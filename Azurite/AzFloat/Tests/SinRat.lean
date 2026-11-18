@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.Sin
 import Azurite.AzFloat.SinRat
 import Azurite.AzFloat.ToString
@@ -28,41 +29,43 @@ inside `q`).  References: a 300-digit evaluation rounded with exact rationals.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def S (q : String) (p : Nat) (m : RoundingMode := .Nearest) := sinRatPrecRound (Q q) p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard S "0" 53 == (zero, .eq)
-#guard S "0" 0 == (zero, .eq)
-#guard S "1/3" 0 == (nan, .eq)
+#guard D (S "0" 53) == ("0.0", .eq)
+#guard D (S "0" 0) == ("0.0", .eq)
+#guard D (S "1/3" 0) == ("NaN", .eq)
 
 -- correctly rounded values at exact rationals
-#guard S "1/3" 53 == (F "5894215658275015/18014398509481984" 53, .gt)
-#guard S "1/10" 53 == (F "1798438952039115/18014398509481984" 53, .gt)
-#guard S "22/7" 53 == (F "-5831425920677443/4611686018427387904" 53, .gt)
-#guard sinPrecRound (F "22/7" 53) 53 .Nearest
-  == (F "-5831425920677151/4611686018427387904" 53, .lt)
-#guard S "-22/7" 53 == (F "5831425920677443/4611686018427387904" 53, .lt)
-#guard S "-7/5" 53 == (F "-4438071036768385/4503599627370496" 53, .gt)
-#guard S "355/113" 53 == (F "-2519516530516539/9444732965739290427392" 53, .lt)
-#guard S "-1/1000" 53 == (F "-2305842624906545/2305843009213693952" 53, .lt)
-#guard S "1000000000000000000000000000000" 53 == (F "-811700891742577/9007199254740992" 53, .lt)
+#guard D (S "1/3" 53) == ("0.32719469679615226", .gt)
+#guard D (S "1/10" 53) == ("0.09983341664682815", .gt)
+#guard D (S "22/7" 53) == ("-0.0012644889303773533", .gt)
+#guard D (sinPrecRound (X "3.142857142857143" 53) 53 .Nearest) == ("-0.00126448893037729", .lt)
+#guard D (S "-22/7" 53) == ("0.0012644889303773533", .lt)
+#guard D (S "-7/5" 53) == ("-0.9854497299884601", .gt)
+#guard D (S "355/113" 53) == ("-2.6676418906241917e-7", .lt)
+#guard D (S "-1/1000" 53) == ("-0.0009999998333333417", .lt)
+#guard D (S "1000000000000000000000000000000" 53) == ("-0.09011690191213806", .lt)
 
 -- agreement with the float `sin` at representable arguments
-#guard S "1/2" 53 == sinPrecRound (F "1/2" 53) 53 .Nearest
-#guard S "-3" 53 == sinPrecRound (F "-3" 53) 53 .Nearest
-#guard S "1000000000000" 53 == sinPrecRound (F "1000000000000" 53) 53 .Nearest
-#guard S "1/1024" 53 == sinPrecRound (F "1/1024" 53) 53 .Nearest
+#guard S "1/2" 53 == sinPrecRound (X "0.5" 53) 53 .Nearest
+#guard S "-3" 53 == sinPrecRound (X "-3" 53) 53 .Nearest
+#guard S "1000000000000" 53 == sinPrecRound (X "1000000000000" 53) 53 .Nearest
+#guard S "1/1024" 53 == sinPrecRound (X "0.0009765625" 53) 53 .Nearest
 
 -- directed modes and other precisions
-#guard S "1/3" 53 .Floor == (F "2947107829137507/9007199254740992" 53, .lt)
-#guard S "1/3" 53 .Ceiling == (F "5894215658275015/18014398509481984" 53, .gt)
-#guard S "22/7" 53 .Floor == (F "-1457856480169361/1152921504606846976" 53, .lt)
-#guard S "22/7" 53 .Ceiling == (F "-5831425920677443/4611686018427387904" 53, .gt)
-#guard S "-22/7" 53 .Floor == (F "5831425920677443/4611686018427387904" 53, .lt)
-#guard S "-22/7" 53 .Ceiling == (F "1457856480169361/1152921504606846976" 53, .gt)
-#guard S "1/3" 20 == (F "686177/2097152" 20, .lt)
-#guard sinRat (Q "1/3") 53 == F "5894215658275015/18014398509481984" 53
+#guard D (S "1/3" 53 .Floor) == ("0.3271946967961522", .lt)
+#guard D (S "1/3" 53 .Ceiling) == ("0.32719469679615226", .gt)
+#guard D (S "22/7" 53 .Floor) == ("-0.0012644889303773535", .lt)
+#guard D (S "22/7" 53 .Ceiling) == ("-0.0012644889303773533", .gt)
+#guard D (S "-22/7" 53 .Floor) == ("0.0012644889303773533", .lt)
+#guard D (S "-22/7" 53 .Ceiling) == ("0.0012644889303773535", .gt)
+#guard D (S "1/3" 20) == ("0.3271947", .lt)
+#guard toString (sinRat (Q "1/3") 53) == "0.32719469679615226"
 #guard toString (sinRat (Q "1/3") 200)
   == "0.3271946967961522441733440852676206060643014068937597915900562"
 #guard toString (sinRat (Q "355/113") 200)
@@ -72,11 +75,11 @@ private def S (q : String) (p : Nat) (m : RoundingMode := .Nearest) := sinRatPre
 private def tinyQ : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 3) <<< (1000 : Nat))
 private def tinyLo : AzFloat := (ofAzRatRound tinyQ 53 .Floor).1
 private def tinyHi : AzFloat := (ofAzRatRound tinyQ 53 .Ceiling).1
-#guard sinRatPrecRound tinyQ 53 .Nearest == (tinyLo, .lt)
-#guard sinRatPrecRound tinyQ 53 .Floor == (tinyLo, .lt)
-#guard sinRatPrecRound tinyQ 53 .Ceiling == (tinyHi, .gt)
-#guard sinRatPrecRound (-tinyQ) 53 .Nearest == (-tinyLo, .gt)
-#guard sinRatPrecRound (-tinyQ) 53 .Floor == (-tinyHi, .lt)
-#guard sinRatPrecRound (-tinyQ) 53 .Ceiling == (-tinyLo, .gt)
+#guard D (sinRatPrecRound tinyQ 53 .Nearest) == ("3.110878728344063e-302", .lt)
+#guard D (sinRatPrecRound tinyQ 53 .Floor) == ("3.110878728344063e-302", .lt)
+#guard D (sinRatPrecRound tinyQ 53 .Ceiling) == ("3.1108787283440633e-302", .gt)
+#guard D (sinRatPrecRound (-tinyQ) 53 .Nearest) == ("-3.110878728344063e-302", .gt)
+#guard D (sinRatPrecRound (-tinyQ) 53 .Floor) == ("-3.1108787283440633e-302", .lt)
+#guard D (sinRatPrecRound (-tinyQ) 53 .Ceiling) == ("-3.110878728344063e-302", .gt)
 #guard (sinTinyRat? tinyQ 53 .Nearest).isSome
 #guard (sinTinyRat? (Q "1/1000") 53 .Nearest).isNone

@@ -26,6 +26,14 @@ denominator, and a tiny rational (delegated).
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
+/-- A pair of floats as decimal outputs. -/
+private def D2f (r : AzFloat × AzFloat) : String × String := (toString r.1, toString r.2)
+/-- A pair of results as decimal outputs and comparison tags. -/
+private def D2 (r : (AzFloat × Ordering) × (AzFloat × Ordering)) :
+    (String × Ordering) × (String × Ordering) :=
+  ((toString r.1.1, r.1.2), (toString r.2.1, r.2.2))
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 private def SC (q : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   sinCosRatPrecRound (Q q) p m
@@ -33,35 +41,26 @@ private def agrees (q : String) (p : Nat) (m : RoundingMode := .Nearest) : Bool 
   sinCosRatPrecRound (Q q) p m == (sinRatPrecRound (Q q) p m, cosRatPrecRound (Q q) p m)
 
 -- special values
-#guard SC "0" 53 == ((zero, .eq), (F "1" 53, .eq))
-#guard SC "0" 0 == ((zero, .eq), (nan, .eq))
-#guard SC "1/3" 0 == ((nan, .eq), (nan, .eq))
+#guard D2 (SC "0" 53) == (("0.0", .eq), ("1.0", .eq))
+#guard D2 (SC "0" 0) == (("0.0", .eq), ("NaN", .eq))
+#guard D2 (SC "1/3" 0) == (("NaN", .eq), ("NaN", .eq))
 
 -- correctly rounded values at exact rationals
-#guard SC "1/3" 53 == ((F "5894215658275015/18014398509481984" 53, .gt),
-  (F "8511415502608429/9007199254740992" 53, .gt))
-#guard SC "1/10" 53 == ((F "1798438952039115/18014398509481984" 53, .gt),
-  (F "8962200775956417/9007199254740992" 53, .gt))
-#guard SC "22/7" 53 == ((F "-5831425920677443/4611686018427387904" 53, .gt),
-  (F "-4503596026893703/4503599627370496" 53, .lt))
-#guard SC "-22/7" 53 == ((F "5831425920677443/4611686018427387904" 53, .lt),
-  (F "-4503596026893703/4503599627370496" 53, .lt))
-#guard SC "-7/5" 53 == ((F "-4438071036768385/4503599627370496" 53, .gt),
-  (F "6123711691446023/36028797018963968" 53, .lt))
-#guard SC "355/113" 53 == ((F "-2519516530516539/9444732965739290427392" 53, .lt),
-  (F "-140737488355323/140737488355328" 53, .lt))
-#guard SC "-1/1000" 53 == ((F "-2305842624906545/2305843009213693952" 53, .lt),
-  (F "2251798687785435/2251799813685248" 53, .gt))
-#guard SC "1000000000000000000000000000000" 53
-  == ((F "-811700891742577/9007199254740992" 53, .lt),
-    (F "-4485275356010793/4503599627370496" 53, .gt))
+#guard D2 (SC "1/3" 53) == (("0.32719469679615226", .gt), ("0.9449569463147377", .gt))
+#guard D2 (SC "1/10" 53) == (("0.09983341664682815", .gt), ("0.9950041652780258", .gt))
+#guard D2 (SC "22/7" 53) == (("-0.0012644889303773533", .gt), ("-0.999999200533553", .lt))
+#guard D2 (SC "-22/7" 53) == (("0.0012644889303773533", .lt), ("-0.999999200533553", .lt))
+#guard D2 (SC "-7/5" 53) == (("-0.9854497299884601", .gt), ("0.16996714290024093", .lt))
+#guard D2 (SC "355/113" 53) == (("-2.6676418906241917e-7", .lt), ("-0.9999999999999645", .lt))
+#guard D2 (SC "-1/1000" 53) == (("-0.0009999998333333417", .lt), ("0.9999995000000417", .gt))
+#guard D2 (SC "1000000000000000000000000000000" 53)
+  == (("-0.09011690191213806", .lt), ("-0.9959311944053957", .gt))
 
 -- directed modes and other precisions
-#guard (SC "1/3" 53 .Floor).1 == (F "2947107829137507/9007199254740992" 53, .lt)
-#guard (SC "22/7" 53 .Ceiling).1 == (F "-5831425920677443/4611686018427387904" 53, .gt)
-#guard (SC "1/3" 20).1 == (F "686177/2097152" 20, .lt)
-#guard sinCosRat (Q "1/3") 53 == (F "5894215658275015/18014398509481984" 53,
-  F "8511415502608429/9007199254740992" 53)
+#guard D ((SC "1/3" 53 .Floor).1) == ("0.3271946967961522", .lt)
+#guard D ((SC "22/7" 53 .Ceiling).1) == ("-0.0012644889303773533", .gt)
+#guard D ((SC "1/3" 20).1) == ("0.3271947", .lt)
+#guard D2f (sinCosRat (Q "1/3") 53) == ("0.32719469679615226", "0.9449569463147377")
 #guard toString (sinCosRat (Q "1/3") 200).1
   == "0.3271946967961522441733440852676206060643014068937597915900562"
 #guard toString (sinCosRat (Q "355/113") 200).1

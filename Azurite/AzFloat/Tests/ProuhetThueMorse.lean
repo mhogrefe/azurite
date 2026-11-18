@@ -24,6 +24,8 @@ place); the hexadecimal digits are the Thue–Morse word `0x6996966996696996` an
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 
@@ -40,14 +42,14 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 
 /-! ## Rounding -/
 
-#guard prouhetThueMorsePrecRound 0 .Nearest == (nan, .eq)
-#guard prouhetThueMorsePrecRound 1 .Nearest == (oneHalf, .gt)                       -- 0.01|1…
-#guard prouhetThueMorsePrecRound 1 .Floor == (F "1/4" 1, .lt)
-#guard prouhetThueMorsePrecRound 2 .Nearest == (F "3/8" 2, .lt)                      -- 0.011|0…
-#guard prouhetThueMorsePrecRound 3 .Nearest == (F "7/16" 3, .gt)                     -- 0.0110|1…
-#guard prouhetThueMorsePrecRound 3 .Down == (F "3/8" 3, .lt)
-#guard prouhetThueMorsePrecRound 4 .Nearest == (F "13/32" 4, .lt)                    -- 0.01101|0…
-#guard prouhetThueMorsePrecRound 4 .Ceiling == (F "7/16" 4, .gt)
+#guard D (prouhetThueMorsePrecRound 0 .Nearest) == ("NaN", .eq)
+#guard D (prouhetThueMorsePrecRound 1 .Nearest) == ("0.5", .gt)  -- 0.01|1…
+#guard D (prouhetThueMorsePrecRound 1 .Floor) == ("0.2", .lt)
+#guard D (prouhetThueMorsePrecRound 2 .Nearest) == ("0.4", .lt)  -- 0.011|0…
+#guard D (prouhetThueMorsePrecRound 3 .Nearest) == ("0.44", .gt)  -- 0.0110|1…
+#guard D (prouhetThueMorsePrecRound 3 .Down) == ("0.4", .lt)
+#guard D (prouhetThueMorsePrecRound 4 .Nearest) == ("0.4", .lt)  -- 0.01101|0…
+#guard D (prouhetThueMorsePrecRound 4 .Ceiling) == ("0.44", .gt)
 #guard toHexString (prouhetThueMorse 53) == "0x0.69969669966968#53"
 #guard toString (prouhetThueMorse 53) == "0.4124540336401076"
 #guard (toHexString (prouhetThueMorsePrecRound 64 .Floor).1,

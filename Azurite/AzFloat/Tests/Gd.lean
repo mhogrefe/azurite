@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Gd
 import Azurite.AzFloat.ToString
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
 
 /-!
@@ -28,84 +29,84 @@ rationals.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def h (x : AzFloat) (k : Int) : AzFloat := x <<< AzInt.ofInt k
 private def A (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := gdPrecRound x p m
 
 -- special values
-#guard A nan 53 == (nan, .eq)
+#guard D (A nan 53) == ("NaN", .eq)
 #guard A (infinity true) 53 == piDiv2PrecRound 53 .Nearest
 #guard A (infinity true) 53 .Floor == piDiv2PrecRound 53 .Floor
 #guard (A (infinity false) 53 .Floor).1 == -(piDiv2PrecRound 53 .Ceiling).1
 #guard (A (infinity false) 53 .Floor).2 == .lt
-#guard A (infinity true) 0 == (nan, .eq)
-#guard A zero 53 == (zero, .eq)
-#guard A zero 0 == (zero, .eq)
-#guard A (F "1" 53) 0 == (nan, .eq)
+#guard D (A (infinity true) 0) == ("NaN", .eq)
+#guard D (A zero 53) == ("0.0", .eq)
+#guard D (A zero 0) == ("0.0", .eq)
+#guard D (A (X "1" 53) 0) == ("NaN", .eq)
 
 -- correctly rounded 53-bit values on every path
-#guard A (F "1/1024" 53) 53 == (F "8796091624107/9007199254740992" 53, .gt)
-#guard A (F "3/8" 53) 53 == (F "1650604576534915/4503599627370496" 53, .lt)
-#guard A (F "3/4" 53) 53 == (F "6198766695064517/9007199254740992" 53, .lt)
-#guard A (F "1" 53) 53 == (F "7798158244213747/9007199254740992" 53, .gt)
-#guard A (F "5/4" 53) 53 == (F "4560955735412077/4503599627370496" 53, .lt)
-#guard A (F "-2" 53) 53 == (F "-5862607364342525/4503599627370496" 53, .gt)
-#guard A (F "7/2" 53) 53 == (F "6802326532795795/4503599627370496" 53, .gt)
-#guard A (F "20" 53) 53 == (F "7074237733463219/4503599627370496" 53, .gt)
-#guard A (F "45" 53) 53 == (F "884279719003555/562949953421312" 53, .lt)
-#guard A (F "200" 53) 53 == (F "884279719003555/562949953421312" 53, .lt)
-#guard A (F "100000" 53) 53 == (F "884279719003555/562949953421312" 53, .lt)
+#guard D (A (X "0.0009765625" 53) 53) == ("0.0009765623447796079", .gt)
+#guard D (A (X "0.375" 53) 53) == ("0.3665078410841438", .lt)
+#guard D (A (X "0.75" 53) 53) == ("0.6882013509140213", .lt)
+#guard D (A (X "1" 53) 53) == ("0.8657694832396586", .gt)
+#guard D (A (X "1.25" 53) 53) == ("1.0127356143501303", .lt)
+#guard D (A (X "-2" 53) 53) == ("-1.301760336046015", .gt)
+#guard D (A (X "3.5" 53) 53) == ("1.5104199075457003", .gt)
+#guard D (A (X "20" 53) 53) == ("1.5707963226725894", .gt)
+#guard D (A (X "45" 53) 53) == ("1.5707963267948966", .lt)
+#guard D (A (X "200" 53) 53) == ("1.5707963267948966", .lt)
+#guard D (A (X "100000" 53) 53) == ("1.5707963267948966", .lt)
 
 -- a huge argument: `π/2` rounded, with the comparison of a number just below `π/2`
-private def huge : AzFloat := h (F "3" 53) (2 ^ 30)
+private def huge : AzFloat := h (X "3" 53) (2 ^ 30)
 #guard (A huge 53).1 == (piDiv2PrecRound 53 .Nearest).1
 #guard (A huge 53 .Floor) == piDiv2PrecRound 53 .Floor
 #guard (A huge 53 .Ceiling) == piDiv2PrecRound 53 .Ceiling
 #guard (A (-huge) 53 .Ceiling).1 == -(piDiv2PrecRound 53 .Floor).1
 
 -- directed rounding and oddness
-#guard A (F "1" 53) 53 .Floor == (F "3899079122106873/4503599627370496" 53, .lt)
-#guard A (F "1" 53) 53 .Ceiling == (F "7798158244213747/9007199254740992" 53, .gt)
-#guard A (F "-3/4" 53) 53 == (F "-6198766695064517/9007199254740992" 53, .gt)
-#guard (A (F "-1" 53) 53 .Floor).1 == -(A (F "1" 53) 53 .Ceiling).1
+#guard D (A (X "1" 53) 53 .Floor) == ("0.8657694832396585", .lt)
+#guard D (A (X "1" 53) 53 .Ceiling) == ("0.8657694832396586", .gt)
+#guard D (A (X "-0.75" 53) 53) == ("-0.6882013509140213", .gt)
+#guard (A (X "-1" 53) 53 .Floor).1 == -(A (X "1" 53) 53 .Ceiling).1
 
 -- other precisions
-#guard A (F "1" 53) 200 == (F ("1391237920176253689963724998890889512640847220755539751705113"
-  ++ "/1606938044258990275541962092341162602522202993782792835301376") 200, .gt)
-#guard A (F "30" 53) 300 == (F ("7999421572937213664891602802477721614953836017510164060302611"
-  ++ "80768607098942482562552613807/50925899408362152156711142210234454026286709841648406265"
-  ++ "9035112338595324940834176545849344") 300, .lt)
-#guard A (F "1/64" 53) 300 == (F ("203695309418709261793874874002220643327251531252941789717943"
-  ++ "5755455859109371507420941901159/1303703024854071095211805240582002023072939771946199200"
-  ++ "40712988758680403184853549195737432064") 300, .lt)
-#guard A (F "3/4" 53) 1000 == (F ("184353417745397661167963670497771353723122348286355821811970"
-  ++ "13266792462473134880684112196849940368757334928406466142549028677492563515990229576953"
-  ++ "51490863489280441148172424393538023654836218531898543256156116907707298345502470387112"
-  ++ "580131304569314927628291421000233275776837995723207517742075478924083/2678771517965668"
-  ++ "30237106262265000452640351202926383401860937597092587762781234030623299594703923964531"
-  ++ "89866822938828670629678632142307851089961443936746437009836419437060577463552686512655"
-  ++ "92785469488545538261618745895485316849691889791385986519265728642799119421635541915107"
-  ++ "457913156096709301417017344") 1000, .gt)
-#guard toString (gd (F "1" 200))
+#guard D (A (X "1" 53) 200)
+  == ("0.8657694832396586242896018461918444413796791992487600996118485", .gt)
+#guard D (A (X "30" 53) 300)
+  == ("1.570796326794709466771944888147653125454663393060919778395717652423602027940801327114648292\
+  ", .lt)
+#guard D (A (X "0.015625" 53) 300)
+  == ("0.015624364255924751377535849394056700481621354788103466320193138194562693671816761111290758\
+  75", .lt)
+#guard D (A (X "0.75" 53) 1000)
+  == ("0.688201350914021377304730291927588999244863232628271289908330258589690720569064135455916498\
+  1558752238686312394994517283623222528492013501905411090517831033203777717978372948036981092864565\
+  0272247084261125922446463696733136084022330874689899151239852450695895498893886690918525812824240\
+  02929348637411843", .gt)
+#guard toString (gd (X "1" 200))
   == "0.8657694832396586242896018461918444413796791992487600996118485"
-#guard (A (F "1" 53) 1).1 == F "1" 1 && (A (F "1" 53) 2).1 == F "3/4" 2
+#guard (A (X "1" 53) 1).1 == X "1" 1 && (A (X "1" 53) 2).1 == X "0.75" 2
 
 -- tiny arguments: the value is just inside `x`
-#guard A (h (F "1" 53) (-1000)) 53 == (h (F "1" 53) (-1000), .gt)
-#guard A (h (F "-1" 53) (-1000)) 53 == (h (F "-1" 53) (-1000), .lt)
-#guard A (h (F "1" 53) (-(2 ^ 30))) 53 .Floor
-  == (h (F "9007199254740991/9007199254740992" 53) (-(2 ^ 30)), .lt)
+#guard D (A (h (X "1" 53) (-1000)) 53) == ("9.332636185032189e-302", .gt)
+#guard D (A (h (X "-1" 53) (-1000)) 53) == ("-9.332636185032189e-302", .lt)
+#guard A (h (X "1" 53) (-(2 ^ 30))) 53 .Floor
+  == (h (X "0.9999999999999999" 53) (-(2 ^ 30)), .lt)
 
 -- the paths of the bracket agree
 private def overlap (a b : Encl) : Bool := le a.1 b.2 && le b.1 a.2
-private def x3 : AzFloat := F "3" 53
+private def x3 : AzFloat := X "3" 53
 private def e3 : AzInt := AzInt.ofInt 2
 #guard (gdLargeSeries? x3 e3 117).isSome
 #guard ((gdLargeSeries? x3 e3 117).map (overlap (gdCore x3 e3 117))) == some true
 #guard (gdLargeSeries? x3 e3 1000).isNone
-private def xs : AzFloat := F "3/8" 53
+private def xs : AzFloat := X "0.375" 53
 private def es : AzInt := AzInt.ofInt (-1)
 #guard ((gdSmallSeries? xs es 117).map (overlap (gdCore xs es 117))) == some true
-#guard (gdSmallSeries? (F "3/4" 53) (AzInt.ofInt 0) 117).isNone
-#guard overlap (gdHuge 128 117) (gdCore (F "200" 53) (AzInt.ofInt 8) 117)
-#guard (enclNarrow? (F "1" 8, F "5/4" 8) 2).isSome && (enclNarrow? (F "1" 8, F "5/4" 8) 3).isNone
+#guard (gdSmallSeries? (X "0.75" 53) (AzInt.ofInt 0) 117).isNone
+#guard overlap (gdHuge 128 117) (gdCore (X "200" 53) (AzInt.ofInt 8) 117)
+#guard (enclNarrow? (X "1" 8, X "1.25" 8) 2).isSome && (enclNarrow? (X "1" 8, X "1.25" 8) 3).isNone

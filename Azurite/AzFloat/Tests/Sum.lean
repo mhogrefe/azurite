@@ -11,11 +11,13 @@ import Azurite.AzFloat.Sum
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Precision
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.ToString
 
 /-!
 # Tests for the correctly rounded sum
 
-Expected values computed by hand (the exact sum, then one rounding).
+Expected values computed by hand (the exact sum, then one rounding), shown as the decimal output
+of the result (`D`: the shortest round-tripping decimal and the comparison tag).
 -/
 
 open Azurite Azurite.AzFloat
@@ -23,19 +25,21 @@ open Azurite Azurite.AzFloat
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 private def P (e : Int) : AzFloat := powerOf2 (AzInt.ofInt e)
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 private def S (xs : List AzFloat) (p : Nat) (m : RoundingMode := .Nearest) :=
   sumPrecRound xs p m
 
 /-! ## Special values -/
 
-#guard S [] 10 == (zero, .eq)
-#guard S [zero, zero] 10 == (zero, .eq)
-#guard S [nan, one] 10 == (nan, .eq)
-#guard S [one, infinity true] 10 == (infinity true, .eq)
-#guard S [infinity false, zero, one] 10 == (infinity false, .eq)
-#guard S [infinity true, one, infinity false] 10 == (nan, .eq)
-#guard S [one] 3 == (setPrec one 3, .eq)
-#guard S [F "1/3" 53] 10 == setPrecRound (F "1/3" 53) 10 .Nearest
+#guard D (S [] 10) == ("0.0", .eq)
+#guard D (S [zero, zero] 10) == ("0.0", .eq)
+#guard D (S [nan, one] 10) == ("NaN", .eq)
+#guard D (S [one, infinity true] 10) == ("Infinity", .eq)
+#guard D (S [infinity false, zero, one] 10) == ("-Infinity", .eq)
+#guard D (S [infinity true, one, infinity false] 10) == ("NaN", .eq)
+#guard D (S [one] 3) == ("1.0", .eq)
+#guard D (S [F "1/3" 53] 10) == ("0.3335", .gt)
 
 /-! ## Two terms agree with addition -/
 
@@ -47,28 +51,28 @@ private def S (xs : List AzFloat) (p : Nat) (m : RoundingMode := .Nearest) :=
 
 /-! ## Exact sums -/
 
-#guard S [one, one, one] 2 == (F "3" 2, .eq)
-#guard S [one, one, one] 1 .Floor == (two, .lt)
-#guard S [one, one, one] 1 .Ceiling == (F "4" 1, .gt)
-#guard S [F "3" 2, F "-1" 1, F "-1" 1, F "-1" 1] 3 == (zero, .eq)
+#guard D (S [one, one, one] 2) == ("3.0", .eq)
+#guard D (S [one, one, one] 1 .Floor) == ("2.0", .lt)
+#guard D (S [one, one, one] 1 .Ceiling) == ("4.0", .gt)
+#guard D (S [F "3" 2, F "-1" 1, F "-1" 1, F "-1" 1] 3) == ("0.0", .eq)
 -- `Σ_{i<10} 2^-i = 1023/512`, ten bits exactly
-#guard S ((List.range 10).map fun i => P (-i)) 10 == (F "1023/512" 10, .eq)
-#guard S ((List.range 10).map fun i => P (-i)) 5 == (setPrec two 5, .gt)
-#guard S ((List.range 10).map fun i => P (-i)) 5 .Floor == (F "31/16" 5, .lt)
+#guard D (S ((List.range 10).map fun i => P (-i)) 10) == ("1.998", .eq)
+#guard D (S ((List.range 10).map fun i => P (-i)) 5) == ("2.0", .gt)
+#guard D (S ((List.range 10).map fun i => P (-i)) 5 .Floor) == ("1.94", .lt)
 -- order does not matter
 #guard S [F "1/3" 53, F "2/3" 53, F "-1" 53] 53 == S [F "-1" 53, F "1/3" 53, F "2/3" 53] 53
 
 /-! ## A boundary inside the bracket -/
 
-#guard S [one, P (-100)] 1 == (one, .lt)
-#guard S [one, P (-100)] 1 .Ceiling == (two, .gt)
-#guard S [one, P (-100)] 1 .Floor == (one, .lt)
-#guard S [one, -P (-100)] 1 == (one, .gt)
-#guard S [one, -P (-100)] 1 .Floor == (oneHalf, .lt)
-#guard S [one, oneHalf] 1 == (two, .gt)                       -- a tie, to even
-#guard S [one, oneHalf, P (-200)] 1 == (two, .gt)             -- just above the tie
-#guard S [one, oneHalf, -P (-200)] 1 == (one, .lt)            -- just below the tie
-#guard S [one, oneHalf, P (-200), -P (-200)] 1 == (two, .gt)  -- exactly the tie again
+#guard D (S [one, P (-100)] 1) == ("1.0", .lt)
+#guard D (S [one, P (-100)] 1 .Ceiling) == ("2.0", .gt)
+#guard D (S [one, P (-100)] 1 .Floor) == ("1.0", .lt)
+#guard D (S [one, -P (-100)] 1) == ("1.0", .gt)
+#guard D (S [one, -P (-100)] 1 .Floor) == ("0.5", .lt)
+#guard D (S [one, oneHalf] 1) == ("2.0", .gt)                       -- a tie, to even
+#guard D (S [one, oneHalf, P (-200)] 1) == ("2.0", .gt)             -- just above the tie
+#guard D (S [one, oneHalf, -P (-200)] 1) == ("1.0", .lt)            -- just below the tie
+#guard D (S [one, oneHalf, P (-200), -P (-200)] 1) == ("2.0", .gt)  -- exactly the tie again
 
 /-! ## Huge exponent gaps: no wide intermediate is ever formed -/
 
@@ -84,8 +88,8 @@ private def tiny : AzFloat := P (-1000000000)
 #guard S [big, tiny, -big, -tiny] 5 == (zero, .eq)
 #guard S [tiny, big, -big, tiny] 5 == (setPrec (P (-999999999)) 5, .eq)
 -- the sign of a cancelling remainder decides a boundary case
-#guard S [one, P (-1000), P (-500), -P (-500)] 1 == (one, .lt)
-#guard S [one, P (-1000), P (-500), -P (-500), -P (-1000)] 1 == (one, .eq)
+#guard D (S [one, P (-1000), P (-500), -P (-500)] 1) == ("1.0", .lt)
+#guard D (S [one, P (-1000), P (-500), -P (-500), -P (-1000)] 1) == ("1.0", .eq)
 
 /-! ## `sumFloat64` -/
 

@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Acos
 import Azurite.AzFloat.AcosRat
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -26,57 +27,58 @@ fixed-point evaluation rounded with exact rationals.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def T (q : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   acosRatPrecRound (Q q) p m
-private def piN : AzFloat := F "884279719003555/281474976710656" 53
-private def piC : AzFloat := F "7074237752028441/2251799813685248" 53
+private def piN : AzFloat := X "3.141592653589793" 53
+private def piC : AzFloat := X "3.1415926535897936" 53
 private def h (x : AzFloat) (k : Int) : AzFloat := x <<< AzInt.ofInt k
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard T "1" 53 == (zero, .eq)
-#guard T "1" 0 == (zero, .eq)
-#guard T "0" 53 == (h piN (-1), .lt)
-#guard T "0" 53 .Ceiling == (h piC (-1), .gt)
-#guard T "-1" 53 == (piN, .lt)
-#guard T "-1" 53 .Ceiling == (piC, .gt)
-#guard T "3/2" 53 == (nan, .eq)
-#guard T "-22/7" 53 == (nan, .eq)
-#guard T "1/3" 0 == (nan, .eq)
+#guard D (T "1" 53) == ("0.0", .eq)
+#guard D (T "1" 0) == ("0.0", .eq)
+#guard D (T "0" 53) == ("1.5707963267948966", .lt)
+#guard D (T "0" 53 .Ceiling) == ("1.5707963267948968", .gt)
+#guard D (T "-1" 53) == ("3.141592653589793", .lt)
+#guard D (T "-1" 53 .Ceiling) == ("3.1415926535897936", .gt)
+#guard D (T "3/2" 53) == ("NaN", .eq)
+#guard D (T "-22/7" 53) == ("NaN", .eq)
+#guard D (T "1/3" 0) == ("NaN", .eq)
 
 -- correctly rounded values at exact rationals
-#guard T "1/3" 53 == (F "1385937093311029/1125899906842624" 53, .gt)
-#guard T "-1/3" 53 == (F "8604727130812765/4503599627370496" 53, .gt)
-#guard T "1/10" 53 == (F "413945236963161/281474976710656" 53, .lt)
-#guard T "-7/10" 53 == (F "2641579407207161/1125899906842624" 53, .gt)
-#guard T "3/4" 53 == (F "6509811378280789/9007199254740992" 53, .gt)
-#guard T "-22/23" 53 == (F "1601947125135619/562949953421312" 53, .lt)
-#guard T "999999/1000000" 53 == (F "6521909456158923/4611686018427387904" 53, .gt)
-#guard T "1/1000000007" 53 == (F "7074237747524841/4503599627370496" 53, .gt)
-#guard T "355/452" 53 == (F "1502979792083137/2251799813685248" 53, .lt)
-#guard T "1/3" 53 .Floor == (F "5543748373244115/4503599627370496" 53, .lt)
-#guard T "-3/4" 53 .Floor == (F "5446784907458243/2251799813685248" 53, .lt)
-#guard T "1/3" 53 .Ceiling == (F "1385937093311029/1125899906842624" 53, .gt)
-#guard T "-3/4" 53 .Ceiling == (F "1361696226864561/562949953421312" 53, .gt)
-#guard T "1/3" 20 == (F "645377/524288" 20, .lt)
-#guard T "3/4" 113
-  == (F "3752650764477129491985459529029319/5192296858534827628530496329220096" 113, .lt)
+#guard D (T "1/3" 53) == ("1.2309594173407747", .gt)
+#guard D (T "-1/3" 53) == ("1.9106332362490186", .gt)
+#guard D (T "1/10" 53) == ("1.4706289056333368", .lt)
+#guard D (T "-7/10" 53) == ("2.34619382340565", .gt)
+#guard D (T "3/4" 53) == ("0.7227342478134157", .gt)
+#guard D (T "-22/23" 53) == ("2.8456297320922257", .lt)
+#guard D (T "999999/1000000" 53) == ("0.0014142136802242518", .gt)
+#guard D (T "1/1000000007" 53) == ("1.5707963257948967", .gt)
+#guard D (T "355/452" 53) == ("0.6674571082868117", .lt)
+#guard D (T "1/3" 53 .Floor) == ("1.2309594173407745", .lt)
+#guard D (T "-3/4" 53 .Floor) == ("2.4188584057763776", .lt)
+#guard D (T "1/3" 53 .Ceiling) == ("1.2309594173407747", .gt)
+#guard D (T "-3/4" 53 .Ceiling) == ("2.418858405776378", .gt)
+#guard D (T "1/3" 20) == ("1.230959", .lt)
+#guard D (T "3/4" 113) == ("0.7227342478134156111783773526413333", .lt)
 
 -- agreement with the float `acos` at representable arguments
-#guard T "1/2" 53 == acosPrecRound (F "1/2" 53) 53 .Nearest
-#guard T "-3/4" 53 .Floor == acosPrecRound (F "-3/4" 53) 53 .Floor
-#guard T "1/1024" 53 == acosPrecRound (F "1/1024" 53) 53 .Nearest
+#guard T "1/2" 53 == acosPrecRound (X "0.5" 53) 53 .Nearest
+#guard T "-3/4" 53 .Floor == acosPrecRound (X "-0.75" 53) 53 .Floor
+#guard T "1/1024" 53 == acosPrecRound (X "0.0009765625" 53) 53 .Nearest
 #guard acosRat (Q "1/3") 53 == (T "1/3" 53).1
-#guard (toString (acosRat (Q "1/3") 200)).startsWith
-  "1.23095941734077468213492917824798737571034000935509483"
+#guard toString (acosRat (Q "1/3") 200) == "1.23095941734077468213492917824798737571034000935509483\
+  9055549"
 
 -- rationals next to `±1`
 private def pw (k : Nat) : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 1) <<< k)
 private def near1 : AzRat := 1 - pw 200
-#guard acosRatPrecRound near1 53 .Nearest
-  == (F "6369051672525773/5708990770823839524233143877797980545530986496" 53, .gt)
-#guard acosRatPrecRound (-near1) 53 .Nearest == (piN, .lt)
-#guard acosRatPrecRound (-near1) 53 .Ceiling == (piC, .gt)
+#guard D (acosRatPrecRound near1 53 .Nearest) == ("1.1156177909894717e-30", .gt)
+#guard D (acosRatPrecRound (-near1) 53 .Nearest) == ("3.141592653589793", .lt)
+#guard D (acosRatPrecRound (-near1) 53 .Ceiling) == ("3.1415926535897936", .gt)
 -- a tiny rational: next to `π/2`
-#guard acosRatPrecRound (pw 5000) 53 .Nearest == (h piN (-1), .lt)
-#guard acosRatPrecRound (-(pw 5000)) 53 .Ceiling == (h piC (-1), .gt)
+#guard D (acosRatPrecRound (pw 5000) 53 .Nearest) == ("1.5707963267948966", .lt)
+#guard D (acosRatPrecRound (-(pw 5000)) 53 .Ceiling) == ("1.5707963267948968", .gt)

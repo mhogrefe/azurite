@@ -11,6 +11,7 @@ import Azurite.AzFloat.LnGammaRat
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.Ln
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.ToString
 
 /-!
 # Tests for `ln Γ` of a rational
@@ -32,18 +33,20 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 private def G (s : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   lnGammaRatPrecRound (Q s) p m
 private def pinf : AzFloat := infinity true
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard G "0" 53 == (pinf, .eq)
-#guard G "0" 0 == (pinf, .eq)
-#guard G "-1/2" 53 == (nan, .eq)
-#guard G "-3" 53 == (nan, .eq)
-#guard G "3" 0 == (nan, .eq)
-#guard G "1/3" 0 == (nan, .eq)
-#guard G "1" 53 == (zero, .eq)
-#guard G "2" 53 == (zero, .eq)
-#guard G "1" 0 == (zero, .eq)
-#guard G "2" 200 .Ceiling == (zero, .eq)
+#guard D (G "0" 53) == ("Infinity", .eq)
+#guard D (G "0" 0) == ("Infinity", .eq)
+#guard D (G "-1/2" 53) == ("NaN", .eq)
+#guard D (G "-3" 53) == ("NaN", .eq)
+#guard D (G "3" 0) == ("NaN", .eq)
+#guard D (G "1/3" 0) == ("NaN", .eq)
+#guard D (G "1" 53) == ("0.0", .eq)
+#guard D (G "2" 53) == ("0.0", .eq)
+#guard D (G "1" 0) == ("0.0", .eq)
+#guard D (G "2" 200 .Ceiling) == ("0.0", .eq)
 
 -- dyadic arguments: the float function
 private def dyadicOk (s : String) (p : Nat) (m : RoundingMode) : Bool :=

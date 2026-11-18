@@ -28,25 +28,27 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 private def K (n : Int) : AzInt := AzInt.ofInt n
 private def L (q : String) (k : Int) (p : Nat) (m : RoundingMode := .Nearest) :=
   logBasePow2RatPrecRound (Q q) (K k) p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard L "1" 0 10 == (nan, .eq)                      -- base 1
-#guard L "0" 4 10 == (infinity false, .eq)
-#guard L "0" (-4) 10 == (infinity true, .eq)
-#guard L "-8" 3 10 == (nan, .eq)
-#guard L "-1/8" (-3) 10 == (nan, .eq)
+#guard D (L "1" 0 10) == ("NaN", .eq) -- base 1
+#guard D (L "0" 4 10) == ("-Infinity", .eq)
+#guard D (L "0" (-4) 10) == ("Infinity", .eq)
+#guard D (L "-8" 3 10) == ("NaN", .eq)
+#guard D (L "-1/8" (-3) 10) == ("NaN", .eq)
 
 -- exact powers of two: `j / k`, rounded once
-#guard L "1" 4 53 == (zero, .eq)
-#guard L "16" 4 53 == (F "1" 53, .eq)
-#guard L "1/16" 4 53 == (F "-1" 53, .eq)
-#guard L "256" (-4) 53 == (F "-2" 53, .eq)
-#guard L "8" 4 53 == (F "3/4" 53, .eq)
-#guard L "1/8" (-4) 53 == (F "3/4" 53, .eq)
-#guard L "2" 3 53 == ofAzRatRound (Q "1/3") 53 .Nearest
-#guard L "2" 3 53 .Up == ofAzRatRound (Q "1/3") 53 .Up
-#guard L "1/4" 3 53 .Floor == ofAzRatRound (Q "-2/3") 53 .Floor
-#guard L "1024" 10 1 == (F "1" 1, .eq)
+#guard D (L "1" 4 53) == ("0.0", .eq)
+#guard D (L "16" 4 53) == ("1.0", .eq)
+#guard D (L "1/16" 4 53) == ("-1.0", .eq)
+#guard D (L "256" (-4) 53) == ("-2.0", .eq)
+#guard D (L "8" 4 53) == ("0.75", .eq)
+#guard D (L "1/8" (-4) 53) == ("0.75", .eq)
+#guard D (L "2" 3 53) == ("0.3333333333333333", .lt)
+#guard D (L "2" 3 53 .Up) == ("0.33333333333333337", .gt)
+#guard D (L "1/4" 3 53 .Floor) == ("-0.6666666666666667", .lt)
+#guard D (L "1024" 10 1) == ("1.0", .eq)
 
 -- `k = ±1` agrees with `log₂`
 #guard L "10" 1 53 == log2RatPrecRound (Q "10") 53 .Nearest
@@ -58,23 +60,23 @@ private def L (q : String) (k : Int) (p : Nat) (m : RoundingMode := .Nearest) :=
 private def ref16 : AzRat :=
   Q ("830482023721840586967579857372347543966207848256145153013/1"
     ++ "".pushn '0' 57)
-#guard (L "10" 4 150).1 == ofAzRat ref16 150
-#guard (L "10" 4 150 .Floor).1 == (ofAzRatRound ref16 150 .Floor).1
-#guard (L "1/10" 4 150).1 == ofAzRat (-ref16) 150
-#guard (L "10" (-4) 150).1 == ofAzRat (-ref16) 150
-#guard (L "1/10" (-4) 150).1 == ofAzRat ref16 150
+#guard toString ((L "10" 4 150).1) == "0.830482023721840586967579857372347543966207848"
+#guard toString ((L "10" 4 150 .Floor).1) == "0.830482023721840586967579857372347543966207848"
+#guard toString ((L "1/10" 4 150).1) == "-0.830482023721840586967579857372347543966207848"
+#guard toString ((L "10" (-4) 150).1) == "-0.830482023721840586967579857372347543966207848"
+#guard toString ((L "1/10" (-4) 150).1) == "0.830482023721840586967579857372347543966207848"
 -- a non-dyadic rational with a non-dyadic base exponent: `log₈ (7/3) = log₂ (7/3) / 3`,
 -- `log₂ (7/3) = 1.22239242133644792598823037328401429988…`
 private def ref73 : AzRat :=
   Q ("12223924213364479259882303732840142998812122182736/3" ++ "".pushn '0' 49)
-#guard (L "7/3" 3 60).1 == ofAzRat ref73 60
+#guard toString ((L "7/3" 3 60).1) == "0.407464140445482642"
 -- a large base
 private def ref1000 : AzRat :=
   Q ("332192809488736234787031942948939017586483139302458061205/1" ++ "".pushn '0' 59)
-#guard (L "10" 1000 100).1 == ofAzRat ref1000 100
+#guard toString ((L "10" 1000 100).1) == "0.00332192809488736234787031942949"
 
 -- nearest at precision `p`
-#guard logBasePow2Rat (Q "256") (K 4) 10 == F "2" 10
+#guard toString (logBasePow2Rat (Q "256") (K 4) 10) == "2.0"
 #guard logBasePow2Rat (Q "10") (K 1) 53 == log2Rat (Q "10") 53
 
 -- precomputed constants: the same results

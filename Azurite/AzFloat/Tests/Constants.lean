@@ -12,6 +12,7 @@ import Azurite.AzFloat.Phi
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.OfString
 
 /-!
 # Tests for the constants
@@ -25,17 +26,19 @@ lies above `√2` (`1.41421356237309514…`).  The low-precision cases are round
 
 open Azurite Azurite.AzFloat
 
-private def Q (s : String) : AzRat := (AzRat.parse s).get!
 
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
-#guard sqrt2PrecRound 1 .Nearest == (one, .lt)
-#guard sqrt2PrecRound 1 .Ceiling == (two, .gt)
-#guard sqrt2PrecRound 2 .Nearest == (F "3/2" 2, .gt)
-#guard sqrt2PrecRound 2 .Floor == (F "1" 2, .lt)
-#guard sqrt2PrecRound 53 .Nearest == (F "6369051672525773/4503599627370496" 53, .gt)
-#guard sqrt2PrecRound 53 .Ceiling == (F "6369051672525773/4503599627370496" 53, .gt)
-#guard sqrt2PrecRound 53 .Floor == (F "6369051672525772/4503599627370496" 53, .lt)
+#guard D (sqrt2PrecRound 1 .Nearest) == ("1.0", .lt)
+#guard D (sqrt2PrecRound 1 .Ceiling) == ("2.0", .gt)
+#guard D (sqrt2PrecRound 2 .Nearest) == ("1.5", .gt)
+#guard D (sqrt2PrecRound 2 .Floor) == ("1.0", .lt)
+#guard D (sqrt2PrecRound 53 .Nearest) == ("1.4142135623730951", .gt)
+#guard D (sqrt2PrecRound 53 .Ceiling) == ("1.4142135623730951", .gt)
+#guard D (sqrt2PrecRound 53 .Floor) == ("1.414213562373095", .lt)
 #guard toHexString (sqrt2 53) == "0x1.6a09e667f3bcd#53"
 #guard toHexString (sqrt2PrecRound 53 .Floor).1 == "0x1.6a09e667f3bcc#53"
 #guard toString (sqrt2 53) == "1.4142135623730951"
@@ -43,56 +46,56 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 
 /-! ## `√3`, `√5` -/
 
-#guard cbrt2PrecRound 1 .Nearest == (one, .lt)
-#guard cbrt2PrecRound 1 .Ceiling == (two, .gt)
-#guard cbrt2PrecRound 2 .Nearest == (F "3/2" 2, .gt)
-#guard cbrt2PrecRound 2 .Floor == (F "1" 2, .lt)
-#guard cbrt2PrecRound 3 .Nearest == (F "5/4" 3, .lt)
-#guard cbrt2PrecRound 53 .Nearest == (F "5674179970822795/4503599627370496" 53, .gt)
-#guard cbrt2PrecRound 53 .Ceiling == (F "5674179970822795/4503599627370496" 53, .gt)
-#guard cbrt2PrecRound 53 .Floor == (F "2837089985411397/2251799813685248" 53, .lt)
-#guard cbrt2PrecRound 0 .Nearest == (nan, .eq)
+#guard D (cbrt2PrecRound 1 .Nearest) == ("1.0", .lt)
+#guard D (cbrt2PrecRound 1 .Ceiling) == ("2.0", .gt)
+#guard D (cbrt2PrecRound 2 .Nearest) == ("1.5", .gt)
+#guard D (cbrt2PrecRound 2 .Floor) == ("1.0", .lt)
+#guard D (cbrt2PrecRound 3 .Nearest) == ("1.2", .lt)
+#guard D (cbrt2PrecRound 53 .Nearest) == ("1.2599210498948732", .gt)
+#guard D (cbrt2PrecRound 53 .Ceiling) == ("1.2599210498948732", .gt)
+#guard D (cbrt2PrecRound 53 .Floor) == ("1.259921049894873", .lt)
+#guard D (cbrt2PrecRound 0 .Nearest) == ("NaN", .eq)
 #guard toHexString (cbrt2 53) == "0x1.428a2f98d728b#53"
 #guard toString (cbrt2 53) == "1.2599210498948732"
-#guard cbrt2 100 == cbrt (F "2" 100)
-#guard sqrt3PrecRound 2 .Nearest == (F "3/2" 2, .lt)
-#guard sqrt3PrecRound 3 .Nearest == (F "7/4" 3, .gt)
-#guard sqrt3PrecRound 3 .Floor == (F "3/2" 3, .lt)
+#guard cbrt2 100 == cbrt (X "2" 100)
+#guard D (sqrt3PrecRound 2 .Nearest) == ("1.5", .lt)
+#guard D (sqrt3PrecRound 3 .Nearest) == ("1.8", .gt)
+#guard D (sqrt3PrecRound 3 .Floor) == ("1.5", .lt)
 #guard toString (sqrt3 53) == "1.7320508075688772"
-#guard sqrt5PrecRound 2 .Nearest == (F "2" 2, .lt)
-#guard sqrt5PrecRound 3 .Nearest == (F "2" 3, .lt)
-#guard sqrt5PrecRound 4 .Nearest == (F "9/4" 4, .gt)
-#guard sqrt5PrecRound 4 .Down == (F "2" 4, .lt)
+#guard D (sqrt5PrecRound 2 .Nearest) == ("2.0", .lt)
+#guard D (sqrt5PrecRound 3 .Nearest) == ("2.0", .lt)
+#guard D (sqrt5PrecRound 4 .Nearest) == ("2.2", .gt)
+#guard D (sqrt5PrecRound 4 .Down) == ("2.0", .lt)
 #guard toString (sqrt5 53) == "2.23606797749979"
 
 /-! ## `√2/2`, `√3/3`, `√5/5` -/
 
-#guard sqrt2Over2PrecRound 1 .Nearest == (oneHalf, .lt)
-#guard sqrt2Over2PrecRound 2 .Nearest == (F "3/4" 2, .gt)
+#guard D (sqrt2Over2PrecRound 1 .Nearest) == ("0.5", .lt)
+#guard D (sqrt2Over2PrecRound 2 .Nearest) == ("0.8", .gt)
 #guard sqrt2Over2PrecRound 53 .Nearest ==
   ((sqrt2PrecRound 53 .Nearest).1 >>> (1 : Nat), (sqrt2PrecRound 53 .Nearest).2)
 #guard sqrt2Over2PrecRound 100 .Floor ==
   ((sqrt2PrecRound 100 .Floor).1 >>> (1 : Nat), (sqrt2PrecRound 100 .Floor).2)
 #guard toString (sqrt2Over2 53) == "0.7071067811865476"
-#guard sqrt3Over3PrecRound 1 .Nearest == (oneHalf, .lt)
-#guard sqrt3Over3PrecRound 2 .Nearest == (F "1/2" 2, .lt)
-#guard sqrt3Over3PrecRound 3 .Nearest == (F "5/8" 3, .gt)
-#guard sqrt3Over3PrecRound 3 .Floor == (F "1/2" 3, .lt)
-#guard sqrt5Over5PrecRound 1 .Nearest == (oneHalf, .gt)
-#guard sqrt5Over5PrecRound 2 .Nearest == (F "1/2" 2, .gt)
-#guard sqrt5Over5PrecRound 3 .Nearest == (F "7/16" 3, .lt)
-#guard sqrt5Over5PrecRound 3 .Ceiling == (F "1/2" 3, .gt)
+#guard D (sqrt3Over3PrecRound 1 .Nearest) == ("0.5", .lt)
+#guard D (sqrt3Over3PrecRound 2 .Nearest) == ("0.5", .lt)
+#guard D (sqrt3Over3PrecRound 3 .Nearest) == ("0.6", .gt)
+#guard D (sqrt3Over3PrecRound 3 .Floor) == ("0.5", .lt)
+#guard D (sqrt5Over5PrecRound 1 .Nearest) == ("0.5", .gt)
+#guard D (sqrt5Over5PrecRound 2 .Nearest) == ("0.5", .gt)
+#guard D (sqrt5Over5PrecRound 3 .Nearest) == ("0.44", .lt)
+#guard D (sqrt5Over5PrecRound 3 .Ceiling) == ("0.5", .gt)
 
 /-! ## The golden ratio -/
 
-#guard phiPrecRound 0 .Nearest == (nan, .eq)
+#guard D (phiPrecRound 0 .Nearest) == ("NaN", .eq)
 
-#guard phiPrecRound 1 .Nearest == (two, .gt)
-#guard phiPrecRound 1 .Floor == (one, .lt)
-#guard phiPrecRound 2 .Nearest == (F "3/2" 2, .lt)
-#guard phiPrecRound 3 .Nearest == (F "3/2" 3, .lt)
-#guard phiPrecRound 3 .Ceiling == (F "7/4" 3, .gt)
-#guard phiPrecRound 4 .Nearest == (F "13/8" 4, .gt)
-#guard phiPrecRound 4 .Down == (F "3/2" 4, .lt)
+#guard D (phiPrecRound 1 .Nearest) == ("2.0", .gt)
+#guard D (phiPrecRound 1 .Floor) == ("1.0", .lt)
+#guard D (phiPrecRound 2 .Nearest) == ("1.5", .lt)
+#guard D (phiPrecRound 3 .Nearest) == ("1.5", .lt)
+#guard D (phiPrecRound 3 .Ceiling) == ("1.8", .gt)
+#guard D (phiPrecRound 4 .Nearest) == ("1.6", .gt)
+#guard D (phiPrecRound 4 .Down) == ("1.5", .lt)
 #guard toString (phi 53) == "1.618033988749895"
 #guard toString (phi 100) == "1.618033988749894848204586834366"

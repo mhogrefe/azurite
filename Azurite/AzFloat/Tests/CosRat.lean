@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Cos
 import Azurite.AzFloat.CosRat
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -27,46 +28,49 @@ agreement with the float `cos` at exactly representable arguments (`1/2`, `3`, `
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def C (q : String) (p : Nat) (m : RoundingMode := .Nearest) := cosRatPrecRound (Q q) p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard C "0" 53 == (F "1" 53, .eq)
-#guard C "0" 0 == (nan, .eq)
-#guard C "1/3" 0 == (nan, .eq)
+#guard D (C "0" 53) == ("1.0", .eq)
+#guard D (C "0" 0) == ("NaN", .eq)
+#guard D (C "1/3" 0) == ("NaN", .eq)
 
 -- correctly rounded values at exact rationals
-#guard C "1/3" 53 == (F "8511415502608429/9007199254740992" 53, .gt)
-#guard C "1/10" 53 == (F "8962200775956417/9007199254740992" 53, .gt)
-#guard C "22/7" 53 == (F "-4503596026893703/4503599627370496" 53, .lt)
-#guard C "-7/5" 53 == (F "6123711691446023/36028797018963968" 53, .lt)
-#guard cosPrecRound (F "-7/5" 53) 53 .Nearest == (F "6123711691446027/36028797018963968" 53, .gt)
-#guard C "355/113" 53 == (F "-140737488355323/140737488355328" 53, .lt)
-#guard C "-1/1000" 53 == (F "2251798687785435/2251799813685248" 53, .gt)
-#guard C "1000000000000000000000000000000" 53 == (F "-4485275356010793/4503599627370496" 53, .gt)
-#guard C "1/1267650600228229401496703205376" 53 == (F "1" 53, .gt)
+#guard D (C "1/3" 53) == ("0.9449569463147377", .gt)
+#guard D (C "1/10" 53) == ("0.9950041652780258", .gt)
+#guard D (C "22/7" 53) == ("-0.999999200533553", .lt)
+#guard D (C "-7/5" 53) == ("0.16996714290024093", .lt)
+#guard D (cosPrecRound (X "-1.4" 53) 53 .Nearest) == ("0.16996714290024104", .gt)
+#guard D (C "355/113" 53) == ("-0.9999999999999645", .lt)
+#guard D (C "-1/1000" 53) == ("0.9999995000000417", .gt)
+#guard D (C "1000000000000000000000000000000" 53) == ("-0.9959311944053957", .gt)
+#guard D (C "1/1267650600228229401496703205376" 53) == ("1.0", .gt)
 
 -- agreement with the float `cos` at representable arguments
-#guard C "1/2" 53 == cosPrecRound (F "1/2" 53) 53 .Nearest
-#guard C "3" 53 == cosPrecRound (F "3" 53) 53 .Nearest
-#guard C "1000000000000" 53 == cosPrecRound (F "1000000000000" 53) 53 .Nearest
-#guard C "1/1024" 53 == cosPrecRound (F "1/1024" 53) 53 .Nearest
+#guard C "1/2" 53 == cosPrecRound (X "0.5" 53) 53 .Nearest
+#guard C "3" 53 == cosPrecRound (X "3" 53) 53 .Nearest
+#guard C "1000000000000" 53 == cosPrecRound (X "1000000000000" 53) 53 .Nearest
+#guard C "1/1024" 53 == cosPrecRound (X "0.0009765625" 53) 53 .Nearest
 
 -- directed modes and other precisions
-#guard C "1/3" 53 .Floor == (F "2127853875652107/2251799813685248" 53, .lt)
-#guard C "1/3" 53 .Ceiling == (F "8511415502608429/9007199254740992" 53, .gt)
-#guard C "22/7" 53 .Floor == (F "-4503596026893703/4503599627370496" 53, .lt)
-#guard C "22/7" 53 .Ceiling == (F "-9007192053787405/9007199254740992" 53, .gt)
-#guard C "1/3" 20 == (F "990859/1048576" 20, .lt)
-#guard cosRat (Q "1/3") 53 == F "8511415502608429/9007199254740992" 53
+#guard D (C "1/3" 53 .Floor) == ("0.9449569463147376", .lt)
+#guard D (C "1/3" 53 .Ceiling) == ("0.9449569463147377", .gt)
+#guard D (C "22/7" 53 .Floor) == ("-0.999999200533553", .lt)
+#guard D (C "22/7" 53 .Ceiling) == ("-0.9999992005335528", .gt)
+#guard D (C "1/3" 20) == ("0.944957", .lt)
+#guard toString (cosRat (Q "1/3") 53) == "0.9449569463147377"
 #guard toString (cosRat (Q "1/3") 200)
   == "0.944956946314737664388284007675880607845852699565140737677646"
 #guard toString (cosRat (Q "355/113") 200)
   == "-0.9999999999999644184337169343129714252032324580791768112016077"
 
 -- tiny arguments (`1/(3·2^1000)`): rounded without touching the argument
-private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
+private def belowOne : AzFloat := X "0.9999999999999999" 53
 private def tinyQ : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 3) <<< (1000 : Nat))
-#guard cosRatPrecRound tinyQ 53 .Nearest == (F "1" 53, .gt)
-#guard cosRatPrecRound tinyQ 53 .Floor == (belowOne, .lt)
-#guard cosRatPrecRound (-tinyQ) 53 .Ceiling == (F "1" 53, .gt)
+#guard D (cosRatPrecRound tinyQ 53 .Nearest) == ("1.0", .gt)
+#guard D (cosRatPrecRound tinyQ 53 .Floor) == ("0.9999999999999999", .lt)
+#guard D (cosRatPrecRound (-tinyQ) 53 .Ceiling) == ("1.0", .gt)

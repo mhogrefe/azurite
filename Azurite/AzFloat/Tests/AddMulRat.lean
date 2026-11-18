@@ -11,18 +11,23 @@ import Azurite.AzFloat.AddMul
 import Azurite.AzFloat.AddMulRat
 import Azurite.AzFloat.Precision
 import Azurite.AzFloat.Shift
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.ToString
 
 /-!
 # Tests for the fused multiply-add and multiply-subtract with a rational factor
 
-Expected values computed by hand (the exact `x ± y·z`, then one rounding).
+Expected values computed by hand (the exact `x ± y·z`, then one rounding), shown as decimal output.
 -/
 
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def P (e : Int) : AzFloat := powerOf2 (AzInt.ofInt e)
 private def A (x y : AzFloat) (z : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   addMulRatPrecRound x y (Q z) p m
@@ -31,54 +36,56 @@ private def S (x y : AzFloat) (z : String) (p : Nat) (m : RoundingMode := .Neare
 
 /-! ## Special values -/
 
-#guard A nan one "1/3" 10 == (nan, .eq)
-#guard A one nan "1/3" 10 == (nan, .eq)
-#guard A one (infinity true) "0" 10 == (nan, .eq)                  -- ∞ · 0
-#guard A (infinity true) (infinity true) "-1" 10 == (nan, .eq)     -- ∞ − ∞
-#guard S (infinity true) (infinity true) "1" 10 == (nan, .eq)      -- ∞ − ∞
-#guard A one (infinity true) "-2/3" 10 == (infinity false, .eq)
-#guard A one (infinity false) "-2/3" 10 == (infinity true, .eq)
-#guard S one (infinity true) "2/3" 10 == (infinity false, .eq)
-#guard A (infinity false) (infinity true) "-1" 10 == (infinity false, .eq)
-#guard A (infinity true) one "1/3" 10 == (infinity true, .eq)
-#guard A (infinity true) zero "1/3" 10 == (infinity true, .eq)
-#guard A zero zero "1/3" 10 == (zero, .eq)
-#guard A (F "7" 3) zero "5/3" 10 == (setPrec (F "7" 3) 10, .eq)
-#guard A zero (F "3" 2) "1/3" 5 == (F "1" 5, .eq)
+#guard D (A nan one "1/3" 10) == ("NaN", .eq)
+#guard D (A one nan "1/3" 10) == ("NaN", .eq)
+#guard D (A one (infinity true) "0" 10) == ("NaN", .eq)  -- ∞ · 0
+#guard D (A (infinity true) (infinity true) "-1" 10) == ("NaN", .eq)  -- ∞ − ∞
+#guard D (S (infinity true) (infinity true) "1" 10) == ("NaN", .eq)  -- ∞ − ∞
+#guard D (A one (infinity true) "-2/3" 10) == ("-Infinity", .eq)
+#guard D (A one (infinity false) "-2/3" 10) == ("Infinity", .eq)
+#guard D (S one (infinity true) "2/3" 10) == ("-Infinity", .eq)
+#guard D (A (infinity false) (infinity true) "-1" 10) == ("-Infinity", .eq)
+#guard D (A (infinity true) one "1/3" 10) == ("Infinity", .eq)
+#guard D (A (infinity true) zero "1/3" 10) == ("Infinity", .eq)
+#guard D (A zero zero "1/3" 10) == ("0.0", .eq)
+#guard D (A (X "7" 3) zero "5/3" 10) == ("7.0", .eq)
+#guard D (A zero (X "3" 2) "1/3" 5) == ("1.0", .eq)
 #guard A zero one "-1/3" 5 == addRatPrecRound zero (Q "-1/3") 5 .Nearest
 #guard S zero one "1/3" 5 == addRatPrecRound zero (Q "-1/3") 5 .Nearest
 
 /-! ## Agreement with the float–rational addition when `y = 1` -/
 
 #guard A one one "1/3" 5 == addRatPrecRound one (Q "1/3") 5 .Nearest
-#guard A (F "-5/4" 4) one "7/9" 20 == addRatPrecRound (F "-5/4" 4) (Q "7/9") 20 .Nearest
-#guard S (F "-5/4" 4) one "7/9" 20 .Floor == subRatPrecRound (F "-5/4" 4) (Q "7/9") 20 .Floor
-#guard A (F "3" 2) (F "3" 2) "1/3" 5 == addRatPrecRound (F "3" 2) (Q "1") 5 .Nearest
+#guard A (X "-1.25" 4) one "7/9" 20 == addRatPrecRound (X "-1.25" 4) (Q "7/9") 20 .Nearest
+#guard S (X "-1.25" 4) one "7/9" 20 .Floor == subRatPrecRound (X "-1.25" 4) (Q "7/9") 20 .Floor
+#guard A (X "3" 2) (X "3" 2) "1/3" 5 == addRatPrecRound (X "3" 2) (Q "1") 5 .Nearest
 
 /-! ## Exact results -/
 
-#guard A (F "1/2" 3) (F "3/4" 3) "5/3" 10 == (F "7/4" 10, .eq)
-#guard S (F "1/2" 3) (F "3/4" 3) "5/3" 10 == (F "-3/4" 10, .eq)
-#guard A (F "1" 5) (F "-6" 5) "1/3" 5 == (F "-1" 5, .eq)
-#guard A (F "1" 5) (F "6" 5) "-1/2" 5 == (F "-2" 5, .eq)
+#guard D (A (X "0.5" 3) (X "0.75" 3) "5/3" 10) == ("1.75", .eq)
+#guard D (S (X "0.5" 3) (X "0.75" 3) "5/3" 10) == ("-0.75", .eq)
+#guard D (A (X "1" 5) (X "-6" 5) "1/3" 5) == ("-1.0", .eq)
+#guard D (A (X "1" 5) (X "6" 5) "-1/2" 5) == ("-2.0", .eq)
 
 /-! ## One rounding, not two -/
 
 -- `x = −1`, `y = 1 + 2^-52`, `z = 1 + 2^-52`: `x + y·z = 2^-51 + 2^-104`, which rounds at 53
 -- bits to `2^-51` from above; rounding the product first would give `2^-51` as exact (`.eq`).
-private def y53 : AzFloat := F "4503599627370497/4503599627370496" 53
-#guard A (F "-1" 53) y53 "4503599627370497/4503599627370496" 53 == (setPrec (P (-51)) 53, .lt)
-#guard S (F "1" 53) y53 "4503599627370497/4503599627370496" 53 == (-setPrec (P (-51)) 53, .gt)
+private def y53 : AzFloat := X "1.0000000000000002" 53
+#guard D (A (X "-1" 53) y53 "4503599627370497/4503599627370496" 53)
+  == ("4.440892098500626e-16", .lt)
+#guard D (S (X "1" 53) y53 "4503599627370497/4503599627370496" 53)
+  == ("-4.440892098500626e-16", .gt)
 -- rounding tags at 3 bits
-#guard A (F "1" 3) (F "1/2" 3) "1/4" 3 == (F "1" 3, .lt)      -- 9/8
-#guard A (F "1" 3) (F "1/2" 3) "1/2" 3 == (F "5/4" 3, .eq)
-#guard A (F "1" 3) (F "3/4" 3) "1/4" 3 == (F "5/4" 3, .gt)    -- 19/16
-#guard A (F "1" 3) (F "1/2" 3) "1/4" 3 .Up == (F "5/4" 3, .gt)
-#guard S (F "1" 3) (F "1/2" 3) "1/4" 3 == (F "7/8" 3, .eq)
-#guard S (F "1" 3) (F "1/2" 3) "1/8" 3 == (F "1" 3, .gt)      -- 15/16
+#guard D (A (X "1" 3) (X "0.5" 3) "1/4" 3) == ("1.0", .lt)  -- 9/8
+#guard D (A (X "1" 3) (X "0.5" 3) "1/2" 3) == ("1.2", .eq)
+#guard D (A (X "1" 3) (X "0.75" 3) "1/4" 3) == ("1.2", .gt)  -- 19/16
+#guard D (A (X "1" 3) (X "0.5" 3) "1/4" 3 .Up) == ("1.2", .gt)
+#guard D (S (X "1" 3) (X "0.5" 3) "1/4" 3) == ("0.9", .eq)
+#guard D (S (X "1" 3) (X "0.5" 3) "1/8" 3) == ("1.0", .gt)  -- 15/16
 -- default precisions
-#guard addMulRat (F "1" 3) (F "2" 10) (Q "3/2") == F "4" 10
-#guard subMulRat (F "1" 3) (F "2" 10) (Q "3/2") == F "-2" 10
+#guard toString (addMulRat (X "1" 3) (X "2" 10) (Q "3/2")) == "4.0"
+#guard toString (subMulRat (X "1" 3) (X "2" 10) (Q "3/2")) == "-2.0"
 
 /-! ## `Float` versions -/
 
@@ -109,20 +116,20 @@ operation commutes with a common shift of `x` and `y`, agrees with the float–f
 operation on a dyadic `z`, and a negligible term only decides the comparison. -/
 
 private def hugeK : AzInt := AzInt.ofInt (2 ^ 40)
-private def x0 : AzFloat := F "1/3" 53
-private def y0 : AzFloat := F "5/7" 53
+private def x0 : AzFloat := X "0.3333333333333333" 53
+private def y0 : AzFloat := X "0.7142857142857143" 53
 private def shiftRes (r : AzFloat × Ordering) (k : AzInt) : AzFloat × Ordering := (r.1 <<< k, r.2)
 #guard addMulRatPrecRound (x0 <<< hugeK) (y0 <<< hugeK) (Q "3/11") 53 .Nearest
   == shiftRes (addMulRatPrecRound x0 y0 (Q "3/11") 53 .Nearest) hugeK
 #guard subMulRatPrecRound (x0 <<< (-hugeK)) (y0 <<< (-hugeK)) (Q "3/11") 53 .Floor
   == shiftRes (subMulRatPrecRound x0 y0 (Q "3/11") 53 .Floor) (-hugeK)
 #guard addMulRatPrecRound x0 (y0 <<< hugeK) (Q "3/8") 53 .Nearest
-  == addMulPrecRound x0 (y0 <<< hugeK) (F "3/8" 2) 53 .Nearest
+  == addMulPrecRound x0 (y0 <<< hugeK) (X "0.375" 2) 53 .Nearest
 #guard addMulRatPrecRound x0 (y0 <<< (-hugeK)) (Q "-3/8") 53 .Ceiling
-  == addMulPrecRound x0 (y0 <<< (-hugeK)) (F "-3/8" 2) 53 .Ceiling
+  == addMulPrecRound x0 (y0 <<< (-hugeK)) (X "-0.375" 2) 53 .Ceiling
 -- `x` exactly representable, `y·z` negligible: the result is `x`, the comparison sees the sign
-#guard addMulRatPrecRound (F "1" 53) (y0 <<< (-hugeK)) (Q "3/11") 53 .Nearest == (F "1" 53, .lt)
-#guard subMulRatPrecRound (F "1" 53) (y0 <<< (-hugeK)) (Q "3/11") 53 .Nearest == (F "1" 53, .gt)
+#guard D (addMulRatPrecRound (X "1" 53) (y0 <<< (-hugeK)) (Q "3/11") 53 .Nearest) == ("1.0", .lt)
+#guard D (subMulRatPrecRound (X "1" 53) (y0 <<< (-hugeK)) (Q "3/11") 53 .Nearest) == ("1.0", .gt)
 -- `x` negligible against a huge `y·z` with exactly representable product
-#guard addMulRatPrecRound (F "1" 53) ((F "11" 53) <<< hugeK) (Q "3/11") 53 .Nearest
-  == ((F "3" 53) <<< hugeK, .lt)
+#guard addMulRatPrecRound (X "1" 53) ((X "11" 53) <<< hugeK) (Q "3/11") 53 .Nearest
+  == ((X "3" 53) <<< hugeK, .lt)

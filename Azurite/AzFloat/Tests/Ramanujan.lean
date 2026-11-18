@@ -25,37 +25,36 @@ itself, from above), and precision `0`.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 
-#guard ramanujanPrecRound 1 .Nearest == (F "288230376151711744" 1, .gt)
-#guard ramanujanPrecRound 1 .Floor == (F "144115188075855872" 1, .lt)
-#guard ramanujanPrecRound 1 .Ceiling == (F "288230376151711744" 1, .gt)
-#guard ramanujanPrecRound 2 .Nearest == (F "288230376151711744" 2, .gt)
-#guard ramanujanPrecRound 2 .Floor == (F "216172782113783808" 2, .lt)
-#guard ramanujanPrecRound 2 .Ceiling == (F "288230376151711744" 2, .gt)
-#guard ramanujanPrecRound 3 .Nearest == (F "252201579132747776" 3, .lt)
-#guard ramanujanPrecRound 3 .Floor == (F "252201579132747776" 3, .lt)
-#guard ramanujanPrecRound 3 .Ceiling == (F "288230376151711744" 3, .gt)
-#guard ramanujanPrecRound 53 .Nearest == (F "262537412640768736" 53, .lt)
-#guard ramanujanPrecRound 53 .Floor == (F "262537412640768736" 53, .lt)
-#guard ramanujanPrecRound 53 .Ceiling == (F "262537412640768768" 53, .gt)
-#guard ramanujanPrecRound 60 .Nearest == (F "262537412640768744" 60, .gt)
-#guard ramanujanPrecRound 60 .Floor == (F "1050149650563074975/4" 60, .lt)
-#guard ramanujanPrecRound 60 .Ceiling == (F "262537412640768744" 60, .gt)
-#guard ramanujanPrecRound 100 .Nearest
-  == (F "1154651751699004161821692133373/4398046511104" 100, .gt)
-#guard ramanujanPrecRound 100 .Floor == (F "288662937924751040455423033343/1099511627776" 100, .lt)
-#guard ramanujanPrecRound 100 .Ceiling
-  == (F "1154651751699004161821692133373/4398046511104" 100, .gt)
-#guard ramanujanPrecRound 150 .Nearest
-  == (F "1300022299673581403712273644576105914215875979/4951760157141521099596496896" 150, .lt)
-#guard ramanujanPrecRound 150 .Floor
-  == (F "1300022299673581403712273644576105914215875979/4951760157141521099596496896" 150, .lt)
-#guard ramanujanPrecRound 150 .Ceiling
-  == (F "325005574918395350928068411144026478553968995/1237940039285380274899124224" 150, .gt)
+#guard D (ramanujanPrecRound 1 .Nearest) == ("3.0e17", .gt)
+#guard D (ramanujanPrecRound 1 .Floor) == ("1.4e17", .lt)
+#guard D (ramanujanPrecRound 1 .Ceiling) == ("3.0e17", .gt)
+#guard D (ramanujanPrecRound 2 .Nearest) == ("3.0e17", .gt)
+#guard D (ramanujanPrecRound 2 .Floor) == ("2.0e17", .lt)
+#guard D (ramanujanPrecRound 2 .Ceiling) == ("3.0e17", .gt)
+#guard D (ramanujanPrecRound 3 .Nearest) == ("2.5e17", .lt)
+#guard D (ramanujanPrecRound 3 .Floor) == ("2.5e17", .lt)
+#guard D (ramanujanPrecRound 3 .Ceiling) == ("3.0e17", .gt)
+#guard D (ramanujanPrecRound 53 .Nearest) == ("2.6253741264076874e17", .lt)
+#guard D (ramanujanPrecRound 53 .Floor) == ("2.6253741264076874e17", .lt)
+#guard D (ramanujanPrecRound 53 .Ceiling) == ("2.6253741264076877e17", .gt)
+#guard D (ramanujanPrecRound 60 .Nearest) == ("262537412640768744.0", .gt)
+#guard D (ramanujanPrecRound 60 .Floor) == ("262537412640768743.8", .lt)
+#guard D (ramanujanPrecRound 60 .Ceiling) == ("262537412640768744.0", .gt)
+#guard D (ramanujanPrecRound 100 .Nearest) == ("262537412640768743.9999999999993", .gt)
+#guard D (ramanujanPrecRound 100 .Floor) == ("262537412640768743.999999999999", .lt)
+#guard D (ramanujanPrecRound 100 .Ceiling) == ("262537412640768743.9999999999993", .gt)
+#guard D (ramanujanPrecRound 150 .Nearest)
+  == ("262537412640768743.9999999999992500725971981857", .lt)
+#guard D (ramanujanPrecRound 150 .Floor) == ("262537412640768743.9999999999992500725971981857", .lt)
+#guard D (ramanujanPrecRound 150 .Ceiling)
+  == ("262537412640768743.9999999999992500725971981859", .gt)
 
-#guard ramanujanPrecRound 0 .Nearest == (nan, .eq)
-#guard ramanujanPrecRound 60 .Nearest == (F "262537412640768744" 60, .gt)
-#guard ramanujan 60 == F "262537412640768744" 60
+#guard D (ramanujanPrecRound 0 .Nearest) == ("NaN", .eq)
+#guard D (ramanujanPrecRound 60 .Nearest) == ("262537412640768744.0", .gt)
+#guard toString (ramanujan 60) == "262537412640768744.0"
 #guard (ramanujanPrecRound 150 .Floor).2 == .lt
 #guard (ramanujanPrecRound 150 .Ceiling).2 == .gt

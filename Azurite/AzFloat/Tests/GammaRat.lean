@@ -9,7 +9,9 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.GammaRat
 import Azurite.AzFloat.Div
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.ToString
 
 /-!
 # Tests for `Γ` and `1/Γ` of a rational
@@ -26,33 +28,37 @@ open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def G (s : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   gammaRatPrecRound (Q s) p m
 private def R (s : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   reciprocalGammaRatPrecRound (Q s) p m
 private def pinf : AzFloat := infinity true
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard G "0" 53 == (pinf, .eq)
-#guard G "0" 0 == (pinf, .eq)
-#guard G "-1" 53 == (nan, .eq)
-#guard G "-3" 53 == (nan, .eq)
-#guard G "3" 0 == (nan, .eq)
-#guard G "1/3" 0 == (nan, .eq)
-#guard R "0" 53 == (zero, .eq)
-#guard R "-1" 53 == (zero, .eq)
-#guard R "-1000" 0 == (zero, .eq)
-#guard R "1/3" 0 == (nan, .eq)
+#guard D (G "0" 53) == ("Infinity", .eq)
+#guard D (G "0" 0) == ("Infinity", .eq)
+#guard D (G "-1" 53) == ("NaN", .eq)
+#guard D (G "-3" 53) == ("NaN", .eq)
+#guard D (G "3" 0) == ("NaN", .eq)
+#guard D (G "1/3" 0) == ("NaN", .eq)
+#guard D (R "0" 53) == ("0.0", .eq)
+#guard D (R "-1" 53) == ("0.0", .eq)
+#guard D (R "-1000" 0) == ("0.0", .eq)
+#guard D (R "1/3" 0) == ("NaN", .eq)
 
 -- positive integers
-#guard G "1" 53 == (F "1" 53, .eq)
-#guard G "2" 53 == (F "1" 53, .eq)
-#guard G "5" 53 == (F "24" 53, .eq)
-#guard G "21" 100 == (F "2432902008176640000" 100, .eq)
+#guard D (G "1" 53) == ("1.0", .eq)
+#guard D (G "2" 53) == ("1.0", .eq)
+#guard D (G "5" 53) == ("24.0", .eq)
+#guard D (G "21" 100) == ("2.43290200817664e18", .eq)
 #guard (G "30" 53).2 != .eq
-#guard R "1" 53 == (F "1" 53, .eq)
-#guard R "3" 53 == (F "1/2" 53, .eq)
-#guard R "4" 53 .Floor == ofAzRatRound (Q "1/6") 53 .Floor
+#guard D (R "1" 53) == ("1.0", .eq)
+#guard D (R "3" 53) == ("0.5", .eq)
+#guard D (R "4" 53 .Floor) == ("0.16666666666666666", .lt)
 
 -- dyadic arguments: the float functions
 private def dyadicOk (s : String) (p : Nat) (m : RoundingMode) : Bool :=
@@ -78,7 +84,7 @@ private def between (s lo hi : String) (p : Nat) : Bool :=
 
 -- within `2^(−180)` of `1`
 private def nearOne (x : AzFloat) : Bool :=
-  lt (subPrecRound x (F "1" 200) 200 .Nearest).1.abs (powerOf2 (AzInt.ofInt (-180)))
+  lt (subPrecRound x (X "1" 200) 200 .Nearest).1.abs (powerOf2 (AzInt.ofInt (-180)))
 
 -- the recurrence `Γ(q + 1) = q Γ(q)` at 200 bits
 private def recOk (s s1 : String) : Bool :=
@@ -108,10 +114,10 @@ private def recOk (s s1 : String) : Bool :=
 -- tiny arguments: `2^(−200)` (`1/q` a float) and `1/(2^200 + 1)` (`1/q` next to one)
 private def t200 : String := "1606938044258990275541962092341162602522202993782792835301376"
 private def t200' : String := "1606938044258990275541962092341162602522202993782792835301377"
-#guard G ("1/" ++ t200) 53 == (F t200 53, .gt)
-#guard G ("1/" ++ t200') 53 == (F t200 53, .lt)
-#guard G ("-1/" ++ t200) 53 .Ceiling == ((-(F t200 53)), .gt)
-#guard R ("1/" ++ t200) 53 == (F ("1/" ++ t200) 53, .lt)
-#guard R ("1/" ++ t200') 53 == (F ("1/" ++ t200) 53, .gt)
-#guard R ("-1/" ++ t200) 53 == (F ("-1/" ++ t200) 53, .lt)
+#guard D (G ("1/" ++ t200) 53) == ("1.6069380442589903e60", .gt)
+#guard D (G ("1/" ++ t200') 53) == ("1.6069380442589903e60", .lt)
+#guard D (G ("-1/" ++ t200) 53 .Ceiling) == ("-1.6069380442589903e60", .gt)
+#guard D (R ("1/" ++ t200) 53) == ("6.223015277861142e-61", .lt)
+#guard D (R ("1/" ++ t200') 53) == ("6.223015277861142e-61", .gt)
+#guard D (R ("-1/" ++ t200) 53) == ("-6.223015277861142e-61", .lt)
 #guard (G ("3/" ++ t200) 53 .Floor).2 == .lt && (R ("3/" ++ t200) 53 .Floor).2 == .lt

@@ -12,6 +12,7 @@ import Azurite.AzFloat.Sin
 import Azurite.AzFloat.SinWithPeriod
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.OfString
 
 /-!
 # Tests for `sin (2π x / u)`
@@ -31,91 +32,92 @@ open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def S (x : String) (u : UInt64) (p : Nat) (m : RoundingMode := .Nearest) :=
   sinWithPeriodPrecRound (F x 53) u p m
-private def half : AzFloat := F "1/2" 53
-private def nhalf : AzFloat := F "-1/2" 53
+private def half : AzFloat := X "0.5" 53
+private def nhalf : AzFloat := X "-0.5" 53
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard sinWithPeriodPrecRound (F "1" 53) 0 53 .Nearest == (nan, .eq)
-#guard sinWithPeriodPrecRound nan 360 53 .Nearest == (nan, .eq)
-#guard sinWithPeriodPrecRound (infinity true) 360 53 .Nearest == (nan, .eq)
-#guard sinWithPeriodPrecRound (infinity false) 360 53 .Nearest == (nan, .eq)
-#guard sinWithPeriodPrecRound zero 360 53 .Nearest == (zero, .eq)
-#guard sinWithPeriodPrecRound zero 360 0 .Nearest == (zero, .eq)
-#guard sinWithPeriodPrecRound zero 0 53 .Nearest == (nan, .eq)
-#guard S "1" 360 0 == (nan, .eq)
+#guard D (sinWithPeriodPrecRound (X "1" 53) 0 53 .Nearest) == ("NaN", .eq)
+#guard D (sinWithPeriodPrecRound nan 360 53 .Nearest) == ("NaN", .eq)
+#guard D (sinWithPeriodPrecRound (infinity true) 360 53 .Nearest) == ("NaN", .eq)
+#guard D (sinWithPeriodPrecRound (infinity false) 360 53 .Nearest) == ("NaN", .eq)
+#guard D (sinWithPeriodPrecRound zero 360 53 .Nearest) == ("0.0", .eq)
+#guard D (sinWithPeriodPrecRound zero 360 0 .Nearest) == ("0.0", .eq)
+#guard D (sinWithPeriodPrecRound zero 0 53 .Nearest) == ("NaN", .eq)
+#guard D (S "1" 360 0) == ("NaN", .eq)
 
 -- exact values
-#guard S "30" 360 53 == (half, .eq)
-#guard S "90" 360 53 == (F "1" 53, .eq)
-#guard S "150" 360 53 == (half, .eq)
-#guard S "180" 360 53 == (zero, .eq)
-#guard S "210" 360 53 == (nhalf, .eq)
-#guard S "270" 360 53 == (F "-1" 53, .eq)
-#guard S "330" 360 53 == (nhalf, .eq)
-#guard S "360" 360 53 == (zero, .eq)
-#guard S "720" 360 53 == (zero, .eq)
-#guard S "-30" 360 53 == (nhalf, .eq)
-#guard S "-90" 360 53 == (F "-1" 53, .eq)
-#guard S "-210" 360 53 == (half, .eq)
-#guard S "-270" 360 53 == (F "1" 53, .eq)
-#guard S "1/2" 1 53 == (zero, .eq)
-#guard S "1/4" 1 53 == (F "1" 53, .eq)
-#guard S "3/4" 1 53 == (F "-1" 53, .eq)
-#guard S "7/4" 1 53 == (F "-1" 53, .eq)
-#guard S "1" 4 53 == (F "1" 53, .eq)
-#guard S "-1" 4 53 == (F "-1" 53, .eq)
-#guard S "1" 12 53 == (half, .eq)
-#guard S "5" 12 53 == (half, .eq)
-#guard S "7" 12 53 == (nhalf, .eq)
-#guard S "11" 12 53 == (nhalf, .eq)
-#guard S "30" 360 7 == (F "1/2" 7, .eq)
+#guard D (S "30" 360 53) == ("0.5", .eq)
+#guard D (S "90" 360 53) == ("1.0", .eq)
+#guard D (S "150" 360 53) == ("0.5", .eq)
+#guard D (S "180" 360 53) == ("0.0", .eq)
+#guard D (S "210" 360 53) == ("-0.5", .eq)
+#guard D (S "270" 360 53) == ("-1.0", .eq)
+#guard D (S "330" 360 53) == ("-0.5", .eq)
+#guard D (S "360" 360 53) == ("0.0", .eq)
+#guard D (S "720" 360 53) == ("0.0", .eq)
+#guard D (S "-30" 360 53) == ("-0.5", .eq)
+#guard D (S "-90" 360 53) == ("-1.0", .eq)
+#guard D (S "-210" 360 53) == ("0.5", .eq)
+#guard D (S "-270" 360 53) == ("1.0", .eq)
+#guard D (S "1/2" 1 53) == ("0.0", .eq)
+#guard D (S "1/4" 1 53) == ("1.0", .eq)
+#guard D (S "3/4" 1 53) == ("-1.0", .eq)
+#guard D (S "7/4" 1 53) == ("-1.0", .eq)
+#guard D (S "1" 4 53) == ("1.0", .eq)
+#guard D (S "-1" 4 53) == ("-1.0", .eq)
+#guard D (S "1" 12 53) == ("0.5", .eq)
+#guard D (S "5" 12 53) == ("0.5", .eq)
+#guard D (S "7" 12 53) == ("-0.5", .eq)
+#guard D (S "11" 12 53) == ("-0.5", .eq)
+#guard D (S "30" 360 7) == ("0.5", .eq)
 
 -- correctly rounded irrational values
-#guard S "45" 360 53 == (F "6369051672525773/9007199254740992" 53, .gt)
-#guard S "60" 360 53 == (F "3900231685776981/4503599627370496" 53, .lt)
-#guard S "1" 360 53 == (F "2515156836085391/144115188075855872" 53, .lt)
-#guard S "359" 360 53 == (F "-2515156836085391/144115188075855872" 53, .gt)
-#guard S "-1" 360 53 == (F "-2515156836085391/144115188075855872" 53, .gt)
-#guard S "-200" 360 53 == (F "6161287160138741/18014398509481984" 53, .lt)
-#guard S "1000000000000001" 360 53 == (F "-4420855817591649/4503599627370496" 53, .lt)
-#guard S "1" 8 53 == (F "6369051672525773/9007199254740992" 53, .gt)
-#guard S "1" 7 53 == (F "7042111946219083/9007199254740992" 53, .lt)
-#guard S "5/2" 7 53 == (F "7042111946219083/9007199254740992" 53, .lt)
-#guard S "1" 1000 53 == (F "7243971794433657/1152921504606846976" 53, .lt)
-#guard S "1/3" 1 53 == (F "7800463371553963/9007199254740992" 53, .gt)
-#guard S "1/12" 1 53 == (half, .gt)
-#guard S "1/12" 1 53 .Floor == (F "9007199254740991/18014398509481984" 53, .lt)
-#guard S "6333186975989761/35184372088832" 360 53
-  == (F "-5030569068109113/10141204801825835211973625643008" 53, .gt)
-#guard S "1/1267650600228229401496703205376" 1 53
-  == (F "884279719003555/178405961588244985132285746181186892047843328" 53, .lt)
-#guard S "1" 18446744073709551615 53
-  == (F "884279719003555/2596148429267413814265248164610048" 53, .lt)
+#guard D (S "45" 360 53) == ("0.7071067811865476", .gt)
+#guard D (S "60" 360 53) == ("0.8660254037844386", .lt)
+#guard D (S "1" 360 53) == ("0.01745240643728351", .lt)
+#guard D (S "359" 360 53) == ("-0.01745240643728351", .gt)
+#guard D (S "-1" 360 53) == ("-0.01745240643728351", .gt)
+#guard D (S "-200" 360 53) == ("0.3420201433256687", .lt)
+#guard D (S "1000000000000001" 360 53) == ("-0.981627183447664", .lt)
+#guard D (S "1" 8 53) == ("0.7071067811865476", .gt)
+#guard D (S "1" 7 53) == ("0.7818314824680298", .lt)
+#guard D (S "5/2" 7 53) == ("0.7818314824680298", .lt)
+#guard D (S "1" 1000 53) == ("0.006283143965558951", .lt)
+#guard D (S "1/3" 1 53) == ("0.8660254037844387", .gt)
+#guard D (S "1/12" 1 53) == ("0.5", .gt)
+#guard D (S "1/12" 1 53 .Floor) == ("0.49999999999999994", .lt)
+#guard D (S "6333186975989761/35184372088832" 360 53) == ("-4.960524086056721e-16", .gt)
+#guard D (S "1/1267650600228229401496703205376" 1 53) == ("4.9565592490930495e-30", .lt)
+#guard D (S "1" 18446744073709551615 53) == ("3.4061215800865545e-19", .lt)
 
 -- directed modes, other precisions
-#guard S "45" 360 53 .Floor == (F "1592262918131443/2251799813685248" 53, .lt)
-#guard S "45" 360 53 .Ceiling == (F "6369051672525773/9007199254740992" 53, .gt)
-#guard S "1" 360 53 .Floor == (F "2515156836085391/144115188075855872" 53, .lt)
-#guard S "1" 360 53 .Ceiling == (F "5030313672170783/288230376151711744" 53, .gt)
-#guard S "-1" 360 53 .Floor == (F "-5030313672170783/288230376151711744" 53, .lt)
-#guard S "-1" 360 53 .Ceiling == (F "-2515156836085391/144115188075855872" 53, .gt)
-#guard S "1" 360 20 == (F "292803/16777216" 20, .gt)
-#guard sinWithPeriod (F "45" 53) 360 == F "6369051672525773/9007199254740992" 53
-#guard toString (sinWithPeriod (F "1" 200) 7)
+#guard D (S "45" 360 53 .Floor) == ("0.7071067811865475", .lt)
+#guard D (S "45" 360 53 .Ceiling) == ("0.7071067811865476", .gt)
+#guard D (S "1" 360 53 .Floor) == ("0.01745240643728351", .lt)
+#guard D (S "1" 360 53 .Ceiling) == ("0.017452406437283515", .gt)
+#guard D (S "-1" 360 53 .Floor) == ("-0.017452406437283515", .lt)
+#guard D (S "-1" 360 53 .Ceiling) == ("-0.01745240643728351", .gt)
+#guard D (S "1" 360 20) == ("0.01745242", .gt)
+#guard toString (sinWithPeriod (X "45" 53) 360) == "0.7071067811865476"
+#guard toString (sinWithPeriod (X "1" 200) 7)
   == "0.781831482468029808708444526674057750232334518708687528980635"
-#guard toString (sinWithPeriod (F "1" 200) 360)
+#guard toString (sinWithPeriod (X "1" 200) 360)
   == "0.01745240643728351281941897851631619247225272030713964268361243"
 
 -- tiny arguments: the cost does not depend on the exponent (`2^(−2^30)` is immediate);
 -- `sin y` rounds like a value just below `y = 2π 2^(−2^30) / u`
 private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
-private def tinyX : AzFloat := (F "1" 53) <<< tinyE
-private def degLo : AzFloat := (F "5030569068109113/288230376151711744" 53) <<< tinyE
-private def degHi : AzFloat := (F "2515284534054557/144115188075855872" 53) <<< tinyE
+private def tinyX : AzFloat := (X "1" 53) <<< tinyE
+private def degLo : AzFloat := (X "0.017453292519943295" 53) <<< tinyE
+private def degHi : AzFloat := (X "0.0174532925199433" 53) <<< tinyE
 private def maxLo : AzFloat :=
-  (F "884279719003555/2596148429267413814265248164610048" 53) <<< tinyE
+  (X "3.4061215800865545e-19" 53) <<< tinyE
 #guard sinWithPeriodPrecRound tinyX 360 53 .Nearest == (degLo, .lt)
 #guard sinWithPeriodPrecRound tinyX 360 53 .Floor == (degLo, .lt)
 #guard sinWithPeriodPrecRound tinyX 360 53 .Ceiling == (degHi, .gt)
@@ -126,12 +128,13 @@ private def maxLo : AzFloat :=
 
 -- huge arguments: `m 2^E mod u` through `2^E mod u` (`3·2^(2^28) ≡ 6 mod 7`, `≡ 48 mod 360`,
 -- `≡ 0 mod 3`, `≡ 3 mod 2^64 − 1`), never building the `2^28`-bit number
-private def hugeX : AzFloat := (F "3" 53) <<< AzInt.ofInt (2 ^ 28)
+private def hugeX : AzFloat := (X "3" 53) <<< AzInt.ofInt (2 ^ 28)
 #guard sinWithPeriodPrecRound hugeX 7 53 .Nearest ==
-  sinWithPeriodPrecRound (F "6" 53) 7 53 .Nearest
-#guard sinWithPeriodPrecRound hugeX 360 53 .Floor == sinWithPeriodPrecRound (F "48" 53) 360 53 .Floor
+  sinWithPeriodPrecRound (X "6" 53) 7 53 .Nearest
+#guard sinWithPeriodPrecRound hugeX 360 53 .Floor
+  == sinWithPeriodPrecRound (X "48" 53) 360 53 .Floor
 #guard sinWithPeriodPrecRound (-hugeX) 360 30 .Ceiling ==
-  sinWithPeriodPrecRound (F "-48" 53) 360 30 .Ceiling
-#guard sinWithPeriodPrecRound hugeX 3 53 .Nearest == (zero, .eq)
+  sinWithPeriodPrecRound (X "-48" 53) 360 30 .Ceiling
+#guard D (sinWithPeriodPrecRound hugeX 3 53 .Nearest) == ("0.0", .eq)
 #guard sinWithPeriodPrecRound hugeX 18446744073709551615 53 .Nearest ==
-  sinWithPeriodPrecRound (F "3" 53) 18446744073709551615 53 .Nearest
+  sinWithPeriodPrecRound (X "3" 53) 18446744073709551615 53 .Nearest

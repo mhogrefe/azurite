@@ -22,20 +22,20 @@ import Azurite.AzRat.Parse
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 
-#guard piPrecRound 1 .Nearest == (F "4" 1, .gt)
-#guard piPrecRound 1 .Floor == (F "2" 1, .lt)
-#guard piPrecRound 2 .Nearest == (F "3" 2, .lt)
-#guard piPrecRound 2 .Ceiling == (F "4" 2, .gt)
-#guard piPrecRound 3 .Nearest == (F "3" 3, .lt)
-#guard piPrecRound 3 .Up == (F "7/2" 3, .gt)
-#guard piPrecRound 53 .Nearest == (F "7074237752028440/2251799813685248" 53, .lt)
-#guard piPrecRound 53 .Ceiling == (F "7074237752028441/2251799813685248" 53, .gt)
-#guard piPrecRound 100 .Nearest
-  == (F "995610453248924340922087778488/316912650057057350374175801344" 100, .lt)
-#guard piPrecRound 100 .Up
-  == (F "995610453248924340922087778489/316912650057057350374175801344" 100, .gt)
+#guard D (piPrecRound 1 .Nearest) == ("4.0", .gt)
+#guard D (piPrecRound 1 .Floor) == ("2.0", .lt)
+#guard D (piPrecRound 2 .Nearest) == ("3.0", .lt)
+#guard D (piPrecRound 2 .Ceiling) == ("4.0", .gt)
+#guard D (piPrecRound 3 .Nearest) == ("3.0", .lt)
+#guard D (piPrecRound 3 .Up) == ("3.5", .gt)
+#guard D (piPrecRound 53 .Nearest) == ("3.141592653589793", .lt)
+#guard D (piPrecRound 53 .Ceiling) == ("3.1415926535897936", .gt)
+#guard D (piPrecRound 100 .Nearest) == ("3.14159265358979323846264338328", .lt)
+#guard D (piPrecRound 100 .Up) == ("3.141592653589793238462643383282", .gt)
 #guard toString (pi 53) == "3.141592653589793"
 #guard toString (pi 200)
   == "3.141592653589793238462643383279502884197169399375105820974944"

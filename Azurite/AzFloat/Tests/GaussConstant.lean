@@ -23,17 +23,17 @@ open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
-#guard gaussConstantPrecRound 1 .Nearest == (F "1" 1, .gt)
-#guard gaussConstantPrecRound 1 .Floor == (F "1/2" 1, .lt)
-#guard gaussConstantPrecRound 2 .Nearest == (F "3/4" 2, .lt)
-#guard gaussConstantPrecRound 2 .Ceiling == (F "1" 2, .gt)
-#guard gaussConstantPrecRound 3 .Nearest == (F "7/8" 3, .gt)
-#guard gaussConstantPrecRound 3 .Floor == (F "3/4" 3, .lt)
-#guard gaussConstantPrecRound 53 .Nearest == (F "7517650266313540/9007199254740992" 53, .gt)
-#guard gaussConstantPrecRound 53 .Floor == (F "7517650266313539/9007199254740992" 53, .lt)
-#guard gaussConstantPrecRound 100 .Nearest
-  == (F "1058015216814730263581923557728/1267650600228229401496703205376" 100, .lt)
-#guard gaussConstantPrecRound 100 .Up
-  == (F "1058015216814730263581923557729/1267650600228229401496703205376" 100, .gt)
+#guard D (gaussConstantPrecRound 1 .Nearest) == ("1.0", .gt)
+#guard D (gaussConstantPrecRound 1 .Floor) == ("0.5", .lt)
+#guard D (gaussConstantPrecRound 2 .Nearest) == ("0.8", .lt)
+#guard D (gaussConstantPrecRound 2 .Ceiling) == ("1.0", .gt)
+#guard D (gaussConstantPrecRound 3 .Nearest) == ("0.9", .gt)
+#guard D (gaussConstantPrecRound 3 .Floor) == ("0.8", .lt)
+#guard D (gaussConstantPrecRound 53 .Nearest) == ("0.8346268416740732", .gt)
+#guard D (gaussConstantPrecRound 53 .Floor) == ("0.8346268416740731", .lt)
+#guard D (gaussConstantPrecRound 100 .Nearest) == ("0.834626841674073186281429732799", .lt)
+#guard D (gaussConstantPrecRound 100 .Up) == ("0.8346268416740731862814297328", .gt)
 #guard toString (gaussConstant 53) == "0.8346268416740732"

@@ -11,6 +11,7 @@ import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.LambertW
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.OfString
 
 /-!
 # Tests for the real branches of the Lambert `W` function
@@ -25,134 +26,123 @@ modes with 120-digit references at the exact float arguments, and 200-bit values
 
 open Azurite Azurite.AzFloat
 
-private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def W0 (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := lambertW0PrecRound x p m
 private def Wm (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) :=
   lambertWm1PrecRound x p m
 private def pinf : AzFloat := infinity true
 private def ninf : AzFloat := infinity false
 /-- The 53-bit float nearest `−e⁻¹` (below it). -/
-private def nearBranch : AzFloat := F "-828390857088487/2251799813685248" 53
+private def nearBranch : AzFloat := X "-0.36787944117144233" 53
 /-- One ulp above `nearBranch`: in the domain, `q ≈ 1.17·10⁻¹⁶`. -/
-private def aboveBranch (p : Nat) : AzFloat := F "-6627126856707895/18014398509481984" p
+private def aboveBranch (p : Nat) : AzFloat :=
+  X "-0.367879441171442278513126211691997013986110687255859375" p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard W0 nan 53 == (nan, .eq)
-#guard W0 pinf 53 == (pinf, .eq)
-#guard W0 ninf 53 == (nan, .eq)
-#guard W0 zero 53 == (zero, .eq)
-#guard W0 (F "-1" 53) 53 == (nan, .eq)
-#guard W0 (F "-1/2" 53) 53 == (nan, .eq)
-#guard W0 nearBranch 53 == (nan, .eq)
-#guard W0 (F "1" 53) 0 == (nan, .eq)
-#guard W0 zero 0 == (zero, .eq)
-#guard Wm nan 53 == (nan, .eq)
-#guard Wm pinf 53 == (nan, .eq)
-#guard Wm ninf 53 == (nan, .eq)
-#guard Wm zero 53 == (ninf, .eq)
-#guard Wm (F "1" 53) 53 == (nan, .eq)
-#guard Wm (F "-1" 53) 53 == (nan, .eq)
-#guard Wm nearBranch 53 == (nan, .eq)
-#guard Wm (F "-1/4" 53) 0 == (nan, .eq)
-#guard Wm zero 0 == (ninf, .eq)
+#guard D (W0 nan 53) == ("NaN", .eq)
+#guard D (W0 pinf 53) == ("Infinity", .eq)
+#guard D (W0 ninf 53) == ("NaN", .eq)
+#guard D (W0 zero 53) == ("0.0", .eq)
+#guard D (W0 (X "-1" 53) 53) == ("NaN", .eq)
+#guard D (W0 (X "-0.5" 53) 53) == ("NaN", .eq)
+#guard D (W0 nearBranch 53) == ("NaN", .eq)
+#guard D (W0 (X "1" 53) 0) == ("NaN", .eq)
+#guard D (W0 zero 0) == ("0.0", .eq)
+#guard D (Wm nan 53) == ("NaN", .eq)
+#guard D (Wm pinf 53) == ("NaN", .eq)
+#guard D (Wm ninf 53) == ("NaN", .eq)
+#guard D (Wm zero 53) == ("-Infinity", .eq)
+#guard D (Wm (X "1" 53) 53) == ("NaN", .eq)
+#guard D (Wm (X "-1" 53) 53) == ("NaN", .eq)
+#guard D (Wm nearBranch 53) == ("NaN", .eq)
+#guard D (Wm (X "-0.25" 53) 0) == ("NaN", .eq)
+#guard D (Wm zero 0) == ("-Infinity", .eq)
 
 -- `W₀`, `x > 0`
-#guard W0 (F "1/2" 53) 53 == (F "24751059545555/70368744177664" 53, .gt)
-#guard W0 (F "1/2" 53) 53 .Floor == (F "6336271243662079/18014398509481984" 53, .lt)
-#guard W0 (F "1" 53) 53 == (F "5108372622710359/9007199254740992" 53, .lt)
-#guard W0 (F "1" 53) 53 .Ceiling == (F "638546577838795/1125899906842624" 53, .gt)
-#guard W0 (F "3" 53) 53 == (F "1182092327033255/1125899906842624" 53, .gt)
-#guard W0 (F "3" 53) 53 .Floor == (F "4728369308133019/4503599627370496" 53, .lt)
-#guard W0 (F "10000000000" 53) 53 == (F "5637573760255067/281474976710656" 53, .gt)
-#guard W0 (F "1267650600228229401496703205376" 53) 53
-  == (F "2291846904728127/35184372088832" 53, .lt)
-#guard W0 (F "1267650600228229401496703205376" 53) 53 .Ceiling
-  == (F "4583693809456255/70368744177664" 53, .gt)
-#guard W0 (F "1/1267650600228229401496703205376" 53) 53
-  == (F "1/1267650600228229401496703205376" 53, .gt)
-#guard W0 (F "1/1267650600228229401496703205376" 53) 53 .Floor
-  == (F "9007199254740991/11417981541647679048466287755595961091061972992" 53, .lt)
-#guard W0 (F "1/3" 53) 53 == (F "2320503604550259/9007199254740992" 53, .lt)
-#guard W0 (F "5/2" 53) 53 == (F "1079272289741457/1125899906842624" 53, .gt)
+#guard D (W0 (X "0.5" 53) 53) == ("0.35173371124919584", .gt)
+#guard D (W0 (X "0.5" 53) 53 .Floor) == ("0.3517337112491958", .lt)
+#guard D (W0 (X "1" 53) 53) == ("0.5671432904097838", .lt)
+#guard D (W0 (X "1" 53) 53 .Ceiling) == ("0.567143290409784", .gt)
+#guard D (W0 (X "3" 53) 53) == ("1.04990889496404", .gt)
+#guard D (W0 (X "3" 53) 53 .Floor) == ("1.0499088949640398", .lt)
+#guard D (W0 (X "10000000000" 53) 53) == ("20.028685413304952", .gt)
+#guard D (W0 (X "1267650600228229401496703205376" 53) 53) == ("65.13820678515364", .lt)
+#guard D (W0 (X "1267650600228229401496703205376" 53) 53 .Ceiling) == ("65.13820678515366", .gt)
+#guard D (W0 (X "7.888609052210118e-31" 53) 53) == ("7.888609052210118e-31", .gt)
+#guard D (W0 (X "7.888609052210118e-31" 53) 53 .Floor) == ("7.888609052210117e-31", .lt)
+#guard D (W0 (X "0.3333333333333333" 53) 53) == ("0.25762765304973667", .lt)
+#guard D (W0 (X "2.5" 53) 53) == ("0.958586356728703", .gt)
 
 -- `W₀`, `−e⁻¹ < x < 0`
-#guard W0 (F "-1/10" 53) 53 == (F "-8058385148099113/72057594037927936" 53, .gt)
-#guard W0 (F "-1/10" 53) 53 .Floor == (F "-4029192574049557/36028797018963968" 53, .lt)
-#guard W0 (F "-9/25" 53) 53 == (F "-7260562050070751/9007199254740992" 53, .lt)
-#guard W0 (F "-9/25" 53) 53 .Ceiling == (F "-3630281025035375/4503599627370496" 53, .gt)
-#guard W0 (F "-1/4" 53) 53 == (F "-6438399281118467/18014398509481984" 53, .gt)
-#guard W0 (F "-1/1267650600228229401496703205376" 53) 53
-  == (F "-1/1267650600228229401496703205376" 53, .gt)
-#guard W0 (F "-1/8" 53) 53 == (F "-5203327617395453/36028797018963968" 53, .gt)
-#guard W0 (F "-1/1000" 53) 53 == (F "-2308152317148371/2305843009213693952" 53, .lt)
-#guard W0 (F "-3678/10000" 53) 53 == (F "-1102662137736347/1125899906842624" 53, .gt)
-#guard W0 (aboveBranch 53) 53 == (F "-4503599558446263/4503599627370496" 53, .lt)
-#guard W0 (aboveBranch 53) 53 .Ceiling == (F "-9007199116892525/9007199254740992" 53, .gt)
+#guard D (W0 (X "-0.1" 53) 53) == ("-0.11183255915896297", .gt)
+#guard D (W0 (X "-0.1" 53) 53 .Floor) == ("-0.11183255915896298", .lt)
+#guard D (W0 (X "-0.36" 53) 53) == ("-0.8060843159708176", .lt)
+#guard D (W0 (X "-0.36" 53) 53 .Ceiling) == ("-0.8060843159708175", .gt)
+#guard D (W0 (X "-0.25" 53) 53) == ("-0.3574029561813889", .gt)
+#guard D (W0 (X "-7.888609052210118e-31" 53) 53) == ("-7.888609052210118e-31", .gt)
+#guard D (W0 (X "-0.125" 53) 53) == ("-0.14442135313750973", .gt)
+#guard D (W0 (X "-0.001" 53) 53) == ("-0.001001001502671886", .lt)
+#guard D (W0 (X "-0.3678" 53) 53) == ("-0.9793607149578305", .gt)
+#guard D (W0 (aboveBranch 53) 53) == ("-0.9999999846957459", .lt)
+#guard D (W0 (aboveBranch 53) 53 .Ceiling) == ("-0.9999999846957458", .gt)
 
 -- `W₋₁`
-#guard Wm (F "-1/10" 53) 53 == (F "-4027515175571421/1125899906842624" 53, .gt)
-#guard Wm (F "-1/10" 53) 53 .Floor == (F "-8055030351142843/2251799813685248" 53, .lt)
-#guard Wm (F "-9/25" 53) 53 == (F "-1376716779936343/1125899906842624" 53, .lt)
-#guard Wm (F "-9/25" 53) 53 .Ceiling == (F "-5506867119745371/4503599627370496" 53, .gt)
-#guard Wm (F "-1/4" 53) 53 == (F "-4848783344313553/2251799813685248" 53, .lt)
-#guard Wm (F "-1/1267650600228229401496703205376" 53) 53
-  == (F "-161877902060443/2199023255552" 53, .lt)
-#guard Wm (F "-1/1267650600228229401496703205376" 53) 53 .Ceiling
-  == (F "-5180092865934175/70368744177664" 53, .gt)
-#guard Wm (F "-1/8" 53) 53 == (F "-3672331608414589/1125899906842624" 53, .gt)
-#guard Wm (F "-1/1000" 53) 53 == (F "-1283245329452111/140737488355328" 53, .lt)
-#guard Wm (F "-3678/10000" 53) 53 == (F "-2298923767488339/2251799813685248" 53, .lt)
-#guard Wm (aboveBranch 53) 53 == (F "-2251799848147365/2251799813685248" 53, .lt)
-#guard Wm (aboveBranch 53) 53 .Ceiling == (F "-4503599696294729/4503599627370496" 53, .gt)
+#guard D (Wm (X "-0.1" 53) 53) == ("-3.577152063957297", .gt)
+#guard D (Wm (X "-0.1" 53) 53 .Floor) == ("-3.5771520639572976", .lt)
+#guard D (Wm (X "-0.36" 53) 53) == ("-1.2227701339785062", .lt)
+#guard D (Wm (X "-0.36" 53) 53 .Ceiling) == ("-1.222770133978506", .gt)
+#guard D (Wm (X "-0.25" 53) 53) == ("-2.15329236411035", .lt)
+#guard D (Wm (X "-7.888609052210118e-31" 53) 53) == ("-73.61354712904495", .lt)
+#guard D (Wm (X "-7.888609052210118e-31" 53) 53 .Ceiling) == ("-73.61354712904493", .gt)
+#guard D (Wm (X "-0.125" 53) 53) == ("-3.2616856845764888", .gt)
+#guard D (Wm (X "-0.001" 53) 53) == ("-9.11800647040274", .lt)
+#guard D (Wm (X "-0.3678" 53) 53) == ("-1.0209272394094255", .lt)
+#guard D (Wm (aboveBranch 53) 53) == ("-1.0000000153042543", .lt)
+#guard D (Wm (aboveBranch 53) 53 .Ceiling) == ("-1.000000015304254", .gt)
 
 -- 200 bits
-#guard W0 (F "1" 200) 200
-  == (F ("227841032476426663099079751600042627130329070727104284459813/"
-      ++ "401734511064747568885490523085290650630550748445698208825344") 200, .gt)
-#guard Wm (F "-1/4" 200) 200
-  == (F ("-432525927537662856011902604319053757720456710040947497833457/"
-      ++ "200867255532373784442745261542645325315275374222849104412672") 200, .lt)
-#guard W0 (aboveBranch 200) 200
-  == (F ("-401734504916500519363838464157987097728614760642047728360695/"
-      ++ "401734511064747568885490523085290650630550748445698208825344") 200, .gt)
-#guard Wm (aboveBranch 200) 200
-  == (F ("-803469034425989362273400164930641479323559745246445132178595/"
-      ++ "803469022129495137770981046170581301261101496891396417650688") 200, .gt)
+#guard D (W0 (X "1" 200) 200)
+  == ("0.567143290409783872999968662210355549753815787186512508135131", .gt)
+#guard D (Wm (X "-0.25" 200) 200)
+  == ("-2.153292364110349649169099150092981375536206485319477695884512", .lt)
+#guard D (W0 (aboveBranch 200) 200)
+  == ("-0.999999984695745871504828693939342150717749770893783964214804", .gt)
+#guard D (Wm (aboveBranch 200) 200)
+  == ("-1.000000015304254284641969185575173803269239102042638319966135", .gt)
 
 -- the nearest wrappers and the omega constant
-#guard lambertW0Float (F "1" 53) == (W0 (F "1" 53) 53).1
-#guard lambertWm1Float (F "-1/4" 53) == (Wm (F "-1/4" 53) 53).1
-#guard toString (lambertW0Float (F "1" 200))
+#guard lambertW0Float (X "1" 53) == (W0 (X "1" 53) 53).1
+#guard lambertWm1Float (X "-0.25" 53) == (Wm (X "-0.25" 53) 53).1
+#guard toString (lambertW0Float (X "1" 200))
   == "0.567143290409783872999968662210355549753815787186512508135131"
 
 -- tiny arguments of `W₀` (`W₀ x = x − x² + ⋯`): rounded by one test, at a cost independent of
 -- the exponent (the Ziv loop would need about `|e|` bits to see the side of `x`)
 private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
-private def tinyX : AzFloat := (F "1" 53) <<< tinyE
-private def third200 : AzFloat := (F "1/3" 53) <<< AzInt.ofInt (-200)
+private def tinyX : AzFloat := (X "1" 53) <<< tinyE
+private def third200 : AzFloat := (X "0.3333333333333333" 53) <<< AzInt.ofInt (-200)
 #guard W0 tinyX 53 == (tinyX, .gt)
 #guard W0 tinyX 53 .Ceiling == (tinyX, .gt)
 #guard (W0 tinyX 53 .Floor).2 == .lt
 #guard (W0 tinyX 53 .Floor).1 != tinyX
 #guard W0 (-tinyX) 53 .Ceiling == (-tinyX, .gt)
 #guard (W0 (-tinyX) 53).2 == .gt
-#guard W0 ((F "3/2" 100) <<< tinyE) 53 == ((F "3/2" 53) <<< tinyE, .gt)
+#guard W0 ((X "1.5" 100) <<< tinyE) 53 == ((X "1.5" 53) <<< tinyE, .gt)
 #guard lambertW0Float tinyX == tinyX
-#guard W0 third200 53 == (third200, .gt)
-#guard W0 third200 53 .Floor
-  == ((F "1501199875790165/4503599627370496" 53) <<< AzInt.ofInt (-200), .lt)
-#guard W0 (-third200) 53 == (-third200, .gt)
-#guard W0 (-third200) 53 .Floor
-  == ((F "-3002399751580331/9007199254740992" 53) <<< AzInt.ofInt (-200), .lt)
+#guard D (W0 third200 53) == ("2.0743384259537138e-61", .gt)
+#guard D (W0 third200 53 .Floor) == ("2.0743384259537134e-61", .lt)
+#guard D (W0 (-third200) 53) == ("-2.0743384259537138e-61", .gt)
+#guard D (W0 (-third200) 53 .Floor) == ("-2.074338425953714e-61", .lt)
 
 -- huge arguments of `W₀` and arguments of `W₋₁` near `0⁻`, far outside the `Float` range
 -- (references: the root of `w + ln |w| = ln |x|` at 80 digits)
-#guard W0 ((F "1" 53) <<< AzInt.ofInt (2 ^ 30)) 53 == (F "6243314596803693/8388608" 53, .lt)
-#guard W0 ((F "1" 53) <<< AzInt.ofInt (2 ^ 62)) 53 == (F "3196577161300663808" 53, .lt)
-#guard Wm ((F "-1" 53) <<< tinyE) 53 == (F "-3121657469763513/4194304" 53, .lt)
-#guard Wm ((F "-1" 53) <<< AzInt.ofInt (-(2 ^ 62 : Int))) 53
-  == (F "-3196577161300663808" 53, .gt)
+#guard D (W0 ((X "1" 53) <<< AzInt.ofInt (2 ^ 30)) 53) == ("744261097.5269905", .lt)
+#guard D (W0 ((X "1" 53) <<< AzInt.ofInt (2 ^ 62)) 53) == ("3.196577161300664e18", .lt)
+#guard D (Wm ((X "-1" 53) <<< tinyE) 53) == ("-744261138.3827956", .lt)
+#guard D (Wm ((X "-1" 53) <<< AzInt.ofInt (-(2 ^ 62 : Int))) 53) == ("-3.196577161300664e18", .gt)
 
 -- precisions at which the Halley refinement used to take its last step too early (the working
 -- precision `p + 74` divisible by `2^⌊lg ((p + 74)/64)⌋`), sending the bracket to the
@@ -162,10 +152,11 @@ private def consistent (x : AzFloat) (p : Nat) : Bool :=
   let c := W0 x p .Ceiling
   let n := W0 x p
   f.2 == .lt && c.2 == .gt && le f.1 n.1 && le n.1 c.1 && lt f.1 c.1
-#guard [86, 100, 120, 150, 182, 310, 438].all fun p => consistent (F "1/3" 53) p
-#guard [100, 120, 310].all fun p => consistent (F "-1/3" 53) p
+#guard [86, 100, 120, 150, 182, 310, 438].all fun p => consistent (X "0.3333333333333333" 53) p
+#guard [100, 120, 310].all fun p => consistent (X "-0.3333333333333333" 53) p
 #guard [100, 120].all fun p =>
-  (Wm (F "-1/3" 53) p .Floor).2 == .lt && (Wm (F "-1/3" 53) p .Ceiling).2 == .gt
+  (Wm (X "-0.3333333333333333\
+    " 53) p .Floor).2 == .lt && (Wm (X "-0.3333333333333333" 53) p .Ceiling).2 == .gt
 
 -- arguments in the subnormal range of `Float` (the `Float` seed is not used there) and
 -- arguments with huge exponents (`|W| ≈ 2^78`: more integer bits than the working precision
@@ -177,7 +168,7 @@ private def dirOk (f : RoundingMode → AzFloat × Ordering) : Bool :=
     && le (f .Nearest).1 (f .Ceiling).1 && lt (f .Floor).1 (f .Ceiling).1
 #guard dirOk fun m => Wm sub268 93 m
 #guard dirOk fun m => Wm sub268 53 m
-#guard lt (Wm sub268 53).1 (nat 0 - nat 746) && lt (nat 0 - nat 749) (Wm sub268 53).1
+#guard toString (Wm sub268 53).1 == "-747.849857705648"
 #guard dirOk fun m => Wm (-((nat 3) <<< AzInt.ofInt (-1074))) 53 m
 #guard dirOk fun m => W0 (one <<< AzInt.ofInt (2 ^ 78)) 3 m
 #guard dirOk fun m => W0 (one <<< AzInt.ofInt (2 ^ 78)) 53 m
@@ -186,16 +177,15 @@ private def dirOk (f : RoundingMode → AzFloat × Ordering) : Bool :=
 #guard dirOk fun m => Wm (-(one <<< AzInt.ofInt (-(2 ^ 200)))) 53 m
 -- `W₀ (2^(2^78)) ≈ 2^78 ln 2 − ln (2^78 ln 2)`: between `2^77` and `2^78`
 #guard (W0 (one <<< AzInt.ofInt (2 ^ 78)) 53).1.exponent? == some (AzInt.ofInt 78)
-#guard expSize (one <<< AzInt.ofInt (2 ^ 78)) == 79
-#guard lambertIntBits (nat 1000, nat 1001) == 10
-#guard lambertIntBits (F "1/4" 53, F "1/2" 53) == 0
+#guard toString (expSize (one <<< AzInt.ofInt (2 ^ 78))) == "79"
+#guard toString (lambertIntBits (nat 1000, nat 1001)) == "10"
+#guard toString (lambertIntBits (X "0.25" 53, X "0.5" 53)) == "0"
 
 -- the top of the `Float` range (the `Float` seed is not used above `2^1000`): the 53-bit
 -- result is the rounding of the 200-bit one; `W₀ (3·2^1022) ≈ 703.0`
 #guard [990, 1010, 1021, 1022, 1023].all fun k =>
   let x := (nat 3) <<< AzInt.ofInt k
   dirOk (fun m => W0 x 53 m) && (W0 x 53).1 == (setPrecRound (W0 x 200).1 53 .Nearest).1
-#guard lt (nat 702) (W0 ((nat 3) <<< AzInt.ofInt 1022) 53).1
-  && lt (W0 ((nat 3) <<< AzInt.ofInt 1022) 53).1 (nat 704)
+#guard toString (W0 ((nat 3) <<< AzInt.ofInt 1022) 53).1 == "702.9397596232295"
 #guard (seedFloat true ((nat 3) <<< AzInt.ofInt 1022)).isNone
 #guard (seedFloat true ((nat 3) <<< AzInt.ofInt 990)).isSome

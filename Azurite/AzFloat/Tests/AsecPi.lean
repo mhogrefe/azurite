@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.AsecPi
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -25,54 +26,57 @@ rationals.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def P (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := asecPiPrecRound x p m
 private def PR (q : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   asecPiRatPrecRound (Q q) p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard P nan 53 == (nan, .eq)
-#guard P zero 53 == (nan, .eq)
-#guard P (F "1/2" 53) 53 == (nan, .eq)
-#guard P (infinity true) 53 == (F "1/2" 53, .eq)
-#guard P (infinity false) 53 == (F "1/2" 53, .eq)
-#guard P (F "1" 53) 53 == (zero, .eq)
-#guard P (F "-1" 53) 53 == (F "1" 53, .eq)
-#guard P (F "3" 53) 0 == (nan, .eq)
-#guard P (F "2" 53) 53 == (F "6004799503160661/18014398509481984" 53, .lt)
-#guard P (F "2" 53) 53 .Ceiling == (F "3002399751580331/9007199254740992" 53, .gt)
-#guard P (F "-2" 53) 53 == (F "6004799503160661/9007199254740992" 53, .lt)
-#guard P (F "-2" 53) 53 .Ceiling == (F "3002399751580331/4503599627370496" 53, .gt)
+#guard D (P nan 53) == ("NaN", .eq)
+#guard D (P zero 53) == ("NaN", .eq)
+#guard D (P (X "0.5" 53) 53) == ("NaN", .eq)
+#guard D (P (infinity true) 53) == ("0.5", .eq)
+#guard D (P (infinity false) 53) == ("0.5", .eq)
+#guard D (P (X "1" 53) 53) == ("0.0", .eq)
+#guard D (P (X "-1" 53) 53) == ("1.0", .eq)
+#guard D (P (X "3" 53) 0) == ("NaN", .eq)
+#guard D (P (X "2" 53) 53) == ("0.3333333333333333", .lt)
+#guard D (P (X "2" 53) 53 .Ceiling) == ("0.33333333333333337", .gt)
+#guard D (P (X "-2" 53) 53) == ("0.6666666666666666", .lt)
+#guard D (P (X "-2" 53) 53 .Ceiling) == ("0.6666666666666667", .gt)
 
 -- correctly rounded values
-#guard P (F "3" 53) 53 == (F "7058519654875637/18014398509481984" 53, .gt)
-#guard P (F "-3" 53) 53 == (F "2738969713651587/4503599627370496" 53, .gt)
-#guard P (F "3/2" 53) 53 == (F "2411411643094145/9007199254740992" 53, .gt)
-#guard P (F "-7/5" 53) 53 == (F "3392328698215697/4503599627370496" 53, .gt)
-#guard P (F "100" 53) 53 == (F "8949856687612233/18014398509481984" 53, .lt)
-#guard P (F "3/2" 53) 53 .Floor == (F "4822823286188289/18014398509481984" 53, .lt)
-#guard P (F "3/2" 53) 53 .Ceiling == (F "2411411643094145/9007199254740992" 53, .gt)
-#guard P (F "3/2" 53) 20 == (F "561451/2097152" 20, .gt)
-#guard asecPi (F "3/2" 53) == (P (F "3/2" 53) 53).1
-#guard (toString (asecPiPrecRound (F "3/2" 200) 200 .Nearest).1).startsWith
-  "0.2677204728012300107452337959412318914943660025783258458"
+#guard D (P (X "3" 53) 53) == ("0.3918265520306073", .gt)
+#guard D (P (X "-3" 53) 53) == ("0.6081734479693928", .gt)
+#guard D (P (X "1.5" 53) 53) == ("0.26772047280123", .gt)
+#guard D (P (X "-1.4" 53) 53) == ("0.7532482855711502", .gt)
+#guard D (P (X "100" 53) 53) == ("0.4968168480841269", .lt)
+#guard D (P (X "1.5" 53) 53 .Floor) == ("0.26772047280122996", .lt)
+#guard D (P (X "1.5" 53) 53 .Ceiling) == ("0.26772047280123", .gt)
+#guard D (P (X "1.5" 53) 20) == ("0.2677207", .gt)
+#guard toString (asecPi (X "1.5" 53)) == "0.26772047280123"
+#guard toString (asecPiPrecRound (X "1.5" 200) 200 .Nearest).1 == "0.267720472801230010745233795941\
+  2318914943660025783258458145956"
 private def huge : AzFloat := powerOf2 (AzInt.ofInt 1073741824)
-#guard P huge 53 == (F "1/2" 53, .gt)
-#guard P (-huge) 53 == (F "1/2" 53, .lt)
+#guard P huge 53 == (X "0.5" 53, .gt)
+#guard P (-huge) 53 == (X "0.5" 53, .lt)
 #guard (P huge 53 .Floor).2 == .lt
 
 -- rationals
-#guard PR "1" 53 == (zero, .eq)
-#guard PR "-1" 53 == (F "1" 53, .eq)
-#guard PR "1/2" 53 == (nan, .eq)
-#guard PR "0" 53 == (nan, .eq)
-#guard PR "3" 0 == (nan, .eq)
-#guard PR "2" 53 == (F "6004799503160661/18014398509481984" 53, .lt)
-#guard PR "-4/2" 53 .Ceiling == (F "3002399751580331/4503599627370496" 53, .gt)
-#guard PR "3" 53 == (F "7058519654875637/18014398509481984" 53, .gt)
-#guard PR "-7/5" 53 == (F "6784657396431393/9007199254740992" 53, .lt)
-#guard PR "22/7" 53 == (F "3575207357253583/9007199254740992" 53, .lt)
-#guard PR "3" 53 .Floor == (F "1764629913718909/4503599627370496" 53, .lt)
-#guard PR "3" 53 .Ceiling == (F "7058519654875637/18014398509481984" 53, .gt)
-#guard PR "3/2" 53 == P (F "3/2" 53) 53
+#guard D (PR "1" 53) == ("0.0", .eq)
+#guard D (PR "-1" 53) == ("1.0", .eq)
+#guard D (PR "1/2" 53) == ("NaN", .eq)
+#guard D (PR "0" 53) == ("NaN", .eq)
+#guard D (PR "3" 0) == ("NaN", .eq)
+#guard D (PR "2" 53) == ("0.3333333333333333", .lt)
+#guard D (PR "-4/2" 53 .Ceiling) == ("0.6666666666666667", .gt)
+#guard D (PR "3" 53) == ("0.3918265520306073", .gt)
+#guard D (PR "-7/5" 53) == ("0.7532482855711501", .lt)
+#guard D (PR "22/7" 53) == ("0.39692775258321855", .lt)
+#guard D (PR "3" 53 .Floor) == ("0.39182655203060723", .lt)
+#guard D (PR "3" 53 .Ceiling) == ("0.3918265520306073", .gt)
+#guard D (PR "3/2" 53) == ("0.26772047280123", .gt)
 #guard asecPiRat (Q "3") 53 == (PR "3" 53).1

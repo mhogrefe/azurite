@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.Pow10
 import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -24,7 +25,8 @@ base `10`, the exact powers of ten, `10^(1/2) = √10`, the correctly rounded `1
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 /-- The rational `digits / 10^zeros`. -/
 private def R (digits : String) (zeros : Nat) : AzRat := Q (digits ++ "/1" ++ "".pushn '0' zeros)
 
@@ -36,44 +38,49 @@ private def refThirdM1 : AzRat :=
   R ("1154434690031883721759293566519350495259344942192108582489235506346411106648340800185441" ++
     "5035432432761012612204917809204465575051000832749571206753778093319327305836534892638281" ++
     "254969314038783827968633") 199
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- agreement with the general functions
-#guard pow10PrecRound (F "3/4" 53) 150 .Nearest == powBasePrecRound 10 (F "3/4" 53) 150 .Nearest
-#guard pow10PrecRound (F "-7/4" 53) 150 .Floor == powBasePrecRound 10 (F "-7/4" 53) 150 .Floor
-#guard pow10 (F "3/4" 53) == powBase 10 (F "3/4" 53)
+#guard pow10PrecRound (X "0.75" 53) 150 .Nearest == powBasePrecRound 10 (X "0.75" 53) 150 .Nearest
+#guard pow10PrecRound (X "-1.75" 53) 150 .Floor == powBasePrecRound 10 (X "-1.75" 53) 150 .Floor
+#guard pow10 (X "0.75" 53) == powBase 10 (X "0.75" 53)
 #guard pow10RatPrecRound (Q "1/3") 150 .Ceiling == powBaseRatPrecRound 10 (Q "1/3") 150 .Ceiling
 #guard pow10Rat (Q "22/7") 100 == powBaseRat 10 (Q "22/7") 100
-#guard pow10M1PrecRound (F "1/1024" 53) 150 .Nearest
-  == powBaseM1PrecRound 10 (F "1/1024" 53) 150 .Nearest
-#guard pow10M1 (F "-3/4" 53) == powBaseM1 10 (F "-3/4" 53)
+#guard pow10M1PrecRound (X "0.0009765625" 53) 150 .Nearest
+  == powBaseM1PrecRound 10 (X "0.0009765625" 53) 150 .Nearest
+#guard pow10M1 (X "-0.75" 53) == powBaseM1 10 (X "-0.75" 53)
 #guard pow10M1RatPrecRound (Q "-1/1000000") 150 .Up
   == powBaseM1RatPrecRound 10 (Q "-1/1000000") 150 .Up
 #guard pow10M1Rat (Q "1/3") 100 == powBaseM1Rat 10 (Q "1/3") 100
 
 -- exact powers of ten
-#guard pow10PrecRound (F "3" 53) 53 .Nearest == (F "1000" 53, .eq)
-#guard pow10PrecRound (F "-2" 53) 53 .Nearest == ofAzRatRound (Q "1/100") 53 .Nearest
-#guard pow10RatPrecRound (Q "5") 53 .Nearest == (F "100000" 53, .eq)
-#guard pow10RatPrecRound (Q "0") 53 .Nearest == (F "1" 53, .eq)
-#guard pow10M1PrecRound (F "3" 53) 53 .Nearest == (F "999" 53, .eq)
-#guard pow10M1RatPrecRound (Q "-1") 53 .Nearest == ofAzRatRound (Q "-9/10") 53 .Nearest
-#guard pow10M1RatPrecRound (Q "0") 53 .Nearest == (zero, .eq)
-#guard pow10 (F "20" 53) == F "100000000000000000000" 53
+#guard D (pow10PrecRound (X "3" 53) 53 .Nearest) == ("1.0e3", .eq)
+#guard D (pow10PrecRound (X "-2" 53) 53 .Nearest) == ("0.01", .gt)
+#guard D (pow10RatPrecRound (Q "5") 53 .Nearest) == ("1.0e5", .eq)
+#guard D (pow10RatPrecRound (Q "0") 53 .Nearest) == ("1.0", .eq)
+#guard D (pow10M1PrecRound (X "3" 53) 53 .Nearest) == ("999.0", .eq)
+#guard D (pow10M1RatPrecRound (Q "-1") 53 .Nearest) == ("-0.9", .lt)
+#guard D (pow10M1RatPrecRound (Q "0") 53 .Nearest) == ("0.0", .eq)
+#guard toString (pow10 (X "20" 53)) == "1.0e20"
 
 -- `10^(1/2) = √10` and `10^(1/3)`
-#guard pow10PrecRound (F "1/2" 53) 150 .Nearest == sqrtPrecRound (F "10" 53) 150 .Nearest
-#guard (pow10RatPrecRound (Q "1/3") 150 .Nearest).1 == ofAzRat refThird 150
-#guard pow10RatPrecRound (Q "1/3") 150 .Floor == ofAzRatRound refThird 150 .Floor
-#guard (pow10M1RatPrecRound (Q "1/3") 150 .Nearest).1 == ofAzRat refThirdM1 150
-#guard pow10Rat (Q "1/3") 53 == ofAzRat refThird 53
+#guard pow10PrecRound (X "0.5" 53) 150 .Nearest == sqrtPrecRound (X "10" 53) 150 .Nearest
+#guard toString (pow10RatPrecRound (Q "1/3") 150 .Nearest).1 == "2.15443469003188372175929356651935\
+  0495259344943"
+#guard D (pow10RatPrecRound (Q "1/3") 150 .Floor) ==
+  ("2.15443469003188372175929356651935049525934494", .lt)
+#guard toString (pow10M1RatPrecRound (Q "1/3") 150 .Nearest).1 == "1.154434690031883721759293566519\
+  350495259344942"
+#guard toString (pow10Rat (Q "1/3") 53) == "2.154434690031884"
 #guard toString (pow10Rat (Q "1/3") 53) == "2.154434690031884"
 
 -- special values
-#guard pow10PrecRound nan 53 .Nearest == (nan, .eq)
-#guard pow10PrecRound (infinity true) 53 .Nearest == (infinity true, .eq)
-#guard pow10PrecRound (infinity false) 53 .Nearest == (zero, .eq)
-#guard pow10PrecRound zero 53 .Nearest == (F "1" 53, .eq)
-#guard pow10PrecRound (F "1/2" 53) 0 .Nearest == (nan, .eq)
-#guard pow10M1PrecRound (infinity false) 53 .Nearest == (F "-1" 53, .eq)
-#guard pow10M1PrecRound zero 53 .Nearest == (zero, .eq)
-#guard pow10M1 nan == nan
+#guard D (pow10PrecRound nan 53 .Nearest) == ("NaN", .eq)
+#guard D (pow10PrecRound (infinity true) 53 .Nearest) == ("Infinity", .eq)
+#guard D (pow10PrecRound (infinity false) 53 .Nearest) == ("0.0", .eq)
+#guard D (pow10PrecRound zero 53 .Nearest) == ("1.0", .eq)
+#guard D (pow10PrecRound (X "0.5" 53) 0 .Nearest) == ("NaN", .eq)
+#guard D (pow10M1PrecRound (infinity false) 53 .Nearest) == ("-1.0", .eq)
+#guard D (pow10M1PrecRound zero 53 .Nearest) == ("0.0", .eq)
+#guard toString (pow10M1 nan) == "NaN"

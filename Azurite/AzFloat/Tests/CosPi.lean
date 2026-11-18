@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.CosPi
 import Azurite.AzFloat.ToString
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
 
 /-!
@@ -28,58 +29,61 @@ evaluation with exact reduction, rounded with exact rationals.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def C (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := cosPiPrecRound x p m
 private def R (q : String) (p : Nat) (m : RoundingMode := .Nearest) := cosPiRatPrecRound (Q q) p m
-private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
+private def belowOne : AzFloat := X "0.9999999999999999" 53
 
 -- floats: special and exact values
-#guard C nan 53 == (nan, .eq)
-#guard C (infinity true) 53 == (nan, .eq)
-#guard C (infinity false) 53 == (nan, .eq)
-#guard C zero 53 == (F "1" 53, .eq)
-#guard C zero 0 == (nan, .eq)
-#guard C (F "1" 53) 0 == (nan, .eq)
-#guard C (F "1" 53) 53 == (F "-1" 53, .eq)
-#guard C (F "2" 53) 53 == (F "1" 53, .eq)
-#guard C (F "-3" 53) 53 == (F "-1" 53, .eq)
-#guard C (F "1/2" 53) 53 == (zero, .eq)
-#guard C (F "-5/2" 53) 53 == (zero, .eq)
-#guard C (F "100000000000000000000" 80) 53 == (F "1" 53, .eq)
-#guard C (F "100000000000000000001" 80) 53 == (F "-1" 53, .eq)
-#guard C (F "200000000000000000001/2" 80) 53 == (zero, .eq)
+#guard D (C nan 53) == ("NaN", .eq)
+#guard D (C (infinity true) 53) == ("NaN", .eq)
+#guard D (C (infinity false) 53) == ("NaN", .eq)
+#guard D (C zero 53) == ("1.0", .eq)
+#guard D (C zero 0) == ("NaN", .eq)
+#guard D (C (X "1" 53) 0) == ("NaN", .eq)
+#guard D (C (X "1" 53) 53) == ("-1.0", .eq)
+#guard D (C (X "2" 53) 53) == ("1.0", .eq)
+#guard D (C (X "-3" 53) 53) == ("-1.0", .eq)
+#guard D (C (X "0.5" 53) 53) == ("0.0", .eq)
+#guard D (C (X "-2.5" 53) 53) == ("0.0", .eq)
+#guard D (C (X "100000000000000000000" 80) 53) == ("1.0", .eq)
+#guard D (C (X "100000000000000000001" 80) 53) == ("-1.0", .eq)
+#guard D (C (X "100000000000000000000.5" 80) 53) == ("0.0", .eq)
 
 -- floats: correctly rounded values
-#guard C (F "1/4" 53) 53 == (F "6369051672525773/9007199254740992" 53, .gt)
-#guard C (F "1/4" 53) 53 .Floor == (F "1592262918131443/2251799813685248" 53, .lt)
-#guard C (F "1/1024" 53) 53 == (F "4503578432573057/4503599627370496" 53, .gt)
-#guard C (F "800000000000000000001/8" 80) 53 == (F "4160783518353059/4503599627370496" 53, .lt)
-#guard C (F "1/10" 53) 53 == (F "8566355544790271/9007199254740992" 53, .lt)
-#guard C (F "1/3" 53) 53 == (F "1/2" 53, .lt)
-#guard C (F "1/3" 53) 53 .Ceiling == (F "4503599627370497/9007199254740992" 53, .gt)
-#guard cosPi (F "1/4" 53) == F "6369051672525773/9007199254740992" 53
-#guard C ((F "1" 53) <<< AzInt.ofInt (-(2 ^ 30 : Int))) 53 .Floor == (belowOne, .lt)
+#guard D (C (X "0.25" 53) 53) == ("0.7071067811865476", .gt)
+#guard D (C (X "0.25" 53) 53 .Floor) == ("0.7071067811865475", .lt)
+#guard D (C (X "0.0009765625" 53) 53) == ("0.9999952938095762", .gt)
+#guard D (C (X "100000000000000000000.125" 80) 53) == ("0.9238795325112867", .lt)
+#guard D (C (X "0.1" 53) 53) == ("0.9510565162951535", .lt)
+#guard D (C (X "0.3333333333333333" 53) 53) == ("0.5", .lt)
+#guard D (C (X "0.3333333333333333" 53) 53 .Ceiling) == ("0.5000000000000001", .gt)
+#guard toString (cosPi (X "0.25" 53)) == "0.7071067811865476"
+#guard D (C ((X "1" 53) <<< AzInt.ofInt (-(2 ^ 30 : Int))) 53 .Floor) == ("0.9999999999999999", .lt)
 
 -- rationals: special and exact values
-#guard R "0" 53 == (F "1" 53, .eq)
-#guard R "0" 0 == (nan, .eq)
-#guard R "1/3" 0 == (nan, .eq)
-#guard R "1/3" 53 == (F "1/2" 53, .eq)
-#guard R "2/3" 53 == (F "-1/2" 53, .eq)
-#guard R "-4/3" 53 == (F "-1/2" 53, .eq)
-#guard R "5/3" 53 == (F "1/2" 53, .eq)
-#guard R "7/2" 53 == (zero, .eq)
-#guard R "-5" 53 == (F "-1" 53, .eq)
-#guard R "100000000000000000000" 53 == (F "1" 53, .eq)
+#guard D (R "0" 53) == ("1.0", .eq)
+#guard D (R "0" 0) == ("NaN", .eq)
+#guard D (R "1/3" 0) == ("NaN", .eq)
+#guard D (R "1/3" 53) == ("0.5", .eq)
+#guard D (R "2/3" 53) == ("-0.5", .eq)
+#guard D (R "-4/3" 53) == ("-0.5", .eq)
+#guard D (R "5/3" 53) == ("0.5", .eq)
+#guard D (R "7/2" 53) == ("0.0", .eq)
+#guard D (R "-5" 53) == ("-1.0", .eq)
+#guard D (R "100000000000000000000" 53) == ("1.0", .eq)
 
 -- rationals: correctly rounded values
-#guard R "1/6" 53 == (F "3900231685776981/4503599627370496" 53, .lt)
-#guard R "1/6" 53 .Ceiling == (F "7800463371553963/9007199254740992" 53, .gt)
-#guard R "1/10" 53 == (F "8566355544790271/9007199254740992" 53, .lt)
-#guard R "1/180" 53 == (F "4502913707333573/4503599627370496" 53, .gt)
-#guard R "-7/5" 53 == (F "-347922205179541/1125899906842624" 53, .lt)
-#guard R "-7/5" 53 .Ceiling == (F "-5566755282872655/18014398509481984" 53, .gt)
-#guard R "1/4" 53 == C (F "1/4" 53) 53
-#guard cosPiRat (Q "1/6") 53 == F "3900231685776981/4503599627370496" 53
-#guard (toString (cosPiRat (Q "1/10") 200)).startsWith
-  "0.95105651629515357211643933337938214340569863412575022244730"
+#guard D (R "1/6" 53) == ("0.8660254037844386", .lt)
+#guard D (R "1/6" 53 .Ceiling) == ("0.8660254037844387", .gt)
+#guard D (R "1/10" 53) == ("0.9510565162951535", .lt)
+#guard D (R "1/180" 53) == ("0.9998476951563913", .gt)
+#guard D (R "-7/5" 53) == ("-0.30901699437494745", .lt)
+#guard D (R "-7/5" 53 .Ceiling) == ("-0.3090169943749474", .gt)
+#guard R "1/4" 53 == C (X "0.25" 53) 53
+#guard toString (cosPiRat (Q "1/6") 53) == "0.8660254037844386"
+#guard toString (cosPiRat (Q "1/10") 200)
+  == "0.9510565162951535721164393333793821434056986341257502224473056"

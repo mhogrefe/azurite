@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.SinCos
 import Azurite.AzFloat.ToString
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
 
 /-!
@@ -26,62 +27,61 @@ arguments (delegated), and `2^1000`.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
+/-- A pair of floats as decimal outputs. -/
+private def D2f (r : AzFloat × AzFloat) : String × String := (toString r.1, toString r.2)
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
+/-- A pair of results as decimal outputs and comparison tags. -/
+private def D2 (r : (AzFloat × Ordering) × (AzFloat × Ordering)) :
+    (String × Ordering) × (String × Ordering) :=
+  ((toString r.1.1, r.1.2), (toString r.2.1, r.2.2))
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def SC (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := sinCosPrecRound x p m
 private def agrees (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) : Bool :=
   sinCosPrecRound x p m == (sinPrecRound x p m, cosPrecRound x p m)
 
 -- special values
-#guard SC nan 53 == ((nan, .eq), (nan, .eq))
-#guard SC (infinity true) 53 == ((nan, .eq), (nan, .eq))
-#guard SC (infinity false) 53 == ((nan, .eq), (nan, .eq))
-#guard SC zero 53 == ((zero, .eq), (F "1" 53, .eq))
-#guard SC zero 0 == ((zero, .eq), (nan, .eq))
-#guard SC (F "1" 53) 0 == ((nan, .eq), (nan, .eq))
+#guard D2 (SC nan 53) == (("NaN", .eq), ("NaN", .eq))
+#guard D2 (SC (infinity true) 53) == (("NaN", .eq), ("NaN", .eq))
+#guard D2 (SC (infinity false) 53) == (("NaN", .eq), ("NaN", .eq))
+#guard D2 (SC zero 53) == (("0.0", .eq), ("1.0", .eq))
+#guard D2 (SC zero 0) == (("0.0", .eq), ("NaN", .eq))
+#guard D2 (SC (X "1" 53) 0) == (("NaN", .eq), ("NaN", .eq))
 
 -- correctly rounded values
-#guard SC (F "1/2" 53) 53 == ((F "539785169252447/1125899906842624" 53, .gt),
-  (F "494035062339541/562949953421312" 53, .gt))
-#guard SC (F "1" 53) 53 == ((F "3789648413623927/4503599627370496" 53, .lt),
-  (F "1216652631687587/2251799813685248" 53, .gt))
-#guard SC (F "-1" 53) 53 == ((F "-3789648413623927/4503599627370496" 53, .gt),
-  (F "1216652631687587/2251799813685248" 53, .gt))
-#guard SC (F "3" 53) 53 == ((F "5084384125703515/36028797018963968" 53, .lt),
-  (F "-4458529838789353/4503599627370496" 53, .gt))
-#guard SC (F "1/1024" 53) 53 == ((F "9007197823085295/9223372036854775808" 53, .gt),
-  (F "9007194959774037/9007199254740992" 53, .lt))
-#guard SC (F "100" 53) 53 == ((F "-570117028153783/1125899906842624" 53, .gt),
-  (F "7767077903818719/9007199254740992" 53, .lt))
-#guard SC (F "-1000" 53) 53 == ((F "-7447868781240427/9007199254740992" 53, .gt),
-  (F "5065460396847547/9007199254740992" 53, .lt))
-#guard SC (F "1000000000000" 53) 53 == ((F "-2752774392258985/4503599627370496" 53, .gt),
-  (F "7128714540216867/9007199254740992" 53, .lt))
-#guard SC (F "1152921504606846976" 53) 53 == ((F "-1870455753513367/2251799813685248" 53, .gt),
-  (F "-5015173257324871/9007199254740992" 53, .gt))
-#guard SC (F "-7/5" 53) 53 == ((F "-4438071036768385/4503599627370496" 53, .gt),
-  (F "6123711691446027/36028797018963968" 53, .gt))
-#guard SC (F "22/7" 53) 53 == ((F "-5831425920677151/4611686018427387904" 53, .lt),
-  (F "-4503596026893703/4503599627370496" 53, .lt))
+#guard D2 (SC (X "0.5" 53) 53) == (("0.479425538604203", .gt), ("0.8775825618903728", .gt))
+#guard D2 (SC (X "1" 53) 53) == (("0.8414709848078965", .lt), ("0.5403023058681398", .gt))
+#guard D2 (SC (X "-1" 53) 53) == (("-0.8414709848078965", .gt), ("0.5403023058681398", .gt))
+#guard D2 (SC (X "3" 53) 53) == (("0.1411200080598672", .lt), ("-0.9899924966004454", .gt))
+#guard D2 (SC (X "0.0009765625" 53) 53)
+  == (("0.0009765623447795783", .gt), ("0.9999995231628797", .lt))
+#guard D2 (SC (X "100" 53) 53) == (("-0.5063656411097588", .gt), ("0.8623188722876839", .lt))
+#guard D2 (SC (X "-1000" 53) 53) == (("-0.8268795405320025", .gt), ("0.5623790762907029", .lt))
+#guard D2 (SC (X "1000000000000" 53) 53)
+  == (("-0.6112387023768895", .gt), ("0.7914463018528902", .lt))
+#guard D2 (SC (X "1152921504606846976" 53) 53)
+  == (("-0.8306492176372546", .gt), ("-0.5567960822766417", .gt))
+#guard D2 (SC (X "-1.4" 53) 53) == (("-0.9854497299884601", .gt), ("0.16996714290024104", .gt))
+#guard D2 (SC (X "3.142857142857143" 53) 53) == (("-0.00126448893037729", .lt), ("-0.99999920053355\
+  3", .lt))
 
 -- directed modes and other precisions
-#guard SC (F "1" 53) 53 .Floor == ((F "3789648413623927/4503599627370496" 53, .lt),
-  (F "4866610526750347/9007199254740992" 53, .lt))
-#guard SC (F "1" 53) 53 .Ceiling == ((F "7579296827247855/9007199254740992" 53, .gt),
-  (F "1216652631687587/2251799813685248" 53, .gt))
-#guard SC (F "3" 53) 20 == ((F "147975/1048576" 20, .lt), (F "-519041/524288" 20, .gt))
-#guard sinCos (F "1" 53) == (F "3789648413623927/4503599627370496" 53,
-  F "1216652631687587/2251799813685248" 53)
-#guard (toString (sinCos (F "1" 200)).1).startsWith
-  "0.84147098480789650665250232163029899962256306079837106567275"
-#guard (toString (sinCos (F "1" 200)).2).startsWith
-  "0.54030230586813971740093660744297660373231042061792222767"
-#guard (toString (sinCos (F "100" 200)).1).startsWith
-  "-0.5063656411097587936565576104597854320650327212906573234433"
+#guard D2 (SC (X "1" 53) 53 .Floor) == (("0.8414709848078965", .lt), ("0.5403023058681397", .lt))
+#guard D2 (SC (X "1" 53) 53 .Ceiling) == (("0.8414709848078966", .gt), ("0.5403023058681398", .gt))
+#guard D2 (SC (X "3" 53) 20) == (("0.14112", .lt), ("-0.989992", .gt))
+#guard D2f (sinCos (X "1" 53)) == ("0.8414709848078965", "0.5403023058681398")
+#guard toString ((sinCos (X "1" 200)).1)
+  == "0.841470984807896506652502321630298999622563060798371065672752"
+#guard toString ((sinCos (X "1" 200)).2)
+  == "0.540302305868139717400936607442976603732310420617922227670097"
+#guard toString ((sinCos (X "100" 200)).1)
+  == "-0.5063656411097587936565576104597854320650327212906573234433926"
 
 -- near a multiple of `π`: the 53-bit float nearest `π`
-private def pi53 : AzFloat := F "884279719003555/281474976710656" 53
-#guard SC pi53 53 == ((F "4967757600021511/40564819207303340847894502572032" 53, .gt),
-  (F "-1" 53, .lt))
+private def pi53 : AzFloat := X "3.141592653589793" 53
+#guard D2 (SC pi53 53) == (("1.2246467991473532e-16", .gt), ("-1.0", .lt))
 #guard agrees (-pi53) 53 .Ceiling
 
 -- agreement with the separate functions: all the octants, both signs, several modes
@@ -90,16 +90,21 @@ private def pi53 : AzFloat := F "884279719003555/281474976710656" 53
 #guard (List.range 13).all fun i => agrees (F s!"{2 * i + 1}/7" 53) 53 .Ceiling
 #guard (List.range 13).all fun i => agrees (F s!"-{2 * i + 1}/3" 64) 40 .Down
 #guard (List.range 13).all fun i => agrees (F s!"{2 * i + 1}/5" 30) 100 .Up
-#guard agrees (F "1" 53) 1
-#guard agrees (F "12345678901234567890/1000000007" 100) 300
-#guard agrees (F "1/3" 2000) 2000
+#guard agrees (X "1" 53) 1
+#guard agrees (X "12345678814.81481618629628669593" 100) 300
+#guard agrees (X "0.3333333333333333333333333333333333333333333333333333333333333333333333333333333\
+  333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\
+    3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\
+    3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\
+    3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\
+    3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\
+    3333333333333333333333333333333333333333333333333335" 2000) 2000
 
 -- small arguments on the ordinary path, tiny arguments (delegated) and a huge argument
-#guard agrees (F "1/1099511627776" 53) 53
-#guard agrees (F "1/1099511627776" 53) 53 .Floor
-private def tinyX : AzFloat := (F "1" 53) <<< AzInt.ofInt (-(2 ^ 30 : Int))
-#guard SC tinyX 53 == ((tinyX, .gt), (F "1" 53, .gt))
+#guard agrees (X "9.094947017729282e-13" 53) 53
+#guard agrees (X "9.094947017729282e-13" 53) 53 .Floor
+private def tinyX : AzFloat := (X "1" 53) <<< AzInt.ofInt (-(2 ^ 30 : Int))
+#guard SC tinyX 53 == ((tinyX, .gt), (X "1" 53, .gt))
 #guard agrees (-tinyX) 53 .Floor
-#guard agrees ((F "1" 53) <<< AzInt.ofInt (-200)) 53
-#guard SC ((F "1" 53) <<< AzInt.ofInt 1000) 53 |>.1
-  |> (· == (F "-2867922922783799/18014398509481984" 53, .gt))
+#guard agrees ((X "1" 53) <<< AzInt.ofInt (-200)) 53
+#guard D (SC ((X "1" 53) <<< AzInt.ofInt 1000) 53).1 == ("-0.15920170308624243", .gt)

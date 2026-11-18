@@ -11,6 +11,7 @@ import Azurite.AzFloat.Ln
 import Azurite.AzFloat.Ln2
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
 
 /-!
@@ -23,57 +24,60 @@ import Azurite.AzRat.Parse
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 
 -- special values
-#guard ln nan == nan
-#guard ln (infinity true) == infinity true
-#guard ln (infinity false) == nan
-#guard ln zero == infinity false
-#guard ln (F "-1" 53) == nan
-#guard ln (F "1" 53) == zero
-#guard lnPrecRound (F "1" 53) 53 .Nearest == (zero, .eq)
+#guard toString (ln nan) == "NaN"
+#guard toString (ln (infinity true)) == "Infinity"
+#guard toString (ln (infinity false)) == "NaN"
+#guard toString (ln zero) == "-Infinity"
+#guard toString (ln (X "-1" 53)) == "NaN"
+#guard toString (ln (X "1" 53)) == "0.0"
+#guard D (lnPrecRound (X "1" 53) 53 .Nearest) == ("0.0", .eq)
 
 -- agreement with the constant `ln 2`
-#guard ln (F "2" 53) == ln2 53
-#guard ln (F "2" 200) == ln2 200
-#guard lnPrecRound (F "2" 53) 53 .Floor == ln2PrecRound 53 .Floor
-#guard lnPrecRound (F "2" 53) 53 .Ceiling == ln2PrecRound 53 .Ceiling
+#guard ln (X "2" 53) == ln2 53
+#guard ln (X "2" 200) == ln2 200
+#guard lnPrecRound (X "2" 53) 53 .Floor == ln2PrecRound 53 .Floor
+#guard lnPrecRound (X "2" 53) 53 .Ceiling == ln2PrecRound 53 .Ceiling
 
 -- known values at 53 bits
-#guard toString (ln (F "10" 53)) == "2.302585092994046"
-#guard toString (ln (F "3" 53)) == "1.0986122886681098"
-#guard toString (ln (F "1/2" 53)) == "-0.6931471805599453"
-#guard toString (ln (F "3/2" 53)) == "0.4054651081081644"
-#guard toString (ln (F "1000000000000" 53)) == "27.631021115928547"
-#guard toString (ln (F "1/1000000000000" 53)) == "-27.631021115928547"
-#guard toString (ln (F "1267650600228229401496703205376" 53)) == "69.31471805599453"
+#guard toString (ln (X "10" 53)) == "2.302585092994046"
+#guard toString (ln (X "3" 53)) == "1.0986122886681098"
+#guard toString (ln (X "0.5" 53)) == "-0.6931471805599453"
+#guard toString (ln (X "1.5" 53)) == "0.4054651081081644"
+#guard toString (ln (X "1000000000000" 53)) == "27.631021115928547"
+#guard toString (ln (X "0.000000000001" 53)) == "-27.631021115928547"
+#guard toString (ln (X "1267650600228229401496703205376" 53)) == "69.31471805599453"
 
 -- precomputed constants: the same results
-#guard lnWith (LnConsts.forPrecision 53) (F "10" 53) == ln (F "10" 53)
-#guard lnWith (LnConsts.forPrecision 53) (F "3" 53) == ln (F "3" 53)
-#guard lnWith (LnConsts.forPrecision 53) (F "1/2" 53) == ln (F "1/2" 53)
-#guard lnWith (LnConsts.forPrecision 200) (F "10" 200) == ln (F "10" 200)
-#guard lnPrecRoundWith (LnConsts.forPrecision 53) (F "10" 53) 53 .Floor
-  == lnPrecRound (F "10" 53) 53 .Floor
-#guard lnPrecRoundWith (LnConsts.forPrecision 53) (F "10" 53) 53 .Ceiling
-  == lnPrecRound (F "10" 53) 53 .Ceiling
-#guard lnPrecRoundWith (LnConsts.forPrecision 53) (F "1" 53) 53 .Nearest == (zero, .eq)
-#guard lnWith (LnConsts.forPrecision 53) nan == nan
-#guard lnWith (LnConsts.forPrecision 53) zero == infinity false
+#guard lnWith (LnConsts.forPrecision 53) (X "10" 53) == ln (X "10" 53)
+#guard lnWith (LnConsts.forPrecision 53) (X "3" 53) == ln (X "3" 53)
+#guard lnWith (LnConsts.forPrecision 53) (X "0.5" 53) == ln (X "0.5" 53)
+#guard lnWith (LnConsts.forPrecision 200) (X "10" 200) == ln (X "10" 200)
+#guard lnPrecRoundWith (LnConsts.forPrecision 53) (X "10" 53) 53 .Floor
+  == lnPrecRound (X "10" 53) 53 .Floor
+#guard lnPrecRoundWith (LnConsts.forPrecision 53) (X "10" 53) 53 .Ceiling
+  == lnPrecRound (X "10" 53) 53 .Ceiling
+#guard D (lnPrecRoundWith (LnConsts.forPrecision 53) (X "1" 53) 53 .Nearest) == ("0.0", .eq)
+#guard toString (lnWith (LnConsts.forPrecision 53) nan) == "NaN"
+#guard toString (lnWith (LnConsts.forPrecision 53) zero) == "-Infinity"
 -- constants too coarse for the precision are ignored
-#guard lnWith (LnConsts.make 64) (F "10" 200) == ln (F "10" 200)
-#guard lnWith (LnConsts.make 1) (F "3" 53) == ln (F "3" 53)
+#guard lnWith (LnConsts.make 64) (X "10" 200) == ln (X "10" 200)
+#guard lnWith (LnConsts.make 1) (X "3" 53) == ln (X "3" 53)
 -- finer constants than needed are fine
-#guard lnWith (LnConsts.forPrecision 500) (F "3" 53) == ln (F "3" 53)
+#guard lnWith (LnConsts.forPrecision 500) (X "3" 53) == ln (X "3" 53)
 
 -- directed rounding brackets the exact value
-#guard (lnPrecRound (F "10" 53) 53 .Floor).2 == .lt
-#guard (lnPrecRound (F "10" 53) 53 .Ceiling).2 == .gt
-#guard (lnPrecRound (F "10" 53) 53 .Floor).1 != (lnPrecRound (F "10" 53) 53 .Ceiling).1
+#guard (lnPrecRound (X "10" 53) 53 .Floor).2 == .lt
+#guard (lnPrecRound (X "10" 53) 53 .Ceiling).2 == .gt
+#guard (lnPrecRound (X "10" 53) 53 .Floor).1 != (lnPrecRound (X "10" 53) 53 .Ceiling).1
 
 -- high precision
-#guard toString (ln (F "10" 200))
+#guard toString (ln (X "10" 200))
   == "2.302585092994045684017991454684364207601101488628772976033328"
-#guard toString (ln (F "3" 200))
+#guard toString (ln (X "3" 200))
   == "1.098612288668109691395245236922525704647490557822749451734695"

@@ -11,6 +11,7 @@ import Azurite.AzFloat.SinhCoshRat
 import Azurite.AzFloat.SinhCosh
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.OfString
 
 /-!
 # Tests for `sinhCoshRat`
@@ -25,16 +26,20 @@ agreement with the float `sinhCosh` at representable arguments, and `sinhCoshRat
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def ok (q : AzRat) (p : Nat) (m : RoundingMode) : Bool :=
   sinhCoshRatPrecRound q p m == (sinhRatPrecRound q p m, coshRatPrecRound q p m)
 private def ok3 (q : AzRat) (p : Nat) : Bool :=
   ok q p .Nearest && ok q p .Floor && ok q p .Ceiling && ok (-q) p .Nearest && ok (-q) p .Floor
+/-- A pair of results as decimal output and comparison tags. -/
+private def D2 (r : (AzFloat × Ordering) × (AzFloat × Ordering)) :
+    (String × Ordering) × (String × Ordering) := ((toString r.1.1, r.1.2), (toString r.2.1, r.2.2))
 
 -- special values
-#guard sinhCoshRatPrecRound (Q "0") 53 .Nearest == ((zero, .eq), (F "1" 53, .eq))
-#guard sinhCoshRatPrecRound (Q "0") 0 .Nearest == ((zero, .eq), (nan, .eq))
-#guard sinhCoshRatPrecRound (Q "1/3") 0 .Nearest == ((nan, .eq), (nan, .eq))
+#guard D2 (sinhCoshRatPrecRound (Q "0") 53 .Nearest) == (("0.0", .eq), ("1.0", .eq))
+#guard D2 (sinhCoshRatPrecRound (Q "0") 0 .Nearest) == (("0.0", .eq), ("NaN", .eq))
+#guard D2 (sinhCoshRatPrecRound (Q "1/3") 0 .Nearest) == (("NaN", .eq), ("NaN", .eq))
 
 -- against the separate computations
 #guard ok3 (Q "1") 53 && ok3 (Q "1/3") 53 && ok3 (Q "22/7") 53 && ok3 (Q "355/113") 53
@@ -49,7 +54,7 @@ private def pw (k : Nat) : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat
 #guard ok3 (Q "1/3" * pw 70) 53 && ok3 (Q "1/3" * pw 60) 53 && ok3 (Q "5/7" * pw 30) 53
 
 -- agreement with the float version, and `sinhCoshRat`
-#guard sinhCoshRatPrecRound (Q "3/2") 53 .Nearest == sinhCoshPrecRound (F "3/2" 53) 53 .Nearest
+#guard sinhCoshRatPrecRound (Q "3/2") 53 .Nearest == sinhCoshPrecRound (X "1.5" 53) 53 .Nearest
 #guard sinhCoshRatPrecRound (Q "-5/1024") 53 .Floor
-  == sinhCoshPrecRound (F "-5/1024" 53) 53 .Floor
+  == sinhCoshPrecRound (X "-0.0048828125" 53) 53 .Floor
 #guard sinhCoshRat (Q "1/3") 53 == (sinhRat (Q "1/3") 53, coshRat (Q "1/3") 53)

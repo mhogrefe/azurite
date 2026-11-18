@@ -26,27 +26,26 @@ open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
-#guard catalanConstantPrecRound 1 .Nearest == (F "1" 1, .gt)
-#guard catalanConstantPrecRound 1 .Floor == (F "1/2" 1, .lt)
-#guard catalanConstantPrecRound 1 .Ceiling == (F "1" 1, .gt)
-#guard catalanConstantPrecRound 2 .Nearest == (F "1" 2, .gt)
-#guard catalanConstantPrecRound 2 .Floor == (F "3/4" 2, .lt)
-#guard catalanConstantPrecRound 2 .Ceiling == (F "1" 2, .gt)
-#guard catalanConstantPrecRound 3 .Nearest == (F "7/8" 3, .lt)
-#guard catalanConstantPrecRound 3 .Floor == (F "7/8" 3, .lt)
-#guard catalanConstantPrecRound 3 .Ceiling == (F "1" 3, .gt)
-#guard catalanConstantPrecRound 53 .Nearest == (F "8250284617241437/9007199254740992" 53, .lt)
-#guard catalanConstantPrecRound 53 .Floor == (F "8250284617241437/9007199254740992" 53, .lt)
-#guard catalanConstantPrecRound 53 .Ceiling == (F "4125142308620719/4503599627370496" 53, .gt)
-#guard catalanConstantPrecRound 100 .Nearest
-  == (F "145140541905894808764502001095/158456325028528675187087900672" 100, .gt)
-#guard catalanConstantPrecRound 100 .Floor
-  == (F "1161124335247158470116016008759/1267650600228229401496703205376" 100, .lt)
-#guard catalanConstantPrecRound 100 .Ceiling
-  == (F "145140541905894808764502001095/158456325028528675187087900672" 100, .gt)
+#guard D (catalanConstantPrecRound 1 .Nearest) == ("1.0", .gt)
+#guard D (catalanConstantPrecRound 1 .Floor) == ("0.5", .lt)
+#guard D (catalanConstantPrecRound 1 .Ceiling) == ("1.0", .gt)
+#guard D (catalanConstantPrecRound 2 .Nearest) == ("1.0", .gt)
+#guard D (catalanConstantPrecRound 2 .Floor) == ("0.8", .lt)
+#guard D (catalanConstantPrecRound 2 .Ceiling) == ("1.0", .gt)
+#guard D (catalanConstantPrecRound 3 .Nearest) == ("0.9", .lt)
+#guard D (catalanConstantPrecRound 3 .Floor) == ("0.9", .lt)
+#guard D (catalanConstantPrecRound 3 .Ceiling) == ("1.0", .gt)
+#guard D (catalanConstantPrecRound 53 .Nearest) == ("0.915965594177219", .lt)
+#guard D (catalanConstantPrecRound 53 .Floor) == ("0.915965594177219", .lt)
+#guard D (catalanConstantPrecRound 53 .Ceiling) == ("0.9159655941772191", .gt)
+#guard D (catalanConstantPrecRound 100 .Nearest) == ("0.9159655941772190150546035149325", .gt)
+#guard D (catalanConstantPrecRound 100 .Floor) == ("0.915965594177219015054603514932", .lt)
+#guard D (catalanConstantPrecRound 100 .Ceiling) == ("0.9159655941772190150546035149325", .gt)
 
-#guard catalanConstantPrecRound 0 .Nearest == (nan, .eq)
+#guard D (catalanConstantPrecRound 0 .Nearest) == ("NaN", .eq)
 #guard (catalanConstantPrecRound 200 .Floor).2 == .lt
 #guard (catalanConstantPrecRound 200 .Ceiling).2 == .gt
 #guard toString (AzFloat.catalanConstant 53) == "0.915965594177219"

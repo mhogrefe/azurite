@@ -11,6 +11,7 @@ import Azurite.AzFloat.Atan2WithPeriod
 import Azurite.AzFloat.AtanWithPeriod
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.OfString
 
 /-!
 # Tests for `atan2 (y, x) u / (2π)`
@@ -26,112 +27,114 @@ References: an independent 1400-bit fixed-point evaluation rounded with exact ra
 
 open Azurite Azurite.AzFloat
 
-private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def D (y x : AzFloat) (u : UInt64) (p : Nat) (m : RoundingMode := .Nearest) :=
   atan2WithPeriodPrecRound y x u p m
 private def inf : AzFloat := infinity true
 private def ninf : AzFloat := infinity false
-private def one' : AzFloat := F "1" 53
+private def one' : AzFloat := X "1" 53
+/-- A result as its decimal output and its comparison tag. -/
+private def Dd (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- `NaN`
-#guard D nan one' 360 53 == (nan, .eq)
-#guard D one' nan 360 53 == (nan, .eq)
-#guard D inf nan 360 53 == (nan, .eq)
-#guard D nan zero 0 53 == (nan, .eq)
+#guard Dd (D nan one' 360 53) == ("NaN", .eq)
+#guard Dd (D one' nan 360 53) == ("NaN", .eq)
+#guard Dd (D inf nan 360 53) == ("NaN", .eq)
+#guard Dd (D nan zero 0 53) == ("NaN", .eq)
 -- `y = ±∞`
-#guard D inf inf 360 53 == (F "45" 53, .eq)
-#guard D ninf inf 360 53 == (F "-45" 53, .eq)
-#guard D inf ninf 360 53 == (F "135" 53, .eq)
-#guard D ninf ninf 360 53 == (F "-135" 53, .eq)
-#guard D inf (F "5" 53) 360 53 == (F "90" 53, .eq)
-#guard D ninf zero 360 53 == (F "-90" 53, .eq)
-#guard D inf ninf 7 2 == (F "3" 2, .gt)
-#guard D ninf ninf 7 2 .Ceiling == (F "-2" 2, .gt)
-#guard D inf ninf 1 53 == (F "3/8" 53, .eq)
+#guard Dd (D inf inf 360 53) == ("45.0", .eq)
+#guard Dd (D ninf inf 360 53) == ("-45.0", .eq)
+#guard Dd (D inf ninf 360 53) == ("135.0", .eq)
+#guard Dd (D ninf ninf 360 53) == ("-135.0", .eq)
+#guard Dd (D inf (X "5" 53) 360 53) == ("9.0e1", .eq)
+#guard Dd (D ninf zero 360 53) == ("-9.0e1", .eq)
+#guard Dd (D inf ninf 7 2) == ("3.0", .gt)
+#guard Dd (D ninf ninf 7 2 .Ceiling) == ("-2.0", .gt)
+#guard Dd (D inf ninf 1 53) == ("0.375", .eq)
 -- `x = ±∞`, finite `y`
-#guard D (F "5" 53) inf 360 53 == (zero, .eq)
-#guard D (F "-5" 53) inf 360 53 == (zero, .eq)
-#guard D zero inf 360 53 == (zero, .eq)
-#guard D (F "5" 53) ninf 360 53 == (F "180" 53, .eq)
-#guard D (F "-5" 53) ninf 360 53 == (F "-180" 53, .eq)
-#guard D zero ninf 360 53 == (F "180" 53, .eq)
+#guard Dd (D (X "5" 53) inf 360 53) == ("0.0", .eq)
+#guard Dd (D (X "-5" 53) inf 360 53) == ("0.0", .eq)
+#guard Dd (D zero inf 360 53) == ("0.0", .eq)
+#guard Dd (D (X "5" 53) ninf 360 53) == ("1.8e2", .eq)
+#guard Dd (D (X "-5" 53) ninf 360 53) == ("-1.8e2", .eq)
+#guard Dd (D zero ninf 360 53) == ("1.8e2", .eq)
 -- `y = 0`, `x = 0`
-#guard D zero zero 360 53 == (zero, .eq)
-#guard D zero (F "3" 53) 360 53 == (zero, .eq)
-#guard D zero (F "-3" 53) 360 53 == (F "180" 53, .eq)
-#guard D (F "2" 53) zero 360 53 == (F "90" 53, .eq)
-#guard D (F "-2" 53) zero 360 53 == (F "-90" 53, .eq)
-#guard D (F "-2" 53) zero 1 53 == (F "-1/4" 53, .eq)
+#guard Dd (D zero zero 360 53) == ("0.0", .eq)
+#guard Dd (D zero (X "3" 53) 360 53) == ("0.0", .eq)
+#guard Dd (D zero (X "-3" 53) 360 53) == ("1.8e2", .eq)
+#guard Dd (D (X "2" 53) zero 360 53) == ("9.0e1", .eq)
+#guard Dd (D (X "-2" 53) zero 360 53) == ("-9.0e1", .eq)
+#guard Dd (D (X "-2" 53) zero 1 53) == ("-0.25", .eq)
 -- the diagonals
-#guard D (F "3" 53) (F "3" 53) 360 53 == (F "45" 53, .eq)
-#guard D (F "-3" 53) (F "3" 53) 360 53 == (F "-45" 53, .eq)
-#guard D (F "3" 53) (F "-3" 53) 360 53 == (F "135" 53, .eq)
-#guard D (F "-3" 53) (F "-3" 53) 360 53 == (F "-135" 53, .eq)
-#guard D (F "1/3" 53) (F "1/3" 53) 360 53 == (F "45" 53, .eq)
-#guard D (F "3" 200) (F "-3" 53) 360 2 == (F "128" 2, .lt)
-#guard D (F "3" 53) (F "-3" 53) 360 2 .Ceiling == (F "192" 2, .gt)
+#guard Dd (D (X "3" 53) (X "3" 53) 360 53) == ("45.0", .eq)
+#guard Dd (D (X "-3" 53) (X "3" 53) 360 53) == ("-45.0", .eq)
+#guard Dd (D (X "3" 53) (X "-3" 53) 360 53) == ("135.0", .eq)
+#guard Dd (D (X "-3" 53) (X "-3" 53) 360 53) == ("-135.0", .eq)
+#guard Dd (D (X "0.3333333333333333" 53) (X "0.3333333333333333" 53) 360 53) == ("45.0", .eq)
+#guard Dd (D (X "3" 200) (X "-3" 53) 360 2) == ("1.3e2", .lt)
+#guard Dd (D (X "3" 53) (X "-3" 53) 360 2 .Ceiling) == ("2.0e2", .gt)
 -- `u = 0`, `p = 0`
-#guard D one' (F "2" 53) 0 53 == (zero, .eq)
-#guard D inf ninf 0 53 == (zero, .eq)
-#guard D (F "-5" 53) ninf 0 53 == (zero, .eq)
-#guard D (F "3" 53) (F "3" 53) 0 53 == (zero, .eq)
-#guard D one' (F "2" 53) 360 0 == (nan, .eq)
+#guard Dd (D one' (X "2" 53) 0 53) == ("0.0", .eq)
+#guard Dd (D inf ninf 0 53) == ("0.0", .eq)
+#guard Dd (D (X "-5" 53) ninf 0 53) == ("0.0", .eq)
+#guard Dd (D (X "3" 53) (X "3" 53) 0 53) == ("0.0", .eq)
+#guard Dd (D one' (X "2" 53) 360 0) == ("NaN", .eq)
 
 -- correctly rounded values
-#guard D (F "1" 53) (F "2" 53) 360 53 == (F "1869349290346353/70368744177664" 53, .gt)
-#guard D (F "2" 53) (F "1" 53) 360 53 == (F "4463837685643407/70368744177664" 53, .lt)
-#guard D (F "1" 53) (F "-2" 53) 360 53 == (F "674814041352073/4398046511104" 53, .gt)
-#guard D (F "2" 53) (F "-1" 53) 360 53 == (F "8202536266336113/70368744177664" 53, .gt)
-#guard D (F "-1" 53) (F "2" 53) 360 53 == (F "-1869349290346353/70368744177664" 53, .lt)
-#guard D (F "-2" 53) (F "1" 53) 360 53 == (F "-4463837685643407/70368744177664" 53, .gt)
-#guard D (F "-1" 53) (F "-2" 53) 360 53 == (F "-674814041352073/4398046511104" 53, .lt)
-#guard D (F "-2" 53) (F "-1" 53) 360 53 == (F "-8202536266336113/70368744177664" 53, .lt)
-#guard D (F "1/3" 53) (F "7/5" 53) 360 53 == (F "3769652993334603/281474976710656" 53, .lt)
-#guard D (F "-7/5" 53) (F "1/3" 53) 360 53 == (F "-5390773727656109/70368744177664" 53, .gt)
-#guard D (F "22/7" 53) (F "-1/1000" 53) 360 53 == (F "791808728949883/8796093022208" 53, .lt)
-#guard D (F "1/1000" 53) (F "-22/7" 53) 360 53 == (F "1583136387046277/8796093022208" 53, .gt)
-#guard D (F "1000000000000" 53) (F "3" 53) 360 53 == (F "6333186975977665/70368744177664" 53, .gt)
-#guard D (F "3" 53) (F "-1000000000000" 53) 360 53 == (F "197912092999491/1099511627776" 53, .lt)
-#guard D (F "1" 53) (F "2" 53) 1 53 == (F "664657525456481/9007199254740992" 53, .lt)
-#guard D (F "1" 53) (F "-2" 53) 400 53 == (F "749793379280081/4398046511104" 53, .lt)
-#guard D (F "-2" 53) (F "1" 53) 7 53 == (F "-1388749502200171/1125899906842624" 53, .gt)
-#guard D (F "2" 53) (F "-1" 53) 18446744073709551615 53 == (F "5972904630562260992" 53, .lt)
-#guard D (F "1" 53) (F "2" 53) 360 53 .Floor == (F "7477397161385411/281474976710656" 53, .lt)
-#guard D (F "-2" 53) (F "-1" 53) 360 53 .Floor == (F "-8202536266336113/70368744177664" 53, .lt)
-#guard D (F "2" 53) (F "-1" 53) 360 53 .Floor == (F "512658516646007/4398046511104" 53, .lt)
-#guard D (F "1" 53) (F "2" 53) 360 53 .Ceiling == (F "1869349290346353/70368744177664" 53, .gt)
-#guard D (F "-2" 53) (F "-1" 53) 360 53 .Ceiling == (F "-512658516646007/4398046511104" 53, .gt)
-#guard D (F "2" 53) (F "-1" 53) 360 53 .Ceiling == (F "8202536266336113/70368744177664" 53, .gt)
-#guard D (F "1" 53) (F "2" 53) 360 20 == (F "217621/8192" 20, .gt)
-#guard D (F "1" 53) (F "-2" 53) 360 1 == (F "128" 1, .lt)
-#guard D (F "-2" 53) (F "1" 53) 360 113
-  == (F "-5146454460852742461152984682250581/81129638414606681695789005144064" 113, .gt)
+#guard Dd (D (X "1" 53) (X "2" 53) 360 53) == ("26.56505117707799", .gt)
+#guard Dd (D (X "2" 53) (X "1" 53) 360 53) == ("63.43494882292201", .lt)
+#guard Dd (D (X "1" 53) (X "-2" 53) 360 53) == ("153.43494882292202", .gt)
+#guard Dd (D (X "2" 53) (X "-1" 53) 360 53) == ("116.56505117707799", .gt)
+#guard Dd (D (X "-1" 53) (X "2" 53) 360 53) == ("-26.56505117707799", .lt)
+#guard Dd (D (X "-2" 53) (X "1" 53) 360 53) == ("-63.43494882292201", .gt)
+#guard Dd (D (X "-1" 53) (X "-2" 53) 360 53) == ("-153.43494882292202", .lt)
+#guard Dd (D (X "-2" 53) (X "-1" 53) 360 53) == ("-116.56505117707799", .lt)
+#guard Dd (D (X "0.3333333333333333" 53) (X "1.4" 53) 360 53) == ("13.392497753751098", .lt)
+#guard Dd (D (X "-1.4" 53) (X "0.3333333333333333" 53) 360 53) == ("-76.6075022462489", .gt)
+#guard Dd (D (X "3.142857142857143" 53) (X "-0.001" 53) 360 53) == ("90.0182304746844", .lt)
+#guard Dd (D (X "0.001" 53) (X "-3.142857142857143" 53) 360 53) == ("179.9817695253156", .gt)
+#guard Dd (D (X "1000000000000" 53) (X "3" 53) 360 53) == ("89.99999999982812", .gt)
+#guard Dd (D (X "3" 53) (X "-1000000000000" 53) 360 53) == ("179.9999999998281", .lt)
+#guard Dd (D (X "1" 53) (X "2" 53) 1 53) == ("0.07379180882521663", .lt)
+#guard Dd (D (X "1" 53) (X "-2" 53) 400 53) == ("170.48327646991333", .lt)
+#guard Dd (D (X "-2" 53) (X "1" 53) 7 53) == ("-1.2334573382234835", .gt)
+#guard Dd (D (X "2" 53) (X "-1" 53) 18446744073709551615 53) == ("5.972904630562261e18", .lt)
+#guard Dd (D (X "1" 53) (X "2" 53) 360 53 .Floor) == ("26.565051177077986", .lt)
+#guard Dd (D (X "-2" 53) (X "-1" 53) 360 53 .Floor) == ("-116.56505117707799", .lt)
+#guard Dd (D (X "2" 53) (X "-1" 53) 360 53 .Floor) == ("116.56505117707798", .lt)
+#guard Dd (D (X "1" 53) (X "2" 53) 360 53 .Ceiling) == ("26.56505117707799", .gt)
+#guard Dd (D (X "-2" 53) (X "-1" 53) 360 53 .Ceiling) == ("-116.56505117707798", .gt)
+#guard Dd (D (X "2" 53) (X "-1" 53) 360 53 .Ceiling) == ("116.56505117707799", .gt)
+#guard Dd (D (X "1" 53) (X "2" 53) 360 20) == ("26.56506", .gt)
+#guard Dd (D (X "1" 53) (X "-2" 53) 360 1) == ("1.0e2", .lt)
+#guard Dd (D (X "-2" 53) (X "1" 53) 360 113) == ("-63.434948822922010648427806279546704", .gt)
 
 -- agreement with `atanWithPeriod` for `x = 1`
-#guard D (F "1/3" 53) one' 360 53 == atanWithPeriodPrecRound (F "1/3" 53) 360 53 .Nearest
-#guard D (F "-22/7" 53) one' 7 53 .Floor == atanWithPeriodPrecRound (F "-22/7" 53) 7 53 .Floor
-#guard atan2WithPeriod (F "1" 53) (F "2" 53) 360 == (D (F "1" 53) (F "2" 53) 360 53).1
-#guard (toString (atan2WithPeriodPrecRound (F "1" 200) (F "-2" 200) 360 200 .Nearest).1).startsWith
-  "153.4349488229220106484278062795467053287957857003547789"
+#guard D (X "0.3333333333333333\
+  " 53) one' 360 53 == atanWithPeriodPrecRound (X "0.3333333333333333" 53) 360 53 .Nearest
+#guard D (X "-3.142857142857143\
+  " 53) one' 7 53 .Floor == atanWithPeriodPrecRound (X "-3.142857142857143" 53) 7 53 .Floor
+#guard atan2WithPeriod (X "1" 53) (X "2" 53) 360 == (D (X "1" 53) (X "2" 53) 360 53).1
+#guard toString (atan2WithPeriodPrecRound (X "1" 200) (X "-2" 200) 360 200 .Nearest).1
+  == "153.434948822922010648427806279546705328795785700354778972014"
 
 -- extreme ratios
 private def t : AzFloat := powerOf2 (AzInt.ofInt (-200))
-#guard D t one' 360 53 == (F ("1007958012753983/"
-  ++ "28269553036454149273332760011886696253239742350009903329945699220681916416") 53, .gt)
-#guard D one' t 360 53 == (F "90" 53, .gt)
-#guard D one' t 360 53 .Floor == (F "6333186975989759/70368744177664" 53, .lt)
-#guard D t (-one') 360 53 == (F "180" 53, .gt)
-#guard D t (-one') 360 53 .Floor == (F "6333186975989759/35184372088832" 53, .lt)
-#guard D (-t) (-one') 360 53 == (F "-180" 53, .lt)
+#guard Dd (D t one' 360 53) == ("3.565525112668747e-59", .gt)
+#guard Dd (D one' t 360 53) == ("9.0e1", .gt)
+#guard Dd (D one' t 360 53 .Floor) == ("89.99999999999999", .lt)
+#guard Dd (D t (-one') 360 53) == ("1.8e2", .gt)
+#guard Dd (D t (-one') 360 53 .Floor) == ("179.99999999999997", .lt)
+#guard Dd (D (-t) (-one') 360 53) == ("-1.8e2", .lt)
 private def tiny : AzFloat := powerOf2 (AzInt.ofInt (-1073741824))
 private def huge : AzFloat := powerOf2 (AzInt.ofInt 1073741824)
 #guard (D tiny one' 360 53).1
-  == (F "1007958012753983/17592186044416" 53) <<< AzInt.ofInt (-1073741824)
+  == (X "57.29577951308232" 53) <<< AzInt.ofInt (-1073741824)
 #guard (D tiny one' 360 53).2 == .gt
 #guard (D (-tiny) huge 360 53 .Floor).2 == .lt
-#guard D huge tiny 360 53 == (F "90" 53, .gt)
-#guard D tiny (-huge) 360 53 == (F "180" 53, .gt)
-#guard D (-huge) (-tiny) 360 53 == (F "-90" 53, .gt)
-#guard D (-huge) tiny 360 53 == (F "-90" 53, .lt)
+#guard Dd (D huge tiny 360 53) == ("9.0e1", .gt)
+#guard Dd (D tiny (-huge) 360 53) == ("1.8e2", .gt)
+#guard Dd (D (-huge) (-tiny) 360 53) == ("-9.0e1", .gt)
+#guard Dd (D (-huge) tiny 360 53) == ("-9.0e1", .lt)
 #guard (D huge tiny 360 53 .Floor).2 == .lt

@@ -11,7 +11,9 @@ import Azurite.AzFloat.LnAbsGammaRat
 import Azurite.AzFloat.GammaRat
 import Azurite.AzFloat.Ln
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.ToString
 
 /-!
 # Tests for `ln |Γ(q)|` and the sign of `Γ(q)` at a rational
@@ -27,6 +29,8 @@ open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def L (s : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   lnAbsGammaRatPrecRound (Q s) p m
 private def pinf : AzFloat := infinity true
@@ -50,7 +54,7 @@ private def modes : List RoundingMode := [.Nearest, .Floor, .Ceiling, .Down, .Up
 -- dyadic arguments: the float function
 #guard ["-1/2", "-3/2", "-5/2", "-7/4", "-201/2", "-1/1024", "-4097/4096"].all fun s =>
   modes.all fun m => L s 53 m == lnAbsGammaPrecRound (F s 64) 53 m
-#guard L "-5/2" 200 == lnAbsGammaPrecRound (F "-5/2" 64) 200 .Nearest
+#guard L "-5/2" 200 == lnAbsGammaPrecRound (X "-2.5" 64) 200 .Nearest
 
 /-- The 53-bit result is the rounding of `ln` of the 200-bit `|Γ(q)|`, with the sign of
 `Γ(q)`. -/

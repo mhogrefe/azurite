@@ -28,25 +28,26 @@ open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
-#guard dottiePrecRound 0 .Nearest == (nan, .eq)
-#guard dottiePrecRound 1 .Nearest == (F "1/2" 1, .lt)
-#guard dottiePrecRound 1 .Ceiling == (F "1" 1, .gt)
-#guard dottiePrecRound 2 .Nearest == (F "3/4" 2, .gt)
-#guard dottiePrecRound 2 .Floor == (F "1/2" 2, .lt)
-#guard dottiePrecRound 3 .Nearest == (F "3/4" 3, .gt)
-#guard dottiePrecRound 3 .Floor == (F "5/8" 3, .lt)
-#guard dottiePrecRound 10 .Nearest == (F "757/1024" 10, .gt)
-#guard dottiePrecRound 10 .Floor == (F "189/256" 10, .lt)
-#guard dottiePrecRound 53 .Nearest == (F "3328543530542871/4503599627370496" 53, .gt)
-#guard dottiePrecRound 53 .Ceiling == (F "3328543530542871/4503599627370496" 53, .gt)
-#guard dottiePrecRound 53 .Floor == (F "6657087061085741/9007199254740992" 53, .lt)
-#guard dottiePrecRound 64 .Nearest
-  == (F "13633714301103599051/18446744073709551616" 64, .gt)
-#guard dottiePrecRound 64 .Floor == (F "6816857150551799525/9223372036854775808" 64, .lt)
+#guard D (dottiePrecRound 0 .Nearest) == ("NaN", .eq)
+#guard D (dottiePrecRound 1 .Nearest) == ("0.5", .lt)
+#guard D (dottiePrecRound 1 .Ceiling) == ("1.0", .gt)
+#guard D (dottiePrecRound 2 .Nearest) == ("0.8", .gt)
+#guard D (dottiePrecRound 2 .Floor) == ("0.5", .lt)
+#guard D (dottiePrecRound 3 .Nearest) == ("0.8", .gt)
+#guard D (dottiePrecRound 3 .Floor) == ("0.6", .lt)
+#guard D (dottiePrecRound 10 .Nearest) == ("0.739", .gt)
+#guard D (dottiePrecRound 10 .Floor) == ("0.738", .lt)
+#guard D (dottiePrecRound 53 .Nearest) == ("0.7390851332151607", .gt)
+#guard D (dottiePrecRound 53 .Ceiling) == ("0.7390851332151607", .gt)
+#guard D (dottiePrecRound 53 .Floor) == ("0.7390851332151606", .lt)
+#guard D (dottiePrecRound 64 .Nearest) == ("0.73908513321516064166", .gt)
+#guard D (dottiePrecRound 64 .Floor) == ("0.7390851332151606416", .lt)
 #guard toString (dottie 53) == "0.7390851332151607"
-#guard (toString (dottie 300)).startsWith
-  "0.739085133215160641655312087673873404013411758900757464965680635773284654883547594599376"
+#guard toString (dottie 300)
+  == "0.739085133215160641655312087673873404013411758900757464965680635773284654883547594599376107"
 
 -- the verified bracket around the proven-convergent fallback iterate contains the candidate's
 #guard

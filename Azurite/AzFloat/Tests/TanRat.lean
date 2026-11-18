@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.SinCosRat
 import Azurite.AzFloat.Tan
 import Azurite.AzFloat.TanRat
@@ -29,7 +30,8 @@ tiny path) and a small one on the ordinary path.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def T (q : String) (p : Nat) (m : RoundingMode := .Nearest) := tanRatPrecRound (Q q) p m
 /-- The reference: the quotient of `sin q` and `cos q` at `p + 300` bits, rounded to `p`. -/
 private def ref (q : String) (p : Nat) (m : RoundingMode := .Nearest) : AzFloat × Ordering :=
@@ -37,22 +39,24 @@ private def ref (q : String) (p : Nat) (m : RoundingMode := .Nearest) : AzFloat 
   divPrecRound sc.1.1 sc.2.1 p m
 private def agrees (q : String) (p : Nat) (m : RoundingMode := .Nearest) : Bool :=
   T q p m == ref q p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard T "0" 53 == (zero, .eq)
-#guard T "0" 0 == (zero, .eq)
-#guard T "1/3" 0 == (nan, .eq)
+#guard D (T "0" 53) == ("0.0", .eq)
+#guard D (T "0" 0) == ("0.0", .eq)
+#guard D (T "1/3" 0) == ("NaN", .eq)
 
 -- agreement with the float `tan` at representable arguments
-#guard T "1/2" 53 == tanPrecRound (F "1/2" 53) 53 .Nearest
-#guard T "-3" 53 == tanPrecRound (F "-3" 53) 53 .Nearest
-#guard T "1000000000000" 53 == tanPrecRound (F "1000000000000" 53) 53 .Nearest
-#guard T "1/1024" 53 == tanPrecRound (F "1/1024" 53) 53 .Nearest
-#guard T "1" 200 == tanPrecRound (F "1" 53) 200 .Nearest
+#guard T "1/2" 53 == tanPrecRound (X "0.5" 53) 53 .Nearest
+#guard T "-3" 53 == tanPrecRound (X "-3" 53) 53 .Nearest
+#guard T "1000000000000" 53 == tanPrecRound (X "1000000000000" 53) 53 .Nearest
+#guard T "1/1024" 53 == tanPrecRound (X "0.0009765625" 53) 53 .Nearest
+#guard T "1" 200 == tanPrecRound (X "1" 53) 200 .Nearest
 
 -- values
-#guard (toString (tanRat (Q "1/3") 200)).startsWith
-  "0.34625354951057549103854356560974077459570391618980021797644"
+#guard toString (tanRat (Q "1/3") 200) == "0.346253549510575491038543565609740774595703916189800217\
+  976444"
 #guard agrees "1/3" 200
 #guard agrees "22/7" 53
 #guard agrees "355/113" 53
@@ -77,8 +81,7 @@ private def agrees (q : String) (p : Nat) (m : RoundingMode := .Nearest) : Bool 
 #guard agrees "1000000000000000000000000000000" 53
 
 -- tiny rationals (the tiny path) and a small one on the ordinary path
-#guard T "1/1267650600228229401496703205376" 20 == (F "1/1267650600228229401496703205376" 20, .lt)
-#guard T "-1/1267650600228229401496703205376" 20
-  == (F "-1/1267650600228229401496703205376" 20, .gt)
+#guard D (T "1/1267650600228229401496703205376" 20) == ("7.88861e-31", .lt)
+#guard D (T "-1/1267650600228229401496703205376" 20) == ("-7.88861e-31", .gt)
 #guard (T "1/3802951800684688204490109616128" 20 .Ceiling).2 == .gt
 #guard agrees "1/1099511627776" 53

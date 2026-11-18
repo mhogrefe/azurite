@@ -13,6 +13,7 @@ import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 import Azurite.AzFloat.Ln
+import Azurite.AzFloat.OfString
 
 /-!
 # Tests for `log₂` of a rational
@@ -24,26 +25,29 @@ import Azurite.AzFloat.Ln
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard log2Rat (Q "0") 53 == infinity false
-#guard log2Rat (Q "-2") 53 == nan
-#guard log2Rat (Q "-1/8") 53 == nan
+#guard toString (log2Rat (Q "0") 53) == "-Infinity"
+#guard toString (log2Rat (Q "-2") 53) == "NaN"
+#guard toString (log2Rat (Q "-1/8") 53) == "NaN"
 
 -- exact powers of two
-#guard log2RatPrecRound (Q "1") 53 .Nearest == (zero, .eq)
-#guard log2RatPrecRound (Q "8") 53 .Nearest == (F "3" 53, .eq)
-#guard log2RatPrecRound (Q "1/8") 53 .Nearest == (F "-3" 53, .eq)
-#guard log2RatPrecRound (Q "1/1267650600228229401496703205376") 53 .Floor == (F "-100" 53, .eq)
-#guard log2RatPrecRound (Q "1267650600228229401496703205376") 3 .Nearest == (F "96" 3, .lt)
+#guard D (log2RatPrecRound (Q "1") 53 .Nearest) == ("0.0", .eq)
+#guard D (log2RatPrecRound (Q "8") 53 .Nearest) == ("3.0", .eq)
+#guard D (log2RatPrecRound (Q "1/8") 53 .Nearest) == ("-3.0", .eq)
+#guard D (log2RatPrecRound (Q "1/1267650600228229401496703205376") 53 .Floor) == ("-1.0e2", .eq)
+#guard D (log2RatPrecRound (Q "1267650600228229401496703205376") 3 .Nearest) == ("1.0e2", .lt)
 
 -- agreement with the float logarithm on exactly representable inputs
-#guard log2Rat (Q "10") 53 == log2 (F "10" 53)
-#guard log2Rat (Q "3") 200 == log2 (F "3" 200)
-#guard log2RatPrecRound (Q "5" ) 53 .Ceiling == log2PrecRound (F "5" 53) 53 .Ceiling
+#guard log2Rat (Q "10") 53 == log2 (X "10" 53)
+#guard log2Rat (Q "3") 200 == log2 (X "3" 200)
+#guard log2RatPrecRound (Q "5" ) 53 .Ceiling == log2PrecRound (X "5" 53) 53 .Ceiling
 
--- known values at 53 bits (exact rationals, unlike `F "1/3" 53`)
+-- known values at 53 bits (exact rationals, unlike `X "0.3333333333333333" 53`)
 #guard toString (log2Rat (Q "1/3") 53) == "-1.584962500721156"
 #guard toString (log2Rat (Q "22/7") 53) == "1.6520766965796931"
 #guard toString (log2Rat (Q "3/2") 53) == "0.5849625007211562"
@@ -61,8 +65,10 @@ private def ref10 : AzRat :=
 private def ref3 : AzRat :=
   Q ("1584962500721156181453738943947816508759" ++ "8144076924810604557526545410982277943586/"
     ++ tenPow79)
-#guard log2Rat (Q "10") 200 == ofAzRat ref10 200
-#guard log2Rat (Q "1/3") 200 == ofAzRat (-ref3) 200
+#guard toString (log2Rat (Q "10") 200)
+  == "3.321928094887362347870319429489390175864831393024580612054757"
+#guard toString (log2Rat (Q "1/3") 200)
+  == "-1.584962500721156181453738943947816508759814407692481060455753"
 
 -- precomputed constants: the same results
 #guard log2RatWith (LnConsts.forPrecision 53) (Q "10") 53 == log2Rat (Q "10") 53

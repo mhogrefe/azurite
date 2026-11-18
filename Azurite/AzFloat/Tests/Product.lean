@@ -11,19 +11,25 @@ import Azurite.AzFloat.Product
 import Azurite.AzFloat.Mul
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Precision
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.ToString
 
 /-!
 # Tests for the correctly rounded product
 
-Expected values computed by hand (the exact product, then one rounding), and agreement with a
-fold of exact two-operand multiplications followed by one rounding.
+Expected values computed by hand (the exact product, then one rounding) shown as decimal output, and
+agreement with a fold of exact two-operand multiplications followed by one rounding.
 -/
 
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def P (e : Int) : AzFloat := powerOf2 (AzInt.ofInt e)
 private def Pr (xs : List AzFloat) (p : Nat) (m : RoundingMode := .Nearest) :=
   productPrecRound xs p m
@@ -34,67 +40,69 @@ private def naive (xs : List AzFloat) (p : Nat) (m : RoundingMode := .Nearest) :
 
 /-! ## Special values -/
 
-#guard Pr [] 5 == (setPrec one 5, .eq)
-#guard Pr [one] 3 == (setPrec one 3, .eq)
-#guard Pr [nan, one] 10 == (nan, .eq)
-#guard Pr [one, infinity true] 10 == (infinity true, .eq)
-#guard Pr [infinity false, one] 10 == (infinity false, .eq)
-#guard Pr [infinity false, negOne] 10 == (infinity true, .eq)
-#guard Pr [infinity true, negOne, F "-2" 2, F "-3" 2] 10 == (infinity false, .eq)
-#guard Pr [infinity true, infinity false] 10 == (infinity false, .eq)
-#guard Pr [infinity false, infinity false] 10 == (infinity true, .eq)
-#guard Pr [zero, one] 10 == (zero, .eq)
-#guard Pr [negOne, zero, negOne] 10 == (zero, .eq)
-#guard Pr [zero, infinity true] 10 == (nan, .eq)
-#guard Pr [infinity false, one, zero] 10 == (nan, .eq)
-#guard Pr [nan, zero, infinity true] 10 == (nan, .eq)
-#guard Pr [one] 0 == (nan, .eq)
+#guard D (Pr [] 5) == ("1.0", .eq)
+#guard D (Pr [one] 3) == ("1.0", .eq)
+#guard D (Pr [nan, one] 10) == ("NaN", .eq)
+#guard D (Pr [one, infinity true] 10) == ("Infinity", .eq)
+#guard D (Pr [infinity false, one] 10) == ("-Infinity", .eq)
+#guard D (Pr [infinity false, negOne] 10) == ("Infinity", .eq)
+#guard D (Pr [infinity true, negOne, X "-2" 2, X "-3" 2] 10) == ("-Infinity", .eq)
+#guard D (Pr [infinity true, infinity false] 10) == ("-Infinity", .eq)
+#guard D (Pr [infinity false, infinity false] 10) == ("Infinity", .eq)
+#guard D (Pr [zero, one] 10) == ("0.0", .eq)
+#guard D (Pr [negOne, zero, negOne] 10) == ("0.0", .eq)
+#guard D (Pr [zero, infinity true] 10) == ("NaN", .eq)
+#guard D (Pr [infinity false, one, zero] 10) == ("NaN", .eq)
+#guard D (Pr [nan, zero, infinity true] 10) == ("NaN", .eq)
+#guard D (Pr [one] 0) == ("NaN", .eq)
 
 /-! ## Two factors agree with multiplication -/
 
-#guard Pr [F "3" 2, F "3" 2] 4 == mulPrecRound (F "3" 2) (F "3" 2) 4 .Nearest
-#guard Pr [F "3" 2, F "5" 3] 3 == mulPrecRound (F "3" 2) (F "5" 3) 3 .Nearest
-#guard Pr [F "3" 2, F "5" 3] 3 .Floor == mulPrecRound (F "3" 2) (F "5" 3) 3 .Floor
-#guard Pr [F "1/3" 53, F "3" 2] 53 == mulPrecRound (F "1/3" 53) (F "3" 2) 53 .Nearest
-#guard Pr [F "1/3" 53, F "3" 2] 53 .Floor == mulPrecRound (F "1/3" 53) (F "3" 2) 53 .Floor
-#guard Pr [negOne, F "3" 2] 2 == (F "-3" 2, .eq)
+#guard Pr [X "3" 2, X "3" 2] 4 == mulPrecRound (X "3" 2) (X "3" 2) 4 .Nearest
+#guard Pr [X "3" 2, X "5" 3] 3 == mulPrecRound (X "3" 2) (X "5" 3) 3 .Nearest
+#guard Pr [X "3" 2, X "5" 3] 3 .Floor == mulPrecRound (X "3" 2) (X "5" 3) 3 .Floor
+#guard Pr [X "0.3333333333333333" 53, X "3" 2] 53 == mulPrecRound (X "0.3333333333333333" 53) (X "3\
+  " 2) 53 .Nearest
+#guard Pr [X "0.3333333333333333" 53, X "3" 2] 53 .Floor
+  == mulPrecRound (X "0.3333333333333333" 53) (X "3" 2) 53 .Floor
+#guard D (Pr [negOne, X "3" 2] 2) == ("-3.0", .eq)
 
 /-! ## Exact products and roundings -/
 
-#guard Pr [negOne, negOne, negOne] 1 == (negOne, .eq)
-#guard Pr [negOne, negOne, negOne, negOne] 1 == (one, .eq)
-#guard Pr [F "3" 2, F "3" 2, F "3" 2] 5 == (F "27" 5, .eq)
-#guard Pr [F "3" 2, F "3" 2, F "3" 2] 3 == (F "28" 3, .gt)                 -- 27 → 28
-#guard Pr [F "3" 2, F "3" 2, F "3" 2] 3 .Floor == (F "24" 3, .lt)
-#guard Pr [F "3" 2, F "5" 3, F "7" 3] 4 == (F "104" 4, .lt)                -- 105 → 104
-#guard Pr [F "3" 2, F "5" 3, F "7" 3] 4 .Ceiling == (F "112" 4, .gt)
-#guard Pr [F "3" 2, F "5" 3, F "7" 3] 2 == (F "96" 2, .lt)                 -- 105 → 96
-#guard Pr [F "3" 2, F "5" 3, F "7" 3] 2 .Up == (F "128" 2, .gt)
-#guard Pr [F "-3" 2, F "5" 3, F "-7" 3] 4 == (F "104" 4, .lt)
-#guard Pr [F "-3" 2, F "-5" 3, F "-7" 3] 4 == (F "-104" 4, .gt)
-#guard Pr [F "-3" 2, F "-5" 3, F "-7" 3] 4 .Floor == (F "-112" 4, .lt)
-#guard Pr [F "1/2" 1, F "1/2" 1, F "1/2" 1, F "1/2" 1] 1 == (P (-4), .eq)
-#guard Pr ((List.range 10).map fun i => P i) 1 == (P 45, .eq)
-#guard Pr ((List.range 100).map fun i => P (-i)) 1 == (P (-4950), .eq)
-#guard Pr [P 1000000000, P (-999999999)] 1 == (two, .eq)
-#guard Pr [P 1000000000, F "3" 2, P (-1000000000)] 2 == (F "3" 2, .eq)
+#guard D (Pr [negOne, negOne, negOne] 1) == ("-1.0", .eq)
+#guard D (Pr [negOne, negOne, negOne, negOne] 1) == ("1.0", .eq)
+#guard D (Pr [X "3" 2, X "3" 2, X "3" 2] 5) == ("27.0", .eq)
+#guard D (Pr [X "3" 2, X "3" 2, X "3" 2] 3) == ("28.0", .gt)  -- 27 → 28
+#guard D (Pr [X "3" 2, X "3" 2, X "3" 2] 3 .Floor) == ("24.0", .lt)
+#guard D (Pr [X "3" 2, X "5" 3, X "7" 3] 4) == ("104.0", .lt)  -- 105 → 104
+#guard D (Pr [X "3" 2, X "5" 3, X "7" 3] 4 .Ceiling) == ("1.1e2", .gt)
+#guard D (Pr [X "3" 2, X "5" 3, X "7" 3] 2) == ("1.0e2", .lt)  -- 105 → 96
+#guard D (Pr [X "3" 2, X "5" 3, X "7" 3] 2 .Up) == ("1.3e2", .gt)
+#guard D (Pr [X "-3" 2, X "5" 3, X "-7" 3] 4) == ("104.0", .lt)
+#guard D (Pr [X "-3" 2, X "-5" 3, X "-7" 3] 4) == ("-104.0", .gt)
+#guard D (Pr [X "-3" 2, X "-5" 3, X "-7" 3] 4 .Floor) == ("-1.1e2", .lt)
+#guard D (Pr [X "0.5" 1, X "0.5" 1, X "0.5" 1, X "0.5" 1] 1) == ("0.06", .eq)
+#guard D (Pr ((List.range 10).map fun i => P i) 1) == ("4.0e13", .eq)
+#guard D (Pr ((List.range 100).map fun i => P (-i)) 1) == ("8.0e-1491", .eq)
+#guard D (Pr [P 1000000000, P (-999999999)] 1) == ("2.0", .eq)
+#guard D (Pr [P 1000000000, X "3" 2, P (-1000000000)] 2) == ("3.0", .eq)
 -- `(1 − 2^−54)² = 1 − 2^−53 + 2^−108`, just above the `53`-bit float `1 − 2^−53`
-#guard Pr [F "1/3" 53, F "3" 2, F "1/3" 53, F "3" 2] 53
-  == (F "9007199254740991/9007199254740992" 53, .lt)
-#guard Pr [F "1/3" 53, F "3" 2, F "1/3" 53, F "3" 2] 53 .Ceiling
-  == (F "18014398509481983/18014398509481984" 53, .gt)
+#guard D (Pr [X "0.3333333333333333" 53, X "3" 2, X "0.3333333333333333" 53, X "3" 2] 53) == ("0.99\
+  99999999999999", .lt)
+#guard D (Pr [X "0.3333333333333333" 53, X "3" 2, X "0.3333333333333333" 53, X "3" 2] 53 .Ceiling)
+  == ("1.0", .gt)
 -- `10!` from the factors `1, …, 10`
-#guard Pr ((List.range 10).map fun i => F (toString (i + 1)) 4) 22 == (F "3628800" 22, .eq)
-#guard Pr ((List.range 10).map fun i => F (toString (i + 1)) 4) 10 == (F "3629056" 10, .gt)
+#guard D (Pr ((List.range 10).map fun i => F (toString (i + 1)) 4) 22) == ("3.6288e6", .eq)
+#guard D (Pr ((List.range 10).map fun i => F (toString (i + 1)) 4) 10) == ("3.63e6", .gt)
 
 /-! ## Agreement with a fold of exact multiplications -/
 
 private def samples : List (List AzFloat) :=
-  [[F "1/3" 53, F "7/5" 10, F "-11/13" 20],
-   [F "1/3" 7, F "1/3" 7, F "1/3" 7, F "1/3" 7, F "1/3" 7],
-   [F "123456789/1000" 40, F "-1/1000" 30, F "98765" 17, F "2/7" 64],
+  [[X "0.3333333333333333" 53, X "1.4" 10, X "-0.846154" 20],
+   [X "0.332" 7, X "0.332" 7, X "0.332" 7, X "0.332" 7, X "0.332" 7],
+   [X "123456.789" 40, X "-0.001" 30, X "98765" 17, X "0.28571428571428571428" 64],
    (List.range 20).map fun i => F (toString (2 * i + 3) ++ "/" ++ toString (i + 2)) (i + 1),
-   [F "-3/2" 2, P 100, F "3/2" 2, P (-100), F "-5" 3]]
+   [X "-1.5" 2, P 100, X "1.5" 2, P (-100), X "-5" 3]]
 
 #guard samples.all fun xs =>
   [1, 2, 3, 7, 24, 53, 100].all fun p =>

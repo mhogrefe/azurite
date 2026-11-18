@@ -13,7 +13,9 @@ import Azurite.AzFloat.Ln
 import Azurite.AzFloat.LnGamma
 import Azurite.AzFloat.Mul
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.ToString
 
 /-!
 # Tests for `Γ` and `1/Γ`
@@ -32,7 +34,11 @@ import Azurite.AzRat.Parse
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def G (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := gammaPrecRound x p m
 private def R (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) :=
   reciprocalGammaPrecRound x p m
@@ -41,28 +47,28 @@ private def ninf : AzFloat := infinity false
 private def modes : List RoundingMode := [.Nearest, .Floor, .Ceiling, .Down, .Up]
 
 -- special values of `Γ`
-#guard G nan 53 == (nan, .eq)
-#guard G pinf 53 == (pinf, .eq)
-#guard G ninf 53 == (nan, .eq)
-#guard G zero 53 == (pinf, .eq)
-#guard G zero 0 == (pinf, .eq)
-#guard G (F "-1" 53) 53 == (nan, .eq)
-#guard G (F "-2" 53) 53 == (nan, .eq)
-#guard G (F "-1000000" 53) 53 == (nan, .eq)
-#guard G ((F "-3" 53) <<< AzInt.ofInt 1000) 53 == (nan, .eq)
-#guard G (F "3" 53) 0 == (nan, .eq)
-#guard G (F "1/2" 53) 0 == (nan, .eq)
+#guard D (G nan 53) == ("NaN", .eq)
+#guard D (G pinf 53) == ("Infinity", .eq)
+#guard D (G ninf 53) == ("NaN", .eq)
+#guard D (G zero 53) == ("Infinity", .eq)
+#guard D (G zero 0) == ("Infinity", .eq)
+#guard D (G (X "-1" 53) 53) == ("NaN", .eq)
+#guard D (G (X "-2" 53) 53) == ("NaN", .eq)
+#guard D (G (X "-1000000" 53) 53) == ("NaN", .eq)
+#guard D (G ((X "-3" 53) <<< AzInt.ofInt 1000) 53) == ("NaN", .eq)
+#guard D (G (X "3" 53) 0) == ("NaN", .eq)
+#guard D (G (X "0.5" 53) 0) == ("NaN", .eq)
 
 -- special values of `1/Γ`
-#guard R nan 53 == (nan, .eq)
-#guard R pinf 53 == (zero, .eq)
-#guard R ninf 53 == (nan, .eq)
-#guard R zero 53 == (zero, .eq)
-#guard R zero 0 == (zero, .eq)
-#guard R (F "-1" 53) 53 == (zero, .eq)
-#guard R (F "-7" 53) 0 == (zero, .eq)
-#guard R ((F "-3" 53) <<< AzInt.ofInt 1000) 53 == (zero, .eq)
-#guard R (F "3" 53) 0 == (nan, .eq)
+#guard D (R nan 53) == ("NaN", .eq)
+#guard D (R pinf 53) == ("0.0", .eq)
+#guard D (R ninf 53) == ("NaN", .eq)
+#guard D (R zero 53) == ("0.0", .eq)
+#guard D (R zero 0) == ("0.0", .eq)
+#guard D (R (X "-1" 53) 53) == ("0.0", .eq)
+#guard D (R (X "-7" 53) 0) == ("0.0", .eq)
+#guard D (R ((X "-3" 53) <<< AzInt.ofInt 1000) 53) == ("0.0", .eq)
+#guard D (R (X "3" 53) 0) == ("NaN", .eq)
 
 -- positive integers
 private def fact (n : Nat) : AzFloat :=
@@ -70,15 +76,15 @@ private def fact (n : Nat) : AzFloat :=
 private def intOk (n p : Nat) (m : RoundingMode) : Bool :=
   G (F (toString n) 64) p m == setPrecRound (fact (n - 1)) p m
     && R (F (toString n) 64) p m == divPrecRound one (fact (n - 1)) p m
-#guard G (F "1" 53) 53 == (F "1" 53, .eq)
-#guard G (F "2" 53) 1 == (F "1" 1, .eq)
-#guard G (F "5" 53) 53 == (F "24" 53, .eq)
-#guard (G (F "23" 53) 53).2 == .eq
-#guard (G (F "24" 53) 53).2 != .eq
-#guard (G (F "30" 53) 200).2 == .eq
-#guard R (F "1" 53) 53 == (F "1" 53, .eq)
-#guard R (F "3" 53) 53 == (F "1/2" 53, .eq)
-#guard (R (F "4" 53) 53).2 != .eq
+#guard D (G (X "1" 53) 53) == ("1.0", .eq)
+#guard D (G (X "2" 53) 1) == ("1.0", .eq)
+#guard D (G (X "5" 53) 53) == ("24.0", .eq)
+#guard (G (X "23" 53) 53).2 == .eq
+#guard (G (X "24" 53) 53).2 != .eq
+#guard (G (X "30" 53) 200).2 == .eq
+#guard D (R (X "1" 53) 53) == ("1.0", .eq)
+#guard D (R (X "3" 53) 53) == ("0.5", .eq)
+#guard (R (X "4" 53) 53).2 != .eq
 #guard modes.all fun m => [1, 2, 3, 4, 5, 10, 19, 23, 24, 30, 60, 118].all fun n => intOk n 53 m
 -- beyond `p + 65` the general path must agree with the exact factorial
 #guard modes.all fun m => [119, 120, 171, 300].all fun n => intOk n 53 m
@@ -89,34 +95,32 @@ private def intOk (n p : Nat) (m : RoundingMode) : Bool :=
 private def between (r : AzFloat × Ordering) (lo hi : String) : Bool :=
   lt (F lo 200) r.1 && lt r.1 (F hi 200)
 #guard modes.all fun m =>
-  between (G (F "1/2" 53) 53 m) "1772453850905515/1000000000000000"
+  between (G (X "0.5" 53) 53 m) "1772453850905515/1000000000000000"
     "1772453850905517/1000000000000000"
 #guard modes.all fun m =>
-  between (G (F "-1/2" 53) 53 m) "-3544907701811033/1000000000000000"
+  between (G (X "-0.5" 53) 53 m) "-3544907701811033/1000000000000000"
     "-3544907701811031/1000000000000000"
 #guard modes.all fun m =>
-  between (G (F "-3/2" 53) 53 m) "2363271801207354/1000000000000000"
+  between (G (X "-1.5" 53) 53 m) "2363271801207354/1000000000000000"
     "2363271801207356/1000000000000000"
 #guard modes.all fun m =>
-  between (G (F "-5/2" 53) 53 m) "-945308720482943/1000000000000000"
+  between (G (X "-2.5" 53) 53 m) "-945308720482943/1000000000000000"
     "-945308720482941/1000000000000000"
 #guard modes.all fun m =>
-  between (R (F "1/2" 53) 53 m) "564189583547755/1000000000000000"
+  between (R (X "0.5" 53) 53 m) "564189583547755/1000000000000000"
     "564189583547757/1000000000000000"
 #guard modes.all fun m =>
-  between (R (F "-1/2" 53) 53 m) "-282094791773879/1000000000000000"
+  between (R (X "-0.5" 53) 53 m) "-282094791773879/1000000000000000"
     "-282094791773877/1000000000000000"
-#guard between (G (F "3/2" 53) 53) "886226925452757/1000000000000000"
-  "886226925452759/1000000000000000"
-#guard between (G (F "1/4" 53) 53) "3625609908221907/1000000000000000"
-  "3625609908221909/1000000000000000"
+#guard toString (G (X "1.5" 53) 53).1 == "0.886226925452758"
+#guard toString (G (X "0.25" 53) 53).1 == "3.625609908221908"
 
 -- `a ≈ b` to `k` bits (relative)
 private def close (a b : AzFloat) (k : Int) : Bool :=
   le (subPrecRound a b 64 .Nearest).1.abs (b.abs <<< AzInt.ofInt (-k))
 
 -- `Γ(1/2)² = π`
-#guard close (mulPrecRound (G (F "1/2" 53) 200).1 (G (F "1/2" 53) 200).1 200 .Nearest).1
+#guard close (mulPrecRound (G (X "0.5" 53) 200).1 (G (X "0.5" 53) 200).1 200 .Nearest).1
   (piPrecRound 200 .Nearest).1 196
 
 -- the recurrence `Γ(x + 1) = x Γ(x)` at 200 bits
@@ -138,12 +142,15 @@ private def prodOk (x : AzFloat) (p : Nat) : Bool :=
   fun s => prodOk (F s 53) 53 && prodOk (F s 53) 150
 
 -- signs between the poles: `Γ < 0` on `(−1, 0)`, `> 0` on `(−2, −1)`, …
-#guard (G (F "-1/3" 53) 53).1.isNegative && (R (F "-1/3" 53) 53).1.isNegative
-#guard !(G (F "-4/3" 53) 53).1.isNegative && !(R (F "-4/3" 53) 53).1.isNegative
-#guard (G (F "-7/3" 53) 53).1.isNegative && (R (F "-7/3" 53) 53).1.isNegative
-#guard !(G (F "-10/3" 53) 53).1.isNegative
-#guard (G (F "-1000001/3" 53) 53).1.isNegative == false
-#guard (G (F "-1000004/3" 53) 53).1.isNegative == true
+#guard (G (X "-0.3333333333333333" 53) 53).1.isNegative && (R (X "-0.333333333333333\
+  3" 53) 53).1.isNegative
+#guard !(G (X "-1.3333333333333333" 53) 53).1.isNegative && !(R (X "-1.333333333333333\
+  3" 53) 53).1.isNegative
+#guard (G (X "-2.3333333333333335" 53) 53).1.isNegative && (R (X "-2.333333333333333\
+  5" 53) 53).1.isNegative
+#guard !(G (X "-3.3333333333333335" 53) 53).1.isNegative
+#guard (G (X "-333333.6666666667" 53) 53).1.isNegative == false
+#guard (G (X "-333334.6666666667" 53) 53).1.isNegative == true
 
 -- directed modes bracket the nearest value and are one ulp apart
 private def consistentOf (f : RoundingMode → AzFloat × Ordering) : Bool :=
@@ -154,16 +161,17 @@ private def consistentOf (f : RoundingMode → AzFloat × Ordering) : Bool :=
 private def consistent (x : AzFloat) (p : Nat) : Bool :=
   consistentOf (fun m => G x p m) && consistentOf (fun m => R x p m)
 #guard [1, 2, 24, 53, 64, 113, 200].all fun p =>
-  consistent (F "1/3" 53) p && consistent (F "-7/5" 53) p && consistent (F "123456/7" 53) p
-    && consistent (F "-123456/7" 53) p
+  consistent (X "0.3333333333333333" 53) p && consistent (X "-1.4" 53) p && consistent (X "17636.57\
+    1428571428" 53) p
+    && consistent (X "-17636.571428571428" 53) p
 
 -- next to the poles and next to `1`, `2`
-#guard consistent (F "-1267650600228229401496703205377/1267650600228229401496703205376" 110) 53
-#guard consistent (F "-2535301200456458802993406410751/1267650600228229401496703205376" 110) 53
-#guard consistent (F "1267650600228229401496703205377/1267650600228229401496703205376" 110) 53
-#guard consistent (F "2535301200456458802993406410751/1267650600228229401496703205376" 110) 53
-#guard between (G (F "-1125899906842625/1125899906842624" 60) 53) "1125899906842623"
-  "1125899906842625"
+#guard consistent (X "-1.000000000000000000000000000000789" 110) 53
+#guard consistent (X "-1.999999999999999999999999999999211" 110) 53
+#guard consistent (X "1.000000000000000000000000000000789" 110) 53
+#guard consistent (X "1.999999999999999999999999999999211" 110) 53
+#guard toString (G (X "-1.000000000000000888" 60) 53).1 ==
+  "1125899906842623.6"
 
 -- tiny arguments: `Γ(x) ≈ 1/x − γ`, `1/Γ(x) ≈ x + γ x²`
 private def tiny (s : String) (k : Int) : AzFloat := (F s 53) <<< AzInt.ofInt (-k)
@@ -186,15 +194,15 @@ private def lnOk (s : String) : Bool :=
   close (lnPrecRound (G x 64).1 64 .Nearest).1 L 50
     && close (lnPrecRound (R x 64).1 64 .Nearest).1 (-L) 50
 #guard ["7/3", "1000/3", "2000001/2", "123456789012/7", "1/1000000"].all lnOk
-#guard consistent (F "2000001/2" 53) 53 && consistent (F "-2000001/2" 53) 53
+#guard consistent (X "1000000.5" 53) 53 && consistent (X "-1000000.5" 53) 53
 
 -- the wrappers and the pieces
-#guard gamma (F "7/2" 53) == (G (F "7/2" 53) 53).1
-#guard reciprocalGamma (F "7/2" 53) == (R (F "7/2" 53) 53).1
-#guard gamma nan == nan
-#guard gammaSmallInt (F "5" 53) 10 && !gammaSmallInt (F "11" 53) 10
-#guard !gammaSmallInt (F "-5" 53) 10 && !gammaSmallInt (F "5/2" 53) 10
-#guard (gammaNearInt (F "-5/2" 53)).toInt == -2 && (gammaNearInt (F "-11/4" 53)).toInt == -3
-#guard (gammaSinEncl (F "-1/2" 53) 96 80).map (·.1) == some true
-#guard (gammaSinEncl (F "-3/2" 53) 96 80).map (·.1) == some false
-#guard (gammaSinEncl (F "-2" 53) 96 80).isNone
+#guard gamma (X "3.5" 53) == (G (X "3.5" 53) 53).1
+#guard reciprocalGamma (X "3.5" 53) == (R (X "3.5" 53) 53).1
+#guard toString (gamma nan) == "NaN"
+#guard gammaSmallInt (X "5" 53) 10 && !gammaSmallInt (X "11" 53) 10
+#guard !gammaSmallInt (X "-5" 53) 10 && !gammaSmallInt (X "2.5" 53) 10
+#guard (gammaNearInt (X "-2.5" 53)).toInt == -2 && (gammaNearInt (X "-2.75" 53)).toInt == -3
+#guard (gammaSinEncl (X "-0.5" 53) 96 80).map (·.1) == some true
+#guard (gammaSinEncl (X "-1.5" 53) 96 80).map (·.1) == some false
+#guard (gammaSinEncl (X "-2" 53) 96 80).isNone

@@ -25,35 +25,33 @@ open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
-#guard ln2PrecRound 1 .Nearest == (F "1/2" 1, .lt)
-#guard ln2PrecRound 1 .Ceiling == (F "1" 1, .gt)
-#guard ln2PrecRound 2 .Nearest == (F "3/4" 2, .gt)
-#guard ln2PrecRound 2 .Floor == (F "1/2" 2, .lt)
-#guard ln2PrecRound 3 .Nearest == (F "3/4" 3, .gt)
-#guard ln2PrecRound 3 .Floor == (F "5/8" 3, .lt)
-#guard ln2PrecRound 53 .Nearest == (F "6243314768165359/9007199254740992" 53, .lt)
-#guard ln2PrecRound 53 .Floor == (F "6243314768165359/9007199254740992" 53, .lt)
-#guard ln2PrecRound 53 .Ceiling == (F "6243314768165360/9007199254740992" 53, .gt)
-#guard ln2PrecRound 100 .Nearest
-  == (F "878668439483319573618263538048/1267650600228229401496703205376" 100, .lt)
-#guard ln2PrecRound 100 .Up
-  == (F "878668439483319573618263538049/1267650600228229401496703205376" 100, .gt)
+#guard D (ln2PrecRound 1 .Nearest) == ("0.5", .lt)
+#guard D (ln2PrecRound 1 .Ceiling) == ("1.0", .gt)
+#guard D (ln2PrecRound 2 .Nearest) == ("0.8", .gt)
+#guard D (ln2PrecRound 2 .Floor) == ("0.5", .lt)
+#guard D (ln2PrecRound 3 .Nearest) == ("0.8", .gt)
+#guard D (ln2PrecRound 3 .Floor) == ("0.6", .lt)
+#guard D (ln2PrecRound 53 .Nearest) == ("0.6931471805599453", .lt)
+#guard D (ln2PrecRound 53 .Floor) == ("0.6931471805599453", .lt)
+#guard D (ln2PrecRound 53 .Ceiling) == ("0.6931471805599454", .gt)
+#guard D (ln2PrecRound 100 .Nearest) == ("0.693147180559945309417232121458", .lt)
+#guard D (ln2PrecRound 100 .Up) == ("0.693147180559945309417232121459", .gt)
 #guard toString (ln2 53) == "0.6931471805599453"
 
 /-! ## `log₂ e = 1/ln 2 = 1.4426950408889634073992468100189213742664595415298…`
 
 `log₂ e · 2^52 = 6497320848556798.0916…`, `log₂ e · 2^99 = 914416617264592211221101407494.5696…`. -/
 
-#guard log2EPrecRound 1 .Nearest == (F "1" 1, .lt)
-#guard log2EPrecRound 1 .Ceiling == (F "2" 1, .gt)
-#guard log2EPrecRound 2 .Nearest == (F "3/2" 2, .gt)
-#guard log2EPrecRound 3 .Nearest == (F "3/2" 3, .gt)
-#guard log2EPrecRound 3 .Floor == (F "5/4" 3, .lt)
-#guard log2EPrecRound 53 .Nearest == (F "6497320848556798/4503599627370496" 53, .lt)
-#guard log2EPrecRound 53 .Ceiling == (F "6497320848556799/4503599627370496" 53, .gt)
-#guard log2EPrecRound 100 .Nearest
-  == (F "914416617264592211221101407495/633825300114114700748351602688" 100, .gt)
-#guard log2EPrecRound 100 .Floor
-  == (F "914416617264592211221101407494/633825300114114700748351602688" 100, .lt)
+#guard D (log2EPrecRound 1 .Nearest) == ("1.0", .lt)
+#guard D (log2EPrecRound 1 .Ceiling) == ("2.0", .gt)
+#guard D (log2EPrecRound 2 .Nearest) == ("1.5", .gt)
+#guard D (log2EPrecRound 3 .Nearest) == ("1.5", .gt)
+#guard D (log2EPrecRound 3 .Floor) == ("1.2", .lt)
+#guard D (log2EPrecRound 53 .Nearest) == ("1.4426950408889634", .lt)
+#guard D (log2EPrecRound 53 .Ceiling) == ("1.4426950408889636", .gt)
+#guard D (log2EPrecRound 100 .Nearest) == ("1.442695040888963407359924681003", .gt)
+#guard D (log2EPrecRound 100 .Floor) == ("1.442695040888963407359924681001", .lt)
 #guard toString (log2E 53) == "1.4426950408889634"

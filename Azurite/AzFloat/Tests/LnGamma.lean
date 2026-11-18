@@ -10,7 +10,9 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.LnGamma
 import Azurite.AzFloat.Ln
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.ToString
 
 /-!
 # Tests for `ln Γ`
@@ -28,24 +30,28 @@ import Azurite.AzRat.Parse
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def G (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := lnGammaPrecRound x p m
 private def pinf : AzFloat := infinity true
 private def ninf : AzFloat := infinity false
 
 -- special values
-#guard G nan 53 == (nan, .eq)
-#guard G pinf 53 == (pinf, .eq)
-#guard G ninf 53 == (nan, .eq)
-#guard G zero 53 == (pinf, .eq)
-#guard G zero 0 == (pinf, .eq)
-#guard G (F "-1/2" 53) 53 == (nan, .eq)
-#guard G (F "-3" 53) 53 == (nan, .eq)
-#guard G (F "3" 53) 0 == (nan, .eq)
-#guard G (F "1" 53) 53 == (zero, .eq)
-#guard G (F "2" 53) 53 == (zero, .eq)
-#guard G (F "1" 53) 0 == (zero, .eq)
-#guard G (F "2" 7) 200 .Ceiling == (zero, .eq)
+#guard D (G nan 53) == ("NaN", .eq)
+#guard D (G pinf 53) == ("Infinity", .eq)
+#guard D (G ninf 53) == ("NaN", .eq)
+#guard D (G zero 53) == ("Infinity", .eq)
+#guard D (G zero 0) == ("Infinity", .eq)
+#guard D (G (X "-0.5" 53) 53) == ("NaN", .eq)
+#guard D (G (X "-3" 53) 53) == ("NaN", .eq)
+#guard D (G (X "3" 53) 0) == ("NaN", .eq)
+#guard D (G (X "1" 53) 53) == ("0.0", .eq)
+#guard D (G (X "2" 53) 53) == ("0.0", .eq)
+#guard D (G (X "1" 53) 0) == ("0.0", .eq)
+#guard D (G (X "2" 7) 200 .Ceiling) == ("0.0", .eq)
 
 -- integers: `ln Γ(n) = ln (n − 1)!`
 private def fact (n : Nat) : Nat := (List.range n).foldl (fun a i => a * (i + 1)) 1
@@ -59,37 +65,34 @@ private def intOk (n p : Nat) (m : RoundingMode) : Bool :=
 #guard intOk 40 700 .Nearest
 
 -- dyadic non-integers, 53 bits
-#guard G (F "1/2" 53) 53 == (F "5155405087351229/9007199254740992" 53, .lt)
-#guard G (F "1/2" 53) 53 .Floor == (F "5155405087351229/9007199254740992" 53, .lt)
-#guard G (F "1/2" 53) 53 .Ceiling == (F "2577702543675615/4503599627370496" 53, .gt)
-#guard G (F "3/2" 53) 53 == (F "-8703277446513041/72057594037927936" 53, .gt)
-#guard G (F "3/2" 53) 53 .Floor == (F "-4351638723256521/36028797018963968" 53, .lt)
-#guard G (F "3/2" 53) 53 .Ceiling == (F "-8703277446513041/72057594037927936" 53, .gt)
-#guard G (F "5/4" 53) 53 == (F "-7081232094244673/72057594037927936" 53, .gt)
-#guard G (F "5/4" 53) 53 .Floor == (F "-3540616047122337/36028797018963968" 53, .lt)
-#guard G (F "7/2" 53) 53 == (F "2704352134006043/2251799813685248" 53, .gt)
-#guard G (F "7/2" 53) 53 .Floor == (F "5408704268012085/4503599627370496" 53, .lt)
-#guard G (F "17/8" 53) 53 == (F "8324071866529019/144115188075855872" 53, .gt)
-#guard G (F "17/8" 53) 53 .Floor == (F "4162035933264509/72057594037927936" 53, .lt)
-#guard G (F "33/32" 53) 53 == (F "-4971044446163549/288230376151711744" 53, .gt)
-#guard G (F "33/32" 53) 53 .Floor == (F "-2485522223081775/144115188075855872" 53, .lt)
-#guard G (F "1/1024" 53) 53 == (F "7803509687568785/1125899906842624" 53, .lt)
-#guard G (F "1/1024" 53) 53 .Ceiling == (F "3901754843784393/562949953421312" 53, .gt)
+#guard D (G (X "0.5" 53) 53) == ("0.5723649429247001", .lt)
+#guard D (G (X "0.5" 53) 53 .Floor) == ("0.5723649429247001", .lt)
+#guard D (G (X "0.5" 53) 53 .Ceiling) == ("0.5723649429247002", .gt)
+#guard D (G (X "1.5" 53) 53) == ("-0.12078223763524522", .gt)
+#guard D (G (X "1.5" 53) 53 .Floor) == ("-0.12078223763524523", .lt)
+#guard D (G (X "1.5" 53) 53 .Ceiling) == ("-0.12078223763524522", .gt)
+#guard D (G (X "1.25" 53) 53) == ("-0.09827183642181316", .gt)
+#guard D (G (X "1.25" 53) 53 .Floor) == ("-0.09827183642181317", .lt)
+#guard D (G (X "3.5" 53) 53) == ("1.2009736023470743", .gt)
+#guard D (G (X "3.5" 53) 53 .Floor) == ("1.200973602347074", .lt)
+#guard D (G (X "2.125" 53) 53) == ("0.057759851530343874", .gt)
+#guard D (G (X "2.125" 53) 53 .Floor) == ("0.05775985153034387", .lt)
+#guard D (G (X "1.03125" 53) 53) == ("-0.017246775001768067", .gt)
+#guard D (G (X "1.03125" 53) 53 .Floor) == ("-0.01724677500176807", .lt)
+#guard D (G (X "0.0009765625" 53) 53) == ("6.9309089024194614", .lt)
+#guard D (G (X "0.0009765625" 53) 53 .Ceiling) == ("6.930908902419462", .gt)
 
 -- 200 bits
-#guard (G (F "1/2" 53) 200).1 == F ("459877500992913075742138371806560050261594038695173574630285"
-  ++ "/803469022129495137770981046170581301261101496891396417650688") 200
-#guard (G (F "3/2" 53) 200).1
-  == F ("-776358290907222272247917629937708823240336864634974405908929"
-    ++ "/6427752177035961102167848369364650410088811975131171341205504") 200
-#guard (G (F "7/2" 53) 200).1 == F ("964945085881140874069583013672322846004554124084804403385759"
-  ++ "/803469022129495137770981046170581301261101496891396417650688") 200
-#guard (G (F "33/32" 53) 200).1
-  == F ("-886863964515712697087372162166677379528168666171518847895483"
-    ++ "/51422017416287688817342786954917203280710495801049370729644032") 200
-#guard (G (F "1/1024" 53) 200).1
-  == F ("696096324786947185169050059313710390147128026557771689489583"
-    ++ "/100433627766186892221372630771322662657637687111424552206336") 200
+#guard toString ((G (X "0.5" 53) 200).1)
+  == "0.572364942924700087071713675676529355823647406457655785756812"
+#guard toString ((G (X "1.5" 53) 200).1)
+  == "-0.12078223763524522234551844578164721225185272790259946836386844"
+#guard toString ((G (X "3.5" 53) 200).1)
+  == "1.200973602347074224816021881450712995770238915468157197042114"
+#guard toString ((G (X "1.03125" 53) 200).1)
+  == "-0.01724677500176806740289126202224623179736644650510638053507814"
+#guard toString ((G (X "0.0009765625" 53) 200).1)
+  == "6.930908902419461889540619064660080535727272548188649964932003"
 
 -- directed modes bracket the nearest value and are one ulp apart
 private def consistent (x : AzFloat) (p : Nat) : Bool :=
@@ -98,7 +101,8 @@ private def consistent (x : AzFloat) (p : Nat) : Bool :=
   let n := G x p
   f.2 == .lt && c.2 == .gt && le f.1 n.1 && le n.1 c.1 && lt f.1 c.1
 #guard [24, 53, 64, 100, 113, 200, 400].all fun p =>
-  consistent (F "1/3" 53) p && consistent (F "7/5" 53) p && consistent (F "123456/7" 53) p
+  consistent (X "0.3333333333333333" 53) p && consistent (X "1.4" 53) p && consistent (X "17636.571\
+    428571428" 53) p
 
 -- next to the zeros: `ln Γ(1 + ε) ≈ −γ ε`, `ln Γ(2 + ε) ≈ (1 − γ) ε`; the signs, and the size
 private def near (s : String) : AzFloat := F s 200
@@ -110,25 +114,25 @@ private def near (s : String) : AzFloat := F s 200
 #guard consistent (near "2535301200456458802993406410751/1267650600228229401496703205376") 53
 #guard lnGammaCancelBits (near "1267650600228229401496703205377/1267650600228229401496703205376")
   200 == 99
-#guard lnGammaCancelBits (F "3/2" 53) 53 == 0
-#guard lnGammaCancelBits (F "1000" 53) 53 == 0
+#guard lnGammaCancelBits (X "1.5" 53) 53 == 0
+#guard lnGammaCancelBits (X "1000" 53) 53 == 0
 
 -- tiny and huge arguments: `ln Γ(x) ≈ −ln x` near `0`, `≈ x (ln x − 1)` far out
-#guard consistent ((F "1" 53) <<< AzInt.ofInt (-200)) 53
-#guard lt (F "138" 53) (G ((F "1" 53) <<< AzInt.ofInt (-200)) 53).1
-#guard lt (G ((F "1" 53) <<< AzInt.ofInt (-200)) 53).1 (F "139" 53)
-#guard consistent ((F "1" 53) <<< AzInt.ofInt (-100000)) 53
-#guard consistent ((F "3" 53) <<< AzInt.ofInt 200) 53
-#guard consistent ((F "3" 53) <<< AzInt.ofInt 100000) 53
-#guard lnGamma (F "7/2" 53) == (G (F "7/2" 53) 53).1
-#guard lnGamma nan == nan
+#guard consistent ((X "1" 53) <<< AzInt.ofInt (-200)) 53
+#guard toString (G ((X "1" 53) <<< AzInt.ofInt (-200)) 53).1 == "138.62943611198907"
+#guard lt (G ((X "1" 53) <<< AzInt.ofInt (-200)) 53).1 (X "139" 53)
+#guard consistent ((X "1" 53) <<< AzInt.ofInt (-100000)) 53
+#guard consistent ((X "3" 53) <<< AzInt.ofInt 200) 53
+#guard consistent ((X "3" 53) <<< AzInt.ofInt 100000) 53
+#guard lnGamma (X "3.5" 53) == (G (X "3.5" 53) 53).1
+#guard toString (lnGamma nan) == "NaN"
 
 -- the pieces
 #guard lnGammaShiftExp 85 == 5
-#guard lnGammaShift (F "3" 53) (AzInt.ofInt 2) 5 == 30
-#guard lnGammaShift (F "1/3" 53) (AzInt.ofInt (-1)) 5 == 32
-#guard lnGammaShift (F "1000" 53) (AzInt.ofInt 10) 5 == 0
-#guard lnGammaShift (F "1/2" 53) (AzInt.ofInt 100) 5 == 1
+#guard lnGammaShift (X "3" 53) (AzInt.ofInt 2) 5 == 30
+#guard lnGammaShift (X "0.3333333333333333" 53) (AzInt.ofInt (-1)) 5 == 32
+#guard lnGammaShift (X "1000" 53) (AzInt.ofInt 10) 5 == 0
+#guard lnGammaShift (X "0.5" 53) (AzInt.ofInt 100) 5 == 1
 #guard lnGammaTerms 85 6 == 16
 #guard lnGammaTerms 2032 10 == 278
 #guard lnGammaTerms 85 200 == 4

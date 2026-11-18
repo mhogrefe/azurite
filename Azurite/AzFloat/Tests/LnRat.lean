@@ -12,6 +12,7 @@ import Azurite.AzFloat.Ln2
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
 
 /-!
@@ -24,22 +25,25 @@ import Azurite.AzRat.Parse
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 
 -- special values
-#guard lnRat (Q "0") 53 == infinity false
-#guard lnRat (Q "-1") 53 == nan
-#guard lnRat (Q "-1/3") 53 == nan
-#guard lnRat (Q "1") 53 == zero
-#guard lnRatPrecRound (Q "1") 53 .Nearest == (zero, .eq)
+#guard toString (lnRat (Q "0") 53) == "-Infinity"
+#guard toString (lnRat (Q "-1") 53) == "NaN"
+#guard toString (lnRat (Q "-1/3") 53) == "NaN"
+#guard toString (lnRat (Q "1") 53) == "0.0"
+#guard D (lnRatPrecRound (Q "1") 53 .Nearest) == ("0.0", .eq)
 
 -- agreement with the float logarithm and the constant `ln 2`
 #guard lnRat (Q "2") 53 == ln2 53
 #guard lnRat (Q "2") 200 == ln2 200
-#guard lnRat (Q "10") 53 == ln (F "10" 53)
-#guard lnRat (Q "3/2") 53 == ln (F "3/2" 53)
-#guard lnRat (Q "1/2") 53 == ln (F "1/2" 53)
-#guard lnRatPrecRound (Q "10") 53 .Floor == lnPrecRound (F "10" 53) 53 .Floor
+#guard lnRat (Q "10") 53 == ln (X "10" 53)
+#guard lnRat (Q "3/2") 53 == ln (X "1.5" 53)
+#guard lnRat (Q "1/2") 53 == ln (X "0.5" 53)
+#guard lnRatPrecRound (Q "10") 53 .Floor == lnPrecRound (X "10" 53) 53 .Floor
 
 -- known values at 53 bits
 #guard toString (lnRat (Q "1/3") 53) == "-1.0986122886681098"

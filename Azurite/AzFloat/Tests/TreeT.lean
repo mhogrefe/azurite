@@ -9,7 +9,9 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.TreeT
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.ToString
 
 /-!
 # Tests for the tree function: `T₀(x) = −W₀(−x)` and `T₋₁(x) = −W₋₁(−x)`
@@ -25,100 +27,102 @@ non-dyadic ones; tiny and huge arguments.  The same for `T₋₁` on `(0, e⁻¹
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def T (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := treeT0PrecRound x p m
 private def TR (q : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   treeT0RatPrecRound (Q q) p m
 private def pinf : AzFloat := infinity true
 private def ninf : AzFloat := infinity false
 /-- The 53-bit float nearest `e⁻¹` (above it). -/
-private def nearBranch : AzFloat := F "828390857088487/2251799813685248" 53
+private def nearBranch : AzFloat := X "0.36787944117144233" 53
 /-- One ulp below `nearBranch`: in the domain. -/
-private def belowBranch : AzFloat := F "6627126856707895/18014398509481984" 53
+private def belowBranch : AzFloat := X "0.3678794411714423" 53
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard T nan 53 == (nan, .eq)
-#guard T pinf 53 == (nan, .eq)
-#guard T ninf 53 == (ninf, .eq)
-#guard T zero 53 == (zero, .eq)
-#guard T zero 0 == (zero, .eq)
-#guard T (F "1/4" 53) 0 == (nan, .eq)
-#guard T (F "1/2" 53) 53 == (nan, .eq)
-#guard T (F "1" 53) 53 == (nan, .eq)
-#guard T (F "3/8" 53) 53 == (nan, .eq)
-#guard T nearBranch 53 == (nan, .eq)
+#guard D (T nan 53) == ("NaN", .eq)
+#guard D (T pinf 53) == ("NaN", .eq)
+#guard D (T ninf 53) == ("-Infinity", .eq)
+#guard D (T zero 53) == ("0.0", .eq)
+#guard D (T zero 0) == ("0.0", .eq)
+#guard D (T (X "0.25" 53) 0) == ("NaN", .eq)
+#guard D (T (X "0.5" 53) 53) == ("NaN", .eq)
+#guard D (T (X "1" 53) 53) == ("NaN", .eq)
+#guard D (T (X "0.375" 53) 53) == ("NaN", .eq)
+#guard D (T nearBranch 53) == ("NaN", .eq)
 #guard (T belowBranch 53).1.isFinite
 #guard lt (T belowBranch 53).1 one
-#guard lt (F "255/256" 53) (T belowBranch 53).1
+#guard lt (X "0.99609375" 53) (T belowBranch 53).1
 
 -- 53 bits, three modes
-#guard T (F "1/4" 53) 53 == (F "6438399281118467/18014398509481984" 53, .lt)
-#guard T (F "1/4" 53) 53 .Floor == (F "6438399281118467/18014398509481984" 53, .lt)
-#guard T (F "1/4" 53) 53 .Ceiling == (F "1609599820279617/4503599627370496" 53, .gt)
-#guard T (F "1/8" 53) 53 == (F "5203327617395453/36028797018963968" 53, .lt)
-#guard T (F "1/8" 53) 53 .Floor == (F "5203327617395453/36028797018963968" 53, .lt)
-#guard T (F "1/8" 53) 53 .Ceiling == (F "2601663808697727/18014398509481984" 53, .gt)
-#guard T (F "23/64" 53) 53 == (F "224904622462065/281474976710656" 53, .lt)
-#guard T (F "23/64" 53) 53 .Floor == (F "224904622462065/281474976710656" 53, .lt)
-#guard T (F "23/64" 53) 53 .Ceiling == (F "7196947918786081/9007199254740992" 53, .gt)
-#guard T (F "1/1024" 53) 53 == (F "4508004127538731/4611686018427387904" 53, .lt)
-#guard T (F "1/1024" 53) 53 .Ceiling == (F "1127001031884683/1152921504606846976" 53, .gt)
-#guard T (F "-1" 53) 53 == (F "-5108372622710359/9007199254740992" 53, .gt)
-#guard T (F "-1" 53) 53 .Floor == (F "-638546577838795/1125899906842624" 53, .lt)
-#guard T (F "-1" 53) 53 .Ceiling == (F "-5108372622710359/9007199254740992" 53, .gt)
-#guard T (F "-3" 53) 53 == (F "-1182092327033255/1125899906842624" 53, .lt)
-#guard T (F "-3" 53) 53 .Floor == (F "-1182092327033255/1125899906842624" 53, .lt)
-#guard T (F "-3" 53) 53 .Ceiling == (F "-4728369308133019/4503599627370496" 53, .gt)
+#guard D (T (X "0.25" 53) 53) == ("0.3574029561813889", .lt)
+#guard D (T (X "0.25" 53) 53 .Floor) == ("0.3574029561813889", .lt)
+#guard D (T (X "0.25" 53) 53 .Ceiling) == ("0.35740295618138895", .gt)
+#guard D (T (X "0.125" 53) 53) == ("0.14442135313750973", .lt)
+#guard D (T (X "0.125" 53) 53 .Floor) == ("0.14442135313750973", .lt)
+#guard D (T (X "0.125" 53) 53 .Ceiling) == ("0.14442135313750976", .gt)
+#guard D (T (X "0.359375" 53) 53) == ("0.7990217286464407", .lt)
+#guard D (T (X "0.359375" 53) 53 .Floor) == ("0.7990217286464407", .lt)
+#guard D (T (X "0.359375" 53) 53 .Ceiling) == ("0.7990217286464408", .gt)
+#guard D (T (X "0.0009765625" 53) 53) == ("0.0009775175737302226", .lt)
+#guard D (T (X "0.0009765625" 53) 53 .Ceiling) == ("0.0009775175737302228", .gt)
+#guard D (T (X "-1" 53) 53) == ("-0.5671432904097838", .gt)
+#guard D (T (X "-1" 53) 53 .Floor) == ("-0.567143290409784", .lt)
+#guard D (T (X "-1" 53) 53 .Ceiling) == ("-0.5671432904097838", .gt)
+#guard D (T (X "-3" 53) 53) == ("-1.04990889496404", .lt)
+#guard D (T (X "-3" 53) 53 .Floor) == ("-1.04990889496404", .lt)
+#guard D (T (X "-3" 53) 53 .Ceiling) == ("-1.0499088949640398", .gt)
 
 -- 200 bits
-#guard (T (F "1/4" 53) 200).1 == F ("1148648814837005366403261257571596333520173057029165660978403"
-  ++ "/3213876088517980551083924184682325205044405987565585670602752") 200
-#guard (T (F "-1" 53) 200).1 == F ("-227841032476426663099079751600042627130329070727104284459813"
-  ++ "/401734511064747568885490523085290650630550748445698208825344") 200
-#guard (T (F "23/64" 53) 200).1
-  == F ("1283978413951549140248550874312079866357971327935468310189845"
-    ++ "/1606938044258990275541962092341162602522202993782792835301376") 200
+#guard toString (T (X "0.25" 53) 200).1 == "0.35740295618138890306881110405590475331659055507601204\
+  36276204"
+#guard toString (T (X "-1" 53) 200).1 == "-0.567143290409783872999968662210355549753815787186512508\
+  135131"
+#guard toString (T (X "0.359375" 53) 200).1 == "0.7990217286464407600909312445163833978062321210921\
+  44379993086"
 
 -- the relation with `W₀`, every mode
 private def viaW (x : AzFloat) (p : Nat) (m : RoundingMode) : Bool :=
   let r := lambertW0PrecRound (-x) p (-m)
   T x p m == (-r.1, r.2.swap)
 #guard [RoundingMode.Nearest, .Floor, .Ceiling, .Down, .Up].all fun m =>
-  viaW (F "1/3" 53) 80 m && viaW (F "-7/2" 53) 80 m && viaW (F "-1/1000" 53) 80 m
+  viaW (X "0.3333333333333333" 53) 80 m && viaW (X "-3.5" 53) 80 m && viaW (X "-0.001" 53) 80 m
 -- directed modes bracket the nearest value
-#guard le (T (F "1/3" 53) 100 .Floor).1 (T (F "1/3" 53) 100).1
-#guard le (T (F "1/3" 53) 100).1 (T (F "1/3" 53) 100 .Ceiling).1
-#guard T (F "1/3" 53) 100 .Down == T (F "1/3" 53) 100 .Floor
-#guard T (F "-5" 53) 100 .Down == T (F "-5" 53) 100 .Ceiling
-#guard T (F "-5" 53) 100 .Up == T (F "-5" 53) 100 .Floor
+#guard le (T (X "0.3333333333333333" 53) 100 .Floor).1 (T (X "0.3333333333333333" 53) 100).1
+#guard le (T (X "0.3333333333333333" 53) 100).1 (T (X "0.3333333333333333" 53) 100 .Ceiling).1
+#guard T (X "0.3333333333333333" 53) 100 .Down == T (X "0.3333333333333333" 53) 100 .Floor
+#guard T (X "-5" 53) 100 .Down == T (X "-5" 53) 100 .Ceiling
+#guard T (X "-5" 53) 100 .Up == T (X "-5" 53) 100 .Floor
 
 -- tiny and huge arguments: `T(x) ≈ x + x²` near `0`, `T(x) ≈ −ln(−x)` far out
-#guard T ((F "1" 53) <<< AzInt.ofInt (-200)) 53 == ((F "1" 53) <<< AzInt.ofInt (-200), .lt)
-#guard T ((F "-1" 53) <<< AzInt.ofInt (-200)) 53 == ((F "-1" 53) <<< AzInt.ofInt (-200), .lt)
-#guard (T ((F "1" 53) <<< AzInt.ofInt (-200)) 53 .Ceiling).2 == .gt
-#guard (T ((F "1" 53) <<< AzInt.ofInt (-(2 ^ 40))) 53 .Floor).1
-  == (F "1" 53) <<< AzInt.ofInt (-(2 ^ 40))
-#guard lt (T ((F "-1" 53) <<< AzInt.ofInt 200) 53).1 (F "-133" 53)
-#guard lt (F "-134" 53) (T ((F "-1" 53) <<< AzInt.ofInt 200) 53).1
+#guard D (T ((X "1" 53) <<< AzInt.ofInt (-200)) 53) == ("6.223015277861142e-61", .lt)
+#guard D (T ((X "-1" 53) <<< AzInt.ofInt (-200)) 53) == ("-6.223015277861142e-61", .lt)
+#guard (T ((X "1" 53) <<< AzInt.ofInt (-200)) 53 .Ceiling).2 == .gt
+#guard (T ((X "1" 53) <<< AzInt.ofInt (-(2 ^ 40))) 53 .Floor).1
+  == (X "1" 53) <<< AzInt.ofInt (-(2 ^ 40))
+#guard lt (T ((X "-1" 53) <<< AzInt.ofInt 200) 53).1 (X "-133" 53)
+#guard lt (X "-134" 53) (T ((X "-1" 53) <<< AzInt.ofInt 200) 53).1
 
 -- the rational version
-#guard TR "0" 53 == (zero, .eq)
-#guard TR "0" 0 == (zero, .eq)
-#guard TR "1/4" 0 == (nan, .eq)
-#guard TR "1/2" 53 == (nan, .eq)
-#guard TR "3679/10000" 53 == (nan, .eq)
+#guard D (TR "0" 53) == ("0.0", .eq)
+#guard D (TR "0" 0) == ("0.0", .eq)
+#guard D (TR "1/4" 0) == ("NaN", .eq)
+#guard D (TR "1/2" 53) == ("NaN", .eq)
+#guard D (TR "3679/10000" 53) == ("NaN", .eq)
 #guard (TR "3678/10000" 53).1.isFinite
-#guard TR "1/4" 53 == T (F "1/4" 53) 53
-#guard TR "1/4" 53 .Ceiling == T (F "1/4" 53) 53 .Ceiling
-#guard TR "-3" 53 .Floor == T (F "-3" 53) 53 .Floor
-#guard TR "23/64" 200 == T (F "23/64" 53) 200
+#guard TR "1/4" 53 == T (X "0.25" 53) 53
+#guard TR "1/4" 53 .Ceiling == T (X "0.25" 53) 53 .Ceiling
+#guard TR "-3" 53 .Floor == T (X "-3" 53) 53 .Floor
+#guard TR "23/64" 200 == T (X "0.359375" 53) 200
 #guard (TR "1/3" 53 .Floor).2 == .lt
 #guard (TR "1/3" 53 .Ceiling).2 == .gt
 #guard le (TR "1/3" 100 .Floor).1 (TR "1/3" 100).1
-#guard lt (T (F "1/3" 53) 100).1 (TR "1/3" 100 .Ceiling).1
-#guard treeT0Rat (Q "1/4") 53 == (T (F "1/4" 53) 53).1
-#guard treeT0Float (F "1/4" 53) == (T (F "1/4" 53) 53).1
-#guard treeT0Float nan == nan
+#guard lt (T (X "0.3333333333333333" 53) 100).1 (TR "1/3" 100 .Ceiling).1
+#guard treeT0Rat (Q "1/4") 53 == (T (X "0.25" 53) 53).1
+#guard treeT0Float (X "0.25" 53) == (T (X "0.25" 53) 53).1
+#guard toString (treeT0Float nan) == "NaN"
 
 /-! ### The branch `T₋₁` -/
 
@@ -127,65 +131,63 @@ private def TmR (q : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   treeTm1RatPrecRound (Q q) p m
 
 -- special values
-#guard Tm nan 53 == (nan, .eq)
-#guard Tm pinf 53 == (nan, .eq)
-#guard Tm ninf 53 == (nan, .eq)
-#guard Tm zero 53 == (pinf, .eq)
-#guard Tm zero 0 == (pinf, .eq)
-#guard Tm (F "1/4" 53) 0 == (nan, .eq)
-#guard Tm (F "-1/4" 53) 53 == (nan, .eq)
-#guard Tm (F "-3" 53) 53 == (nan, .eq)
-#guard Tm (F "1/2" 53) 53 == (nan, .eq)
-#guard Tm nearBranch 53 == (nan, .eq)
+#guard D (Tm nan 53) == ("NaN", .eq)
+#guard D (Tm pinf 53) == ("NaN", .eq)
+#guard D (Tm ninf 53) == ("NaN", .eq)
+#guard D (Tm zero 53) == ("Infinity", .eq)
+#guard D (Tm zero 0) == ("Infinity", .eq)
+#guard D (Tm (X "0.25" 53) 0) == ("NaN", .eq)
+#guard D (Tm (X "-0.25" 53) 53) == ("NaN", .eq)
+#guard D (Tm (X "-3" 53) 53) == ("NaN", .eq)
+#guard D (Tm (X "0.5" 53) 53) == ("NaN", .eq)
+#guard D (Tm nearBranch 53) == ("NaN", .eq)
 #guard lt one (Tm belowBranch 53).1
-#guard lt (Tm belowBranch 53).1 (F "257/256" 53)
+#guard lt (Tm belowBranch 53).1 (X "1.00390625" 53)
 
 -- 53 bits, three modes
-#guard Tm (F "1/4" 53) 53 == (F "4848783344313553/2251799813685248" 53, .gt)
-#guard Tm (F "1/4" 53) 53 .Floor == (F "303048959019597/140737488355328" 53, .lt)
-#guard Tm (F "1/4" 53) 53 .Ceiling == (F "4848783344313553/2251799813685248" 53, .gt)
-#guard Tm (F "1/8" 53) 53 == (F "3672331608414589/1125899906842624" 53, .lt)
-#guard Tm (F "1/8" 53) 53 .Floor == (F "3672331608414589/1125899906842624" 53, .lt)
-#guard Tm (F "1/8" 53) 53 .Ceiling == (F "7344663216829179/2251799813685248" 53, .gt)
-#guard Tm (F "23/64" 53) 53 == (F "5549097812391523/4503599627370496" 53, .lt)
-#guard Tm (F "23/64" 53) 53 .Ceiling == (F "1387274453097881/1125899906842624" 53, .gt)
-#guard Tm (F "1/1024" 53) 53 == (F "321748405352517/35184372088832" 53, .gt)
-#guard Tm (F "1/1024" 53) 53 .Floor == (F "5147974485640271/562949953421312" 53, .lt)
+#guard D (Tm (X "0.25" 53) 53) == ("2.15329236411035", .gt)
+#guard D (Tm (X "0.25" 53) 53 .Floor) == ("2.1532923641103494", .lt)
+#guard D (Tm (X "0.25" 53) 53 .Ceiling) == ("2.15329236411035", .gt)
+#guard D (Tm (X "0.125" 53) 53) == ("3.2616856845764888", .lt)
+#guard D (Tm (X "0.125" 53) 53 .Floor) == ("3.2616856845764888", .lt)
+#guard D (Tm (X "0.125" 53) 53 .Ceiling) == ("3.261685684576489", .gt)
+#guard D (Tm (X "0.359375" 53) 53) == ("1.2321472314428312", .lt)
+#guard D (Tm (X "0.359375" 53) 53 .Ceiling) == ("1.2321472314428314", .gt)
+#guard D (Tm (X "0.0009765625" 53) 53) == ("9.144639686625084", .gt)
+#guard D (Tm (X "0.0009765625" 53) 53 .Floor) == ("9.144639686625082", .lt)
 
 -- 200 bits
-#guard (Tm (F "1/4" 53) 200).1
-  == F ("432525927537662856011902604319053757720456710040947497833457"
-    ++ "/200867255532373784442745261542645325315275374222849104412672") 200
-#guard (Tm (F "1/1024" 53) 200).1
-  == F ("918429338342403556177845420307463407070447582150909422625657"
-    ++ "/100433627766186892221372630771322662657637687111424552206336") 200
+#guard toString (Tm (X "0.25" 53) 200).1 == "2.1532923641103496491690991500929813755362064853194776\
+  95884512"
+#guard toString (Tm (X "0.0009765625" 53) 200).1 == "9.14463968662508319248836861113583194930933690\
+  4039638212432"
 
 -- the relation with `W₋₁`, every mode; the two branches on either side of `1`
 private def viaWm (x : AzFloat) (p : Nat) (m : RoundingMode) : Bool :=
   let r := lambertWm1PrecRound (-x) p (-m)
   Tm x p m == (-r.1, r.2.swap)
 #guard [RoundingMode.Nearest, .Floor, .Ceiling, .Down, .Up].all fun m =>
-  viaWm (F "1/3" 53) 80 m && viaWm (F "1/1000" 53) 80 m
-#guard lt (T (F "1/3" 53) 80).1 one && lt one (Tm (F "1/3" 53) 80).1
-#guard Tm (F "1/5" 53) 100 .Down == Tm (F "1/5" 53) 100 .Floor
-#guard Tm (F "1/5" 53) 100 .Up == Tm (F "1/5" 53) 100 .Ceiling
+  viaWm (X "0.3333333333333333" 53) 80 m && viaWm (X "0.001" 53) 80 m
+#guard lt (T (X "0.3333333333333333" 53) 80).1 one && lt one (Tm (X "0.3333333333333333" 53) 80).1
+#guard Tm (X "0.2" 53) 100 .Down == Tm (X "0.2" 53) 100 .Floor
+#guard Tm (X "0.2" 53) 100 .Up == Tm (X "0.2" 53) 100 .Ceiling
 -- a tiny argument: `T₋₁(x) ≈ ln (1/x) + ln ln (1/x)`
-#guard lt (F "143" 53) (Tm ((F "1" 53) <<< AzInt.ofInt (-200)) 53).1
-#guard lt (Tm ((F "1" 53) <<< AzInt.ofInt (-200)) 53).1 (F "144" 53)
+#guard lt (X "143" 53) (Tm ((X "1" 53) <<< AzInt.ofInt (-200)) 53).1
+#guard lt (Tm ((X "1" 53) <<< AzInt.ofInt (-200)) 53).1 (X "144" 53)
 
 -- the rational version
-#guard TmR "0" 53 == (pinf, .eq)
-#guard TmR "0" 0 == (pinf, .eq)
-#guard TmR "1/4" 0 == (nan, .eq)
-#guard TmR "-1/4" 53 == (nan, .eq)
-#guard TmR "1/2" 53 == (nan, .eq)
-#guard TmR "3679/10000" 53 == (nan, .eq)
+#guard D (TmR "0" 53) == ("Infinity", .eq)
+#guard D (TmR "0" 0) == ("Infinity", .eq)
+#guard D (TmR "1/4" 0) == ("NaN", .eq)
+#guard D (TmR "-1/4" 53) == ("NaN", .eq)
+#guard D (TmR "1/2" 53) == ("NaN", .eq)
+#guard D (TmR "3679/10000" 53) == ("NaN", .eq)
 #guard lt one (TmR "3678/10000" 53).1
-#guard TmR "1/4" 53 == Tm (F "1/4" 53) 53
-#guard TmR "1/4" 53 .Floor == Tm (F "1/4" 53) 53 .Floor
-#guard TmR "1/1024" 200 == Tm (F "1/1024" 53) 200
+#guard TmR "1/4" 53 == Tm (X "0.25" 53) 53
+#guard TmR "1/4" 53 .Floor == Tm (X "0.25" 53) 53 .Floor
+#guard TmR "1/1024" 200 == Tm (X "0.0009765625" 53) 200
 #guard (TmR "1/3" 53 .Floor).2 == .lt
 #guard (TmR "1/3" 53 .Ceiling).2 == .gt
-#guard treeTm1Rat (Q "1/4") 53 == (Tm (F "1/4" 53) 53).1
-#guard treeTm1Float (F "1/4" 53) == (Tm (F "1/4" 53) 53).1
-#guard treeTm1Float nan == nan
+#guard treeTm1Rat (Q "1/4") 53 == (Tm (X "0.25" 53) 53).1
+#guard treeTm1Float (X "0.25" 53) == (Tm (X "0.25" 53) 53).1
+#guard toString (treeTm1Float nan) == "NaN"

@@ -11,6 +11,7 @@ import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Log2P1
 import Azurite.AzFloat.LogBasePow2
 import Azurite.AzFloat.LogBasePow2P1
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 import Azurite.AzFloat.Ln
@@ -26,88 +27,93 @@ and with `log_{2^k}` on the exact `1 + x`, and
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def K (n : Int) : AzInt := AzInt.ofInt n
 private def L (x : AzFloat) (k : Int) (p : Nat) (m : RoundingMode := .Nearest) :=
   logBasePow2P1PrecRound x (K k) p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard L nan 4 10 == (nan, .eq)
-#guard L one 0 10 == (nan, .eq)                              -- base 1
-#guard L (infinity true) 4 10 == (infinity true, .eq)
-#guard L (infinity true) (-4) 10 == (infinity false, .eq)
-#guard L (infinity false) 4 10 == (nan, .eq)
-#guard L zero 4 10 == (zero, .eq)
-#guard L zero (-4) 10 == (zero, .eq)
-#guard L (F "-1" 53) 4 10 == (infinity false, .eq)
-#guard L (F "-1" 53) (-4) 10 == (infinity true, .eq)
-#guard L (F "-2" 53) 4 10 == (nan, .eq)
-#guard L (F "-3/2" 53) 4 10 == (nan, .eq)
-#guard L (F "8" 53) 4 0 == (nan, .eq)                        -- precision 0
+#guard D (L nan 4 10) == ("NaN", .eq)
+#guard D (L one 0 10) == ("NaN", .eq)  -- base 1
+#guard D (L (infinity true) 4 10) == ("Infinity", .eq)
+#guard D (L (infinity true) (-4) 10) == ("-Infinity", .eq)
+#guard D (L (infinity false) 4 10) == ("NaN", .eq)
+#guard D (L zero 4 10) == ("0.0", .eq)
+#guard D (L zero (-4) 10) == ("0.0", .eq)
+#guard D (L (X "-1" 53) 4 10) == ("-Infinity", .eq)
+#guard D (L (X "-1" 53) (-4) 10) == ("Infinity", .eq)
+#guard D (L (X "-2" 53) 4 10) == ("NaN", .eq)
+#guard D (L (X "-1.5" 53) 4 10) == ("NaN", .eq)
+#guard D (L (X "8" 53) 4 0) == ("NaN", .eq)  -- precision 0
 
 -- exact cases: `1 + x = 2^j` gives `j / k`, rounded once
-#guard L (F "7" 53) 3 53 == (F "1" 53, .eq)
-#guard L (F "3" 53) 4 53 == (F "1/2" 53, .eq)
-#guard L (F "15" 53) 4 53 == (F "1" 53, .eq)
-#guard L (F "15" 53) (-4) 53 == (F "-1" 53, .eq)
-#guard L (F "-1/2" 53) 2 53 == (F "-1/2" 53, .eq)
-#guard L (F "-3/4" 53) 4 53 .Ceiling == (F "-1/2" 53, .eq)
-#guard L (F "-7/8" 53) (-3) 53 == (F "1" 53, .eq)
-#guard L (F "1" 53) 3 53 == ofAzRatRound (Q "1/3") 53 .Nearest
-#guard L (F "1" 53) 3 53 .Up == ofAzRatRound (Q "1/3") 53 .Up
-#guard L (F "3" 53) 3 53 .Floor == ofAzRatRound (Q "2/3") 53 .Floor
-#guard L (F "-3/4" 53) 3 53 == ofAzRatRound (Q "-2/3") 53 .Nearest
-#guard L (F "1023" 53) 10 1 == (F "1" 1, .eq)
-#guard L (F "1267650600228229401496703205375" 110) 10 110 == (F "10" 110, .eq)
-#guard (L (F "1/2" 53) 4 53).2 != .eq                         -- 3/2 is not a power of two
+#guard D (L (X "7" 53) 3 53) == ("1.0", .eq)
+#guard D (L (X "3" 53) 4 53) == ("0.5", .eq)
+#guard D (L (X "15" 53) 4 53) == ("1.0", .eq)
+#guard D (L (X "15" 53) (-4) 53) == ("-1.0", .eq)
+#guard D (L (X "-0.5" 53) 2 53) == ("-0.5", .eq)
+#guard D (L (X "-0.75" 53) 4 53 .Ceiling) == ("-0.5", .eq)
+#guard D (L (X "-0.875" 53) (-3) 53) == ("1.0", .eq)
+#guard D (L (X "1" 53) 3 53) == ("0.3333333333333333", .lt)
+#guard D (L (X "1" 53) 3 53 .Up) == ("0.33333333333333337", .gt)
+#guard D (L (X "3" 53) 3 53 .Floor) == ("0.6666666666666666", .lt)
+#guard D (L (X "-0.75" 53) 3 53) == ("-0.6666666666666666", .gt)
+#guard D (L (X "1023" 53) 10 1) == ("1.0", .eq)
+#guard D (L (X "1267650600228229401496703205375" 110) 10 110) == ("1.0e1", .eq)
+#guard (L (X "0.5" 53) 4 53).2 != .eq                         -- 3/2 is not a power of two
 
 -- `k = 1` agrees with `log2P1`
-#guard L (F "10" 53) 1 53 == log2P1PrecRound (F "10" 53) 53 .Nearest
-#guard L (F "-1/3" 53) 1 20 .Floor == log2P1PrecRound (F "-1/3" 53) 20 .Floor
-#guard L (F "1/1073741824" 53) 1 100 == log2P1PrecRound (F "1/1073741824" 53) 100 .Nearest
+#guard L (X "10" 53) 1 53 == log2P1PrecRound (X "10" 53) 53 .Nearest
+#guard L (X "-0.3333333333333333" 53) 1 20 .Floor
+  == log2P1PrecRound (X "-0.3333333333333333" 53) 20 .Floor
+#guard L (X "0.000000000931322574615478515625" 53) 1 100
+  == log2P1PrecRound (X "0.000000000931322574615478515625" 53) 100 .Nearest
 
 -- agreement with `log_{2^k}` on the exact `1 + x`
-#guard L (F "9" 53) 4 150 == logBasePow2PrecRound (F "10" 53) (K 4) 150 .Nearest
-#guard L (F "9" 53) 4 150 .Floor == logBasePow2PrecRound (F "10" 53) (K 4) 150 .Floor
-#guard L (F "9" 53) (-4) 150 == logBasePow2PrecRound (F "10" 53) (K (-4)) 150 .Nearest
-#guard L (F "-3/8" 53) 4 150 .Ceiling == logBasePow2PrecRound (F "5/8" 53) (K 4) 150 .Ceiling
-#guard L (F "10" 53) (-1) 53 == logBasePow2PrecRound (F "11" 53) (K (-1)) 53 .Nearest
-#guard L (F "2" 53) 1000 100 == logBasePow2PrecRound (F "3" 53) (K 1000) 100 .Nearest
+#guard L (X "9" 53) 4 150 == logBasePow2PrecRound (X "10" 53) (K 4) 150 .Nearest
+#guard L (X "9" 53) 4 150 .Floor == logBasePow2PrecRound (X "10" 53) (K 4) 150 .Floor
+#guard L (X "9" 53) (-4) 150 == logBasePow2PrecRound (X "10" 53) (K (-4)) 150 .Nearest
+#guard L (X "-0.375" 53) 4 150 .Ceiling == logBasePow2PrecRound (X "0.625" 53) (K 4) 150 .Ceiling
+#guard L (X "10" 53) (-1) 53 == logBasePow2PrecRound (X "11" 53) (K (-1)) 53 .Nearest
+#guard L (X "2" 53) 1000 100 == logBasePow2PrecRound (X "3" 53) (K 1000) 100 .Nearest
 
 -- `log₁₆ (1 + 9)`
 private def ref16 : AzRat :=
   Q ("830482023721840586967579857372347543966207848256145153013/1"
     ++ "".pushn '0' 57)
-#guard (L (F "9" 53) 4 150).1 == ofAzRat ref16 150
-#guard (L (F "9" 53) 4 150 .Floor).1 == (ofAzRatRound ref16 150 .Floor).1
-#guard (L (F "9" 53) (-4) 150).1 == ofAzRat (-ref16) 150
+#guard toString (L (X "9" 53) 4 150).1 == "0.830482023721840586967579857372347543966207848"
+#guard toString (L (X "9" 53) 4 150 .Floor).1 == "0.830482023721840586967579857372347543966207848"
+#guard toString (L (X "9" 53) (-4) 150).1 == "-0.830482023721840586967579857372347543966207848"
 -- a tiny argument: `log₁₆ (1 + 2^(−30))` is not exact
-#guard (L (F "1/1073741824" 53) 4 100).2 != .eq
-#guard (L (F "-1/1073741824" 53) 4 100).2 != .eq
+#guard (L (X "0.000000000931322574615478515625" 53) 4 100).2 != .eq
+#guard (L (X "-0.000000000931322574615478515625" 53) 4 100).2 != .eq
 
 -- default precision
-#guard logBasePow2P1 (F "7" 10) (K 3) == F "1" 10
-#guard logBasePow2P1 (F "10" 53) (K 1) == log2P1 (F "10" 53)
-#guard logBasePow2P1 (F "9" 53) (K 4) == ofAzRat ref16 53
+#guard toString (logBasePow2P1 (X "7" 10) (K 3)) == "1.0"
+#guard logBasePow2P1 (X "10" 53) (K 1) == log2P1 (X "10" 53)
+#guard toString (logBasePow2P1 (X "9" 53) (K 4)) == "0.8304820237218405"
 
 -- precomputed constants: the same results
-#guard logBasePow2P1With (LnConsts.forPrecision 53) (F "1/2" 53) (K 3)
-  == logBasePow2P1 (F "1/2" 53) (K 3)
-#guard logBasePow2P1With (LnConsts.forPrecision 53) (F "-1/2" 53) (K 2)
-  == logBasePow2P1 (F "-1/2" 53) (K 2)
+#guard logBasePow2P1With (LnConsts.forPrecision 53) (X "0.5" 53) (K 3)
+  == logBasePow2P1 (X "0.5" 53) (K 3)
+#guard logBasePow2P1With (LnConsts.forPrecision 53) (X "-0.5" 53) (K 2)
+  == logBasePow2P1 (X "-0.5" 53) (K 2)
 
 -- tiny arguments: the cost does not depend on the exponent (`2^(−2^30)` is immediate)
 private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
-private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+private def tinyX : AzFloat := (X "1" 53) <<< tinyE
 -- `log₁₆ (1 + x) ≈ x / (4 ln 2)`
 #guard L tinyX 4 53
-  == ((F "3248660424278399/2251799813685248" 53) <<< (tinyE - AzInt.ofInt 2), .lt)
+  == ((X "1.4426950408889634" 53) <<< (tinyE - AzInt.ofInt 2), .lt)
 
 -- a huge power of two, `x = 2^K` with `K = 2^30 − 98`: `log₂ (1 + x) = K + ε`, `ε ≈ 2^(−K)`;
 -- the side of `K` is decided without `K` bits of working precision
-private def bigX : AzFloat := (F "1" 52) <<< AzInt.ofInt (2 ^ 30 - 98)
-#guard L bigX 2 52 == (F "536870863" 52, .lt)
-#guard L bigX (-2) 52 == (F "-536870863" 52, .gt)
-#guard L bigX 1 52 .Floor == (F "1073741726" 52, .lt)
-#guard L bigX (-1) 52 .Floor == (F "-4503599216328705/4194304" 52, .lt)
+private def bigX : AzFloat := (X "1" 52) <<< AzInt.ofInt (2 ^ 30 - 98)
+#guard D (L bigX 2 52) == ("536870863.0", .lt)
+#guard D (L bigX (-2) 52) == ("-536870863.0", .gt)
+#guard D (L bigX 1 52 .Floor) == ("1073741726.0", .lt)
+#guard D (L bigX (-1) 52 .Floor) == ("-1073741726.0000002", .lt)
 #guard (L bigX 3 52).2 != .eq

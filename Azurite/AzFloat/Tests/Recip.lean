@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.Recip
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
@@ -18,27 +19,30 @@ import Azurite.AzRat.Parse
 
 open Azurite Azurite.AzFloat
 
-private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard recip nan == nan
-#guard recip zero == infinity true
-#guard recip (infinity true) == zero
-#guard recip (infinity false) == zero
+#guard toString (recip nan) == "NaN"
+#guard toString (recip zero) == "Infinity"
+#guard toString (recip (infinity true)) == "0.0"
+#guard toString (recip (infinity false)) == "0.0"
 
 -- exact reciprocals
-#guard recipPrecRound (F "1" 53) 53 .Nearest == (F "1" 53, .eq)
-#guard recipPrecRound (F "4" 53) 53 .Nearest == (F "1/4" 53, .eq)
-#guard recipPrecRound (F "-8" 53) 53 .Floor == (F "-1/8" 53, .eq)
-#guard recipPrecRound (F "1/1024" 53) 53 .Ceiling == (F "1024" 53, .eq)
+#guard D (recipPrecRound (X "1" 53) 53 .Nearest) == ("1.0", .eq)
+#guard D (recipPrecRound (X "4" 53) 53 .Nearest) == ("0.25", .eq)
+#guard D (recipPrecRound (X "-8" 53) 53 .Floor) == ("-0.125", .eq)
+#guard D (recipPrecRound (X "0.0009765625" 53) 53 .Ceiling) == ("1024.0", .eq)
 
 -- rounded reciprocals agree with the rounding of the exact rational
-#guard recip (F "3" 53) == F "1/3" 53
-#guard recip (F "7" 200) == F "1/7" 200
-#guard recip (F "-3/2" 53) == F "-2/3" 53
-#guard toString (recip (F "3" 53)) == "0.3333333333333333"
-#guard toString (recip (F "3/2" 53)) == "0.6666666666666666"
-#guard (recipPrecRound (F "3" 53) 53 .Floor).2 == .lt
-#guard (recipPrecRound (F "3" 53) 53 .Ceiling).2 == .gt
-#guard recipPrecRound (F "3" 53) 53 .Floor == divPrecRound one (F "3" 53) 53 .Floor
+#guard toString (recip (X "3" 53)) == "0.3333333333333333"
+#guard toString (recip (X "7" 200)) == "0.142857142857142857142857142857142857142857142857142857142\
+  8571"
+#guard toString (recip (X "-1.5" 53)) == "-0.6666666666666666"
+#guard toString (recip (X "3" 53)) == "0.3333333333333333"
+#guard toString (recip (X "1.5" 53)) == "0.6666666666666666"
+#guard (recipPrecRound (X "3" 53) 53 .Floor).2 == .lt
+#guard (recipPrecRound (X "3" 53) 53 .Ceiling).2 == .gt
+#guard recipPrecRound (X "3" 53) 53 .Floor == divPrecRound one (X "3" 53) 53 .Floor

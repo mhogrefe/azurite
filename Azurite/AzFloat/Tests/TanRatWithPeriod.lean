@@ -12,6 +12,7 @@ import Azurite.AzFloat.SinCosRatWithPeriod
 import Azurite.AzFloat.TanRatWithPeriod
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.OfString
 
 /-!
 # Tests for `tanRatWithPeriod`
@@ -26,7 +27,8 @@ modes and precisions; huge and tiny rationals.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def T (q : String) (u : UInt64) (p : Nat) (m : RoundingMode := .Nearest) :=
   tanRatWithPeriodPrecRound (Q q) u p m
 private def ref (q : String) (u : UInt64) (p : Nat) (m : RoundingMode := .Nearest) :
@@ -35,30 +37,32 @@ private def ref (q : String) (u : UInt64) (p : Nat) (m : RoundingMode := .Neares
   divPrecRound sc.1.1 sc.2.1 p m
 private def agrees (q : String) (u : UInt64) (p : Nat) (m : RoundingMode := .Nearest) : Bool :=
   T q u p m == ref q u p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard T "1/3" 0 53 == (nan, .eq)
-#guard T "0" 360 53 == (zero, .eq)
-#guard T "0" 360 0 == (zero, .eq)
-#guard T "1/3" 360 0 == (nan, .eq)
+#guard D (T "1/3" 0 53) == ("NaN", .eq)
+#guard D (T "0" 360 53) == ("0.0", .eq)
+#guard D (T "0" 360 0) == ("0.0", .eq)
+#guard D (T "1/3" 360 0) == ("NaN", .eq)
 
 -- exact values and poles
-#guard T "180" 360 53 == (zero, .eq)
-#guard T "1/2" 1 53 == (zero, .eq)
-#guard T "45" 360 53 == (F "1" 53, .eq)
-#guard T "3/8" 1 53 == (F "-1" 53, .eq)
-#guard T "-1/8" 1 53 == (F "-1" 53, .eq)
-#guard T "-7/8" 1 53 == (F "1" 53, .eq)
-#guard T "90" 360 53 == (infinity true, .eq)
-#guard T "1/4" 1 53 == (infinity true, .eq)
-#guard T "3/4" 1 53 == (infinity false, .eq)
-#guard T "-1/4" 1 53 == (infinity false, .eq)
-#guard T "-3/4" 1 53 == (infinity true, .eq)
-#guard T "5/4" 1 53 == (infinity true, .eq)
-#guard T "45/2" 90 53 == (infinity true, .eq)
+#guard D (T "180" 360 53) == ("0.0", .eq)
+#guard D (T "1/2" 1 53) == ("0.0", .eq)
+#guard D (T "45" 360 53) == ("1.0", .eq)
+#guard D (T "3/8" 1 53) == ("-1.0", .eq)
+#guard D (T "-1/8" 1 53) == ("-1.0", .eq)
+#guard D (T "-7/8" 1 53) == ("1.0", .eq)
+#guard D (T "90" 360 53) == ("Infinity", .eq)
+#guard D (T "1/4" 1 53) == ("Infinity", .eq)
+#guard D (T "3/4" 1 53) == ("-Infinity", .eq)
+#guard D (T "-1/4" 1 53) == ("-Infinity", .eq)
+#guard D (T "-3/4" 1 53) == ("Infinity", .eq)
+#guard D (T "5/4" 1 53) == ("Infinity", .eq)
+#guard D (T "45/2" 90 53) == ("Infinity", .eq)
 
 -- agreement with the float function at a representable argument
-#guard T "1/3" 360 200 == tanWithPeriodPrecRound (F "1" 200) 1080 200 .Nearest
+#guard T "1/3" 360 200 == tanWithPeriodPrecRound (X "1" 200) 1080 200 .Nearest
 
 -- a sweep against the quotient of `sin` and `cos` (thirds of a degree, not multiples of `45°`)
 #guard (List.range 1081).all fun i => i % 135 == 0 || agrees s!"{i}/3" 360 53

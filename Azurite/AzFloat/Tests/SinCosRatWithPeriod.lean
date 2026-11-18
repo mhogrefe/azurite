@@ -11,6 +11,7 @@ import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.SinCosRatWithPeriod
 import Azurite.AzFloat.SinWithPeriod
 import Azurite.AzFloat.CosWithPeriod
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -28,36 +29,42 @@ periods, modes and precisions, a huge numerator and denominator, and a tiny rati
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def SC (q : String) (u : UInt64) (p : Nat) (m : RoundingMode := .Nearest) :=
   sinCosRatWithPeriodPrecRound (Q q) u p m
 private def agrees (q : String) (u : UInt64) (p : Nat) (m : RoundingMode := .Nearest) : Bool :=
   sinCosRatWithPeriodPrecRound (Q q) u p m
     == (sinRatWithPeriodPrecRound (Q q) u p m, cosRatWithPeriodPrecRound (Q q) u p m)
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
+/-- A pair of results as decimal output. -/
+private def D2 (r : (AzFloat × Ordering) × (AzFloat × Ordering)) :
+    (String × Ordering) × (String × Ordering) := (D r.1, D r.2)
 
 -- special values
-#guard SC "1/3" 0 53 == ((nan, .eq), (nan, .eq))
-#guard SC "0" 360 53 == ((zero, .eq), (F "1" 53, .eq))
-#guard SC "0" 360 0 == ((zero, .eq), (nan, .eq))
-#guard SC "1/3" 360 0 == ((nan, .eq), (nan, .eq))
+#guard D2 (SC "1/3" 0 53) == (("NaN", .eq), ("NaN", .eq))
+#guard D2 (SC "0" 360 53) == (("0.0", .eq), ("1.0", .eq))
+#guard D2 (SC "0" 360 0) == (("0.0", .eq), ("NaN", .eq))
+#guard D2 (SC "1/3" 360 0) == (("NaN", .eq), ("NaN", .eq))
 
 -- exact values
-#guard (SC "30" 360 53).1 == (F "1/2" 53, .eq)
-#guard (SC "60" 360 53).2 == (F "1/2" 53, .eq)
-#guard SC "90" 360 53 == ((F "1" 53, .eq), (zero, .eq))
-#guard SC "-90" 360 53 == ((F "-1" 53, .eq), (zero, .eq))
-#guard SC "1/2" 1 53 == ((zero, .eq), (F "-1" 53, .eq))
-#guard (SC "1/12" 1 53).1 == (F "1/2" 53, .eq)
-#guard (SC "-5/12" 1 53).1 == (F "-1/2" 53, .eq)
-#guard (SC "1/3" 1 53).2 == (F "-1/2" 53, .eq)
+#guard D (SC "30" 360 53).1 == ("0.5", .eq)
+#guard D (SC "60" 360 53).2 == ("0.5", .eq)
+#guard D2 (SC "90" 360 53) == (("1.0", .eq), ("0.0", .eq))
+#guard D2 (SC "-90" 360 53) == (("-1.0", .eq), ("0.0", .eq))
+#guard D2 (SC "1/2" 1 53) == (("0.0", .eq), ("-1.0", .eq))
+#guard D (SC "1/12" 1 53).1 == ("0.5", .eq)
+#guard D (SC "-5/12" 1 53).1 == ("-0.5", .eq)
+#guard D (SC "1/3" 1 53).2 == ("-0.5", .eq)
 
 -- `45°`, and `1/3°` against the float function at `1` with period `1080`
-#guard (SC "45" 360 53).1 == (F "6369051672525773/9007199254740992" 53, .gt)
+#guard D (SC "45" 360 53).1 == ("0.7071067811865476", .gt)
 #guard (SC "1/8" 1 53).1 == (SC "1/8" 1 53).2
-#guard SC "1/3" 360 200 == (sinWithPeriodPrecRound (F "1" 200) 1080 200 .Nearest,
-  cosWithPeriodPrecRound (F "1" 200) 1080 200 .Nearest)
+#guard SC "1/3" 360 200 == (sinWithPeriodPrecRound (X "1" 200) 1080 200 .Nearest,
+  cosWithPeriodPrecRound (X "1" 200) 1080 200 .Nearest)
 #guard sinCosRatWithPeriod (Q "1/3") 360 53
-  == (sinWithPeriod (F "1" 53) 1080, cosWithPeriod (F "1" 53) 1080)
+  == (sinWithPeriod (X "1" 53) 1080, cosWithPeriod (X "1" 53) 1080)
 
 -- agreement with the separate functions
 #guard (List.range 1081).all fun i => agrees s!"{i}/3" 360 53

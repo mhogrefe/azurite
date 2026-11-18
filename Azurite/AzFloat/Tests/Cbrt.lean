@@ -14,6 +14,7 @@ import Azurite.AzFloat.PowBaseRat
 import Azurite.AzFloat.Shift
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.OfString
 
 /-!
 # Tests for the cube root
@@ -27,60 +28,63 @@ with `10^(1/3)` and `7^(1/3)` from `pow10Rat`/`powBaseRat` at 150 bits, the symm
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def R (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) : AzFloat × Ordering :=
   cbrtPrecRound x p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- exact cubes
-#guard R one 1 == (one, .eq)
-#guard R (F "8" 4) 2 == (F "2" 2, .eq)
-#guard R (F "27/8" 5) 2 == (F "3/2" 2, .eq)
-#guard R (F "-8" 4) 2 == (F "-2" 2, .eq)
-#guard R (F "-27/8" 5) 2 == (F "-3/2" 2, .eq)
-#guard R (F "1/8" 2) 1 == (F "1/2" 1, .eq)
-#guard R (one <<< 300) 1 == (one <<< 100, .eq)
-#guard R (one <<< 303) 1 == (one <<< 101, .eq)
-#guard R (F "1000" 10) 53 == (F "10" 53, .eq)
-#guard R (F "-1000000" 20) 53 == (F "-100" 53, .eq)
-#guard R (F "1/1000" 53) 53 != (F "1/10" 53, .eq)
-#guard cbrt (F "1000000000000000000000" 70) == F "10000000" 70
+#guard D (R one 1) == ("1.0", .eq)
+#guard D (R (X "8" 4) 2) == ("2.0", .eq)
+#guard D (R (X "3.375" 5) 2) == ("1.5", .eq)
+#guard D (R (X "-8" 4) 2) == ("-2.0", .eq)
+#guard D (R (X "-3.375" 5) 2) == ("-1.5", .eq)
+#guard D (R (X "0.125" 2) 1) == ("0.5", .eq)
+#guard D (R (one <<< 300) 1) == ("1.0e30", .eq)
+#guard D (R (one <<< 303) 1) == ("3.0e30", .eq)
+#guard D (R (X "1000" 10) 53) == ("1.0e1", .eq)
+#guard D (R (X "-1000000" 20) 53) == ("-1.0e2", .eq)
+#guard R (X "0.001" 53) 53 != (X "0.1" 53, .eq)
+#guard toString (cbrt (X "1000000000000000000000" 70)) == "1.0e7"
 
 -- inexact roots
-#guard R (F "2" 2) 2 == (F "3/2" 2, .gt)
-#guard R (F "2" 3) 3 == (F "5/4" 3, .lt)
-#guard R (F "2" 2) 2 .Ceiling == (F "3/2" 2, .gt)
-#guard R (F "2" 2) 2 .Floor == (F "1" 2, .lt)
-#guard R (one <<< 301) 1 == (one <<< 100, .lt)
-#guard R (one <<< 301) 1 .Ceiling == (one <<< 101, .gt)
-#guard R (one <<< 302) 1 == (one <<< 101, .gt)
-#guard toString (cbrt (F "2" 53)) == "1.2599210498948732"
-#guard toString (cbrt (F "-2" 53)) == "-1.2599210498948732"
-#guard toString (cbrt (F "10" 53)) == "2.154434690031884"
+#guard D (R (X "2" 2) 2) == ("1.5", .gt)
+#guard D (R (X "2" 3) 3) == ("1.2", .lt)
+#guard D (R (X "2" 2) 2 .Ceiling) == ("1.5", .gt)
+#guard D (R (X "2" 2) 2 .Floor) == ("1.0", .lt)
+#guard D (R (one <<< 301) 1) == ("1.0e30", .lt)
+#guard D (R (one <<< 301) 1 .Ceiling) == ("3.0e30", .gt)
+#guard D (R (one <<< 302) 1) == ("3.0e30", .gt)
+#guard toString (cbrt (X "2" 53)) == "1.2599210498948732"
+#guard toString (cbrt (X "-2" 53)) == "-1.2599210498948732"
+#guard toString (cbrt (X "10" 53)) == "2.154434690031884"
 
 -- ties at precision `1`: `∛(27/8) = 3/2 → 2` (even), `∛(125/8) = 5/2 → 2`
-#guard R (F "27/8" 5) 1 == (F "2" 1, .gt)
-#guard R (F "125/8" 7) 1 == (F "2" 1, .lt)
-#guard R (F "-27/8" 5) 1 == (F "-2" 1, .lt)
+#guard D (R (X "3.375" 5) 1) == ("2.0", .gt)
+#guard D (R (X "15.625" 7) 1) == ("2.0", .lt)
+#guard D (R (X "-3.375" 5) 1) == ("-2.0", .lt)
 
 -- agreement with `10^(1/3)` and `7^(1/3)`
-#guard R (F "10" 53) 150 == pow10RatPrecRound (Q "1/3") 150 .Nearest
-#guard R (F "10" 53) 150 .Floor == pow10RatPrecRound (Q "1/3") 150 .Floor
-#guard R (F "7" 53) 150 .Ceiling == powBaseRatPrecRound 7 (Q "1/3") 150 .Ceiling
-#guard R (F "12345" 53) 100 == powBaseRatPrecRound 12345 (Q "1/3") 100 .Nearest
+#guard R (X "10" 53) 150 == pow10RatPrecRound (Q "1/3") 150 .Nearest
+#guard R (X "10" 53) 150 .Floor == pow10RatPrecRound (Q "1/3") 150 .Floor
+#guard R (X "7" 53) 150 .Ceiling == powBaseRatPrecRound 7 (Q "1/3") 150 .Ceiling
+#guard R (X "12345" 53) 100 == powBaseRatPrecRound 12345 (Q "1/3") 100 .Nearest
 
 -- symmetry: `∛(−x) = −∛x` with `Floor` and `Ceiling` exchanged
-#guard R (F "-2" 53) 53 == (-(R (F "2" 53) 53).1, (R (F "2" 53) 53).2.swap)
-#guard R (F "-2" 53) 53 .Floor == (-(R (F "2" 53) 53 .Ceiling).1, .lt)
-#guard R (F "-2" 53) 53 .Ceiling == (-(R (F "2" 53) 53 .Floor).1, .gt)
-#guard R (F "-10" 53) 150 .Down == (-(R (F "10" 53) 150 .Down).1, .gt)
-#guard R (F "-10" 53) 150 .Up == (-(R (F "10" 53) 150 .Up).1, .lt)
+#guard R (X "-2" 53) 53 == (-(R (X "2" 53) 53).1, (R (X "2" 53) 53).2.swap)
+#guard R (X "-2" 53) 53 .Floor == (-(R (X "2" 53) 53 .Ceiling).1, .lt)
+#guard R (X "-2" 53) 53 .Ceiling == (-(R (X "2" 53) 53 .Floor).1, .gt)
+#guard R (X "-10" 53) 150 .Down == (-(R (X "10" 53) 150 .Down).1, .gt)
+#guard R (X "-10" 53) 150 .Up == (-(R (X "10" 53) 150 .Up).1, .lt)
 
 -- special values
-#guard R nan 3 == (nan, .eq)
-#guard R (infinity true) 3 == (infinity true, .eq)
-#guard R (infinity false) 3 == (infinity false, .eq)
-#guard R zero 3 == (zero, .eq)
-#guard R (F "2" 2) 0 == (nan, .eq)
-#guard cbrt nan == nan
-#guard cbrt (infinity false) == infinity false
-#guard cbrt zero == zero
+#guard D (R nan 3) == ("NaN", .eq)
+#guard D (R (infinity true) 3) == ("Infinity", .eq)
+#guard D (R (infinity false) 3) == ("-Infinity", .eq)
+#guard D (R zero 3) == ("0.0", .eq)
+#guard D (R (X "2" 2) 0) == ("NaN", .eq)
+#guard toString (cbrt nan) == "NaN"
+#guard toString (cbrt (infinity false)) == "-Infinity"
+#guard toString (cbrt zero) == "0.0"

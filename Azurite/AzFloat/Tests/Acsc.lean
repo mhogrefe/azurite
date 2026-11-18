@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Acsc
 import Azurite.AzFloat.Asin
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -30,91 +31,86 @@ rationals.
 
 open Azurite Azurite.AzFloat
 
-private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def A (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := acscPrecRound x p m
-private def piN : AzFloat := F "884279719003555/281474976710656" 53
-private def piC : AzFloat := F "7074237752028441/2251799813685248" 53
+private def piN : AzFloat := X "3.141592653589793" 53
+private def piC : AzFloat := X "3.1415926535897936" 53
 private def h (x : AzFloat) (k : Int) : AzFloat := x <<< AzInt.ofInt k
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard A nan 53 == (nan, .eq)
-#guard A zero 53 == (nan, .eq)
-#guard A (F "1/2" 53) 53 == (nan, .eq)
-#guard A (F "-9007199254740991/9007199254740992" 53) 53 == (nan, .eq)
+#guard D (A nan 53) == ("NaN", .eq)
+#guard D (A zero 53) == ("NaN", .eq)
+#guard D (A (X "0.5" 53) 53) == ("NaN", .eq)
+#guard D (A (X "-0.9999999999999999" 53) 53) == ("NaN", .eq)
 #guard A (powerOf2 (AzInt.ofInt (-1073741824))) 53 == (nan, .eq)
-#guard A (infinity true) 53 == (zero, .eq)
-#guard A (infinity false) 53 == (zero, .eq)
-#guard A (infinity true) 0 == (zero, .eq)
-#guard A (F "1" 53) 53 == (h piN (-1), .lt)
-#guard A (F "1" 53) 53 .Ceiling == (h piC (-1), .gt)
-#guard A (F "-1" 53) 53 == (-(h piN (-1)), .gt)
-#guard A (F "-1" 53) 53 .Floor == (-(h piC (-1)), .lt)
-#guard A (F "-1" 53) 53 .Ceiling == (-(h piN (-1)), .gt)
-#guard A (F "2" 53) 0 == (nan, .eq)
+#guard D (A (infinity true) 53) == ("0.0", .eq)
+#guard D (A (infinity false) 53) == ("0.0", .eq)
+#guard D (A (infinity true) 0) == ("0.0", .eq)
+#guard D (A (X "1" 53) 53) == ("1.5707963267948966", .lt)
+#guard D (A (X "1" 53) 53 .Ceiling) == ("1.5707963267948968", .gt)
+#guard D (A (X "-1" 53) 53) == ("-1.5707963267948966", .gt)
+#guard D (A (X "-1" 53) 53 .Floor) == ("-1.5707963267948968", .lt)
+#guard D (A (X "-1" 53) 53 .Ceiling) == ("-1.5707963267948966", .gt)
+#guard D (A (X "2" 53) 0) == ("NaN", .eq)
 
 -- correctly rounded values
-#guard A (F "2" 53) 53 == (F "2358079250676147/4503599627370496" 53, .gt)
-#guard A (F "-2" 53) 53 == (F "-2358079250676147/4503599627370496" 53, .lt)
-#guard A (F "3/2" 53) 53 == (F "3286401200665711/4503599627370496" 53, .lt)
-#guard A (F "5/4" 53) 53 == (F "8352332796509007/9007199254740992" 53, .lt)
-#guard A (F "-7/5" 53) 53 == (F "-7166154329695639/9007199254740992" 53, .gt)
-#guard A (F "100" 53) 53 == (F "2882351802074999/288230376151711744" 53, .lt)
-#guard A (F "-1000" 53) 53 == (F "-2305843393521035/2305843009213693952" 53, .gt)
-#guard A (F "1000000000000" 53) 53 == (F "4951760157141521/4951760157141521099596496896" 53, .lt)
-#guard A (F "1000001/1000000" 53) 53 == (F "3533934351504973/2251799813685248" 53, .lt)
-#guard A (F "-1000001/1000000" 53) 53 == (F "-3533934351504973/2251799813685248" 53, .gt)
-#guard A (F "22/7" 53) 53 == (F "5833260670897689/18014398509481984" 53, .gt)
-#guard A (F "1125899906842624" 53) 53 == (F "1/1125899906842624" 53, .lt)
-#guard A (F "3377699720527872" 53) 53
-  == (F "6004799503160661/20282409603651670423947251286016" 53, .lt)
-#guard A (F "1180591620717411303424" 53) 53 == (F "1/1180591620717411303424" 53, .lt)
-#guard A (F "-1180591620717411303424" 53) 53 == (F "-1/1180591620717411303424" 53, .gt)
-#guard A (F "2" 53) 53 .Floor == (F "4716158501352293/9007199254740992" 53, .lt)
-#guard A (F "-3/2" 53) 53 .Floor == (F "-6572802401331423/9007199254740992" 53, .lt)
-#guard A (F "1125899906842624" 53) 53 .Floor == (F "1/1125899906842624" 53, .lt)
-#guard A (F "-1180591620717411303424" 53) 53 .Floor
-  == (F "-4503599627370497/5316911983139663491615228241121378304" 53, .lt)
-#guard A (F "2" 53) 53 .Ceiling == (F "2358079250676147/4503599627370496" 53, .gt)
-#guard A (F "-3/2" 53) 53 .Ceiling == (F "-3286401200665711/4503599627370496" 53, .gt)
-#guard A (F "1125899906842624" 53) 53 .Ceiling
-  == (F "4503599627370497/5070602400912917605986812821504" 53, .gt)
-#guard A (F "-1180591620717411303424" 53) 53 .Ceiling == (F "-1/1180591620717411303424" 53, .gt)
-#guard A (F "2" 53) 20 == (F "549033/1048576" 20, .lt)
-#guard A (F "2" 53) 1 == (F "1/2" 1, .lt)
-#guard A (F "3/2" 53) 113
-  == (F "7577925234026520191382024829077409/10384593717069655257060992658440192" 113, .gt)
-#guard A (F "-3/2" 53) 2 == (F "-3/4" 2, .lt)
-#guard A (F "1024" 53) 200 == asinPrecRound (F "1/1024" 53) 200 .Nearest
-#guard A (F "1024" 53) 120
-  == (F "664614103530053290214990741842365567/680564733841876926926749214863536422912" 120, .lt)
-#guard A (F "2" 53) 53 == asinPrecRound (F "1/2" 53) 53 .Nearest
-#guard A (F "-4" 53) 53 .Floor == asinPrecRound (F "-1/4" 53) 53 .Floor
-#guard acsc (F "2" 53) == (A (F "2" 53) 53).1
+#guard D (A (X "2" 53) 53) == ("0.5235987755982989", .gt)
+#guard D (A (X "-2" 53) 53) == ("-0.5235987755982989", .lt)
+#guard D (A (X "1.5" 53) 53) == ("0.7297276562269663", .lt)
+#guard D (A (X "1.25" 53) 53) == ("0.9272952180016122", .lt)
+#guard D (A (X "-1.4" 53) 53) == ("-0.7956029534845354", .gt)
+#guard D (A (X "100" 53) 53) == ("0.010000166674167112", .lt)
+#guard D (A (X "-1000" 53) 53) == ("-0.0010000001666667416", .gt)
+#guard D (A (X "1000000000000" 53) 53) == ("1.0e-12", .lt)
+#guard D (A (X "1.000001" 53) 53) == ("1.569382113821837", .lt)
+#guard D (A (X "-1.000001" 53) 53) == ("-1.569382113821837", .gt)
+#guard D (A (X "3.142857142857143" 53) 53) == ("0.3238110152735501", .gt)
+#guard D (A (X "1125899906842624" 53) 53) == ("8.881784197001252e-16", .lt)
+#guard D (A (X "3377699720527872" 53) 53) == ("2.9605947323337506e-16", .lt)
+#guard D (A (X "1180591620717411303424" 53) 53) == ("8.470329472543003e-22", .lt)
+#guard D (A (X "-1180591620717411303424" 53) 53) == ("-8.470329472543003e-22", .gt)
+#guard D (A (X "2" 53) 53 .Floor) == ("0.5235987755982988", .lt)
+#guard D (A (X "-1.5" 53) 53 .Floor) == ("-0.7297276562269664", .lt)
+#guard D (A (X "1125899906842624" 53) 53 .Floor) == ("8.881784197001252e-16", .lt)
+#guard D (A (X "-1180591620717411303424" 53) 53 .Floor) == ("-8.470329472543005e-22", .lt)
+#guard D (A (X "2" 53) 53 .Ceiling) == ("0.5235987755982989", .gt)
+#guard D (A (X "-1.5" 53) 53 .Ceiling) == ("-0.7297276562269663", .gt)
+#guard D (A (X "1125899906842624" 53) 53 .Ceiling) == ("8.881784197001254e-16", .gt)
+#guard D (A (X "-1180591620717411303424" 53) 53 .Ceiling) == ("-8.470329472543003e-22", .gt)
+#guard D (A (X "2" 53) 20) == ("0.523599", .lt)
+#guard D (A (X "2" 53) 1) == ("0.5", .lt)
+#guard D (A (X "1.5" 53) 113) == ("0.7297276562269663634547966598133207", .gt)
+#guard D (A (X "-1.5" 53) 2) == ("-0.8", .lt)
+#guard A (X "1024" 53) 200 == asinPrecRound (X "0.0009765625" 53) 200 .Nearest
+#guard D (A (X "1024" 53) 120) == ("0.000976562655220495715999044108961015572", .lt)
+#guard A (X "2" 53) 53 == asinPrecRound (X "0.5" 53) 53 .Nearest
+#guard A (X "-4" 53) 53 .Floor == asinPrecRound (X "-0.25" 53) 53 .Floor
+#guard acsc (X "2" 53) == (A (X "2" 53) 53).1
 
 -- oddness: `f(−x, m) = −f(x, −m)`
 private def odd (x : AzFloat) (p : Nat) (m : RoundingMode) : Bool :=
   let r := A x p (-m)
   A (-x) p m == (-r.1, r.2.swap)
-#guard odd (F "3/2" 53) 53 .Nearest && odd (F "3/2" 53) 53 .Floor && odd (F "3/2" 53) 53 .Ceiling
-#guard odd (F "1000001/1000000" 53) 20 .Floor && odd (F "1024" 53) 113 .Ceiling
+#guard odd (X "1.5" 53) 53 .Nearest && odd (X "1.5" 53) 53 .Floor && odd (X "1.5" 53) 53 .Ceiling
+#guard odd (X "1.000001" 53) 20 .Floor && odd (X "1024" 53) 113 .Ceiling
 
 -- next to `±1`
-#guard A (F "4503599627370497/4503599627370496" 53) 53
-  == (F "7074237657122175/4503599627370496" 53, .gt)
-#guard A (F "-4503599627370497/4503599627370496" 53) 53 .Floor
-  == (F "-7074237657122175/4503599627370496" 53, .lt)
+#guard D (A (X "1.0000000000000002" 53) 53) == ("1.5707963057214724", .gt)
+#guard D (A (X "-1.0000000000000002" 53) 53 .Floor) == ("-1.5707963057214724", .lt)
 
 -- 200-bit strings
-#guard (toString (A (F "2" 200) 200).1).startsWith
-  "0.52359877559829887307710723054658381403286156656251763682"
-#guard (toString (A (F "-3/2" 200) 200).1).startsWith
-  "-0.7297276562269663634547966598133206953965059140477136907"
+#guard toString (A (X "2" 200) 200).1 == "0.5235987755982988730771072305465838140328615665625176368\
+  291576"
+#guard toString (A (X "-1.5" 200) 200).1 == "-0.729727656226966363454796659813320695396505914047713\
+  6907089496"
 
 -- huge powers of two: exponentially close to the float `1/x`
-private def succ1 : AzFloat := F "4503599627370497/4503599627370496" 53
+private def succ1 : AzFloat := X "1.0000000000000002" 53
 private def pw (k : Int) : AzFloat := powerOf2 (AzInt.ofInt k)
-private def tiny (k : Int) : AzFloat := h (F "1" 53) (-k)
+private def tiny (k : Int) : AzFloat := h (X "1" 53) (-k)
 private def pow2ok (k : Int) : Bool :=
   A (pw k) 53 == (tiny k, .lt) && A (pw k) 53 .Floor == (tiny k, .lt)
     && A (pw k) 53 .Ceiling == (h succ1 (-k), .gt)
@@ -129,8 +125,8 @@ private def pow2ok (k : Int) : Bool :=
 private def recipOk (x : AzFloat) (p : Nat) : Bool :=
   A x p == divPrecRound one x p .Nearest && A x p .Floor == divPrecRound one x p .Floor
     && A x p .Ceiling == divPrecRound one x p .Ceiling
-#guard recipOk (h (F "3" 53) 300) 53
-#guard recipOk (h (F "-3" 53) 300) 53
-#guard recipOk (h (F "3" 53) 1073741824) 53
-#guard recipOk (h (F "-7074237752028441/2251799813685248" 53) 1073741824) 200
-#guard A (h (F "3" 53) 300) 53 == (h (F "6004799503160661/18014398509481984" 53) (-300), .lt)
+#guard recipOk (h (X "3" 53) 300) 53
+#guard recipOk (h (X "-3" 53) 300) 53
+#guard recipOk (h (X "3" 53) 1073741824) 53
+#guard recipOk (h (X "-3.1415926535897936" 53) 1073741824) 200
+#guard D (A (h (X "3" 53) 300) 53) == ("1.6363644884325754e-91", .lt)

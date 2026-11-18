@@ -27,24 +27,26 @@ private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 private def R (s : String) (p : Nat) (m : RoundingMode := .Nearest) : Option (AzFloat × Ordering) :=
   ofDecimalStringRound s p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 /-! ## Values and tags -/
 
-#guard R "0.1" 53 == some (F "1/10" 53, .gt)                         -- binary64 0.1 is above 1/10
+#guard (R "0.1" 53).map D == some ("0.1", .gt) -- binary64 0.1 is above 1/10
 #guard R "0.1" 53 .Floor == some (F "1/10" 53 - (F "1/10" 53).ulp?.get!, .lt)
-#guard R "1.5e-30" 53 == some (F "15/10000000000000000000000000000000" 53, .lt)
-#guard R "-2" 5 == some (F "-2" 5, .eq)
-#guard R "+2.50" 4 == some (F "5/2" 4, .eq)
-#guard R "1E3" 1 == some (F "1024" 1, .gt)
-#guard R "0" 7 == some (zero, .eq)
-#guard R "0.000" 7 == some (zero, .eq)
-#guard R "123456789" 20 == some (F "123456789" 20, .lt)                -- 27 bits, rounded down
+#guard (R "1.5e-30" 53).map D == some ("1.5e-30", .lt)
+#guard (R "-2" 5).map D == some ("-2.0", .eq)
+#guard (R "+2.50" 4).map D == some ("2.5", .eq)
+#guard (R "1E3" 1).map D == some ("1.0e3", .gt)
+#guard (R "0" 7).map D == some ("0.0", .eq)
+#guard (R "0.000" 7).map D == some ("0.0", .eq)
+#guard (R "123456789" 20).map D == some ("1.234568e8", .lt) -- 27 bits, rounded down
 
 /-! ## Special values and rejections -/
 
-#guard R "NaN" 3 == some (nan, .eq)
-#guard R "Infinity" 3 == some (infinity true, .eq)
-#guard R "-Infinity" 3 == some (infinity false, .eq)
+#guard (R "NaN" 3).map D == some ("NaN", .eq)
+#guard (R "Infinity" 3).map D == some ("Infinity", .eq)
+#guard (R "-Infinity" 3).map D == some ("-Infinity", .eq)
 #guard R "inf" 3 == none
 #guard R "1/3" 3 == none
 #guard R "1.2.3" 3 == none

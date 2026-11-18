@@ -11,6 +11,7 @@ import Azurite.AzFloat.Atan2RatWithPeriod
 import Azurite.AzFloat.AtanRatWithPeriod
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.OfString
 
 /-!
 # Tests for `atan2 (y, x) u / (2π)` of rationals
@@ -28,82 +29,82 @@ exact rationals.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def E (y x : String) (u : UInt64) (p : Nat) (m : RoundingMode := .Nearest) :=
   atan2RatWithPeriodPrecRound (Q y) (Q x) u p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard E "0" "0" 360 53 == (zero, .eq)
-#guard E "0" "3/7" 360 53 == (zero, .eq)
-#guard E "0" "-3/7" 360 53 == (F "180" 53, .eq)
-#guard E "2/3" "0" 360 53 == (F "90" 53, .eq)
-#guard E "-2/3" "0" 360 53 == (F "-90" 53, .eq)
-#guard E "3/7" "3/7" 360 53 == (F "45" 53, .eq)
-#guard E "-3/7" "3/7" 360 53 == (F "-45" 53, .eq)
-#guard E "3/7" "-3/7" 360 53 == (F "135" 53, .eq)
-#guard E "-3/7" "-3/7" 360 53 == (F "-135" 53, .eq)
-#guard E "6/14" "-9/21" 360 2 == (F "128" 2, .lt)
-#guard E "3/7" "-3/7" 7 2 == (F "3" 2, .gt)
-#guard E "3/7" "-3/7" 1 53 == (F "3/8" 53, .eq)
-#guard E "1/3" "7/5" 0 53 == (zero, .eq)
-#guard E "0" "-3/7" 0 53 == (zero, .eq)
-#guard E "3/7" "-3/7" 0 53 == (zero, .eq)
-#guard E "1/3" "7/5" 360 0 == (nan, .eq)
+#guard D (E "0" "0" 360 53) == ("0.0", .eq)
+#guard D (E "0" "3/7" 360 53) == ("0.0", .eq)
+#guard D (E "0" "-3/7" 360 53) == ("1.8e2", .eq)
+#guard D (E "2/3" "0" 360 53) == ("9.0e1", .eq)
+#guard D (E "-2/3" "0" 360 53) == ("-9.0e1", .eq)
+#guard D (E "3/7" "3/7" 360 53) == ("45.0", .eq)
+#guard D (E "-3/7" "3/7" 360 53) == ("-45.0", .eq)
+#guard D (E "3/7" "-3/7" 360 53) == ("135.0", .eq)
+#guard D (E "-3/7" "-3/7" 360 53) == ("-135.0", .eq)
+#guard D (E "6/14" "-9/21" 360 2) == ("1.3e2", .lt)
+#guard D (E "3/7" "-3/7" 7 2) == ("3.0", .gt)
+#guard D (E "3/7" "-3/7" 1 53) == ("0.375", .eq)
+#guard D (E "1/3" "7/5" 0 53) == ("0.0", .eq)
+#guard D (E "0" "-3/7" 0 53) == ("0.0", .eq)
+#guard D (E "3/7" "-3/7" 0 53) == ("0.0", .eq)
+#guard D (E "1/3" "7/5" 360 0) == ("NaN", .eq)
 
 -- correctly rounded values
-#guard E "1" "3" 360 53 == (F "1297244197648527/70368744177664" 53, .lt)
-#guard E "3" "1" 360 53 == (F "5035942778341233/70368744177664" 53, .gt)
-#guard E "1" "-3" 360 53 == (F "710570609645687/4398046511104" 53, .lt)
-#guard E "3" "-1" 360 53 == (F "7630431173638287/70368744177664" 53, .lt)
-#guard E "-1" "3" 360 53 == (F "-1297244197648527/70368744177664" 53, .gt)
-#guard E "-3" "1" 360 53 == (F "-5035942778341233/70368744177664" 53, .lt)
-#guard E "-1" "-3" 360 53 == (F "-710570609645687/4398046511104" 53, .gt)
-#guard E "-3" "-1" 360 53 == (F "-7630431173638287/70368744177664" 53, .gt)
-#guard E "1/3" "7/5" 360 53 == (F "3769652993334603/281474976710656" 53, .lt)
-#guard E "-7/5" "1/3" 360 53 == (F "-5390773727656109/70368744177664" 53, .gt)
-#guard E "22/7" "-1/1000" 360 53 == (F "791808728949883/8796093022208" 53, .lt)
-#guard E "1/1000" "-22/7" 360 53 == (F "1583136387046277/8796093022208" 53, .gt)
-#guard E "355/113" "1000000007/3" 360 53 == (F "2550078099435557/4722366482869645213696" 53, .lt)
-#guard E "1" "3" 1 53 == (F "7379878102178287/144115188075855872" 53, .lt)
-#guard E "1" "-3" 400 53 == (F "789522899606319/4398046511104" 53, .gt)
-#guard E "-3" "1" 7 53 == (F "-1566737753261717/1125899906842624" 53, .lt)
-#guard E "3" "-1" 18446744073709551615 53 == (F "5556310415506208768" 53, .gt)
-#guard E "1" "3" 360 53 .Floor == (F "1297244197648527/70368744177664" 53, .lt)
-#guard E "-3" "-1" 360 53 .Floor == (F "-476901948352393/4398046511104" 53, .lt)
-#guard E "1" "3" 360 53 .Ceiling == (F "5188976790594109/281474976710656" 53, .gt)
-#guard E "-3" "-1" 360 53 .Ceiling == (F "-7630431173638287/70368744177664" 53, .gt)
-#guard E "1" "3" 360 20 == (F "151019/8192" 20, .lt)
-#guard E "1" "-3" 360 1 == (F "128" 1, .lt)
-#guard E "-3" "1" 360 113
-  == (F "-5806046725119159567778531012198059/81129638414606681695789005144064" 113, .lt)
+#guard D (E "1" "3" 360 53) == ("18.43494882292201", .lt)
+#guard D (E "3" "1" 360 53) == ("71.56505117707799", .gt)
+#guard D (E "1" "-3" 360 53) == ("161.56505117707798", .lt)
+#guard D (E "3" "-1" 360 53) == ("108.43494882292201", .lt)
+#guard D (E "-1" "3" 360 53) == ("-18.43494882292201", .gt)
+#guard D (E "-3" "1" 360 53) == ("-71.56505117707799", .lt)
+#guard D (E "-1" "-3" 360 53) == ("-161.56505117707798", .gt)
+#guard D (E "-3" "-1" 360 53) == ("-108.43494882292201", .gt)
+#guard D (E "1/3" "7/5" 360 53) == ("13.392497753751098", .lt)
+#guard D (E "-7/5" "1/3" 360 53) == ("-76.6075022462489", .gt)
+#guard D (E "22/7" "-1/1000" 360 53) == ("90.0182304746844", .lt)
+#guard D (E "1/1000" "-22/7" 360 53) == ("179.9817695253156", .gt)
+#guard D (E "355/113" "1000000007/3" 360 53) == ("5.400000420733862e-7", .lt)
+#guard D (E "1" "3" 1 53) == ("0.05120819117478336", .lt)
+#guard D (E "1" "-3" 400 53) == ("179.51672353008667", .gt)
+#guard D (E "-3" "1" 7 53) == ("-1.3915426617765165", .lt)
+#guard D (E "3" "-1" 18446744073709551615 53) == ("5.556310415506209e18", .gt)
+#guard D (E "1" "3" 360 53 .Floor) == ("18.43494882292201", .lt)
+#guard D (E "-3" "-1" 360 53 .Floor) == ("-108.43494882292202", .lt)
+#guard D (E "1" "3" 360 53 .Ceiling) == ("18.434948822922014", .gt)
+#guard D (E "-3" "-1" 360 53 .Ceiling) == ("-108.43494882292201", .gt)
+#guard D (E "1" "3" 360 20) == ("18.43494", .lt)
+#guard D (E "1" "-3" 360 1) == ("1.0e2", .lt)
+#guard D (E "-3" "1" 360 113) == ("-71.5650511770779893515721937204533", .lt)
 
 -- agreement with the float function, with `atanRatWithPeriod`, and homogeneity
 #guard E "1/2" "-3" 360 53
-  == atan2WithPeriodPrecRound (F "1/2" 53) (F "-3" 53) 360 53 .Nearest
+  == atan2WithPeriodPrecRound (X "0.5" 53) (X "-3" 53) 360 53 .Nearest
 #guard E "1/3" "1" 360 53 == atanRatWithPeriodPrecRound (Q "1/3") 360 53 .Nearest
 #guard E "-22/7" "1" 7 53 .Floor == atanRatWithPeriodPrecRound (Q "-22/7") 7 53 .Floor
 #guard E "2/21" "-2/5" 360 53 == E "5" "-21" 360 53
 #guard atan2RatWithPeriod (Q "1") (Q "3") 360 53 == (E "1" "3" 360 53).1
-#guard (toString (atan2RatWithPeriod (Q "1") (Q "-2") 360 200)).startsWith
-  "153.4349488229220106484278062795467053287957857003547789"
+#guard toString (atan2RatWithPeriod (Q "1") (Q "-2") 360 200)
+  == "153.434948822922010648427806279546705328795785700354778972014"
 
 -- extreme ratios: next to `0`, a quarter turn and a half turn
 private def pw (k : Nat) : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 1) <<< k)
 private def one' : AzRat := Q "1"
 private def R (y x : AzRat) (m : RoundingMode := .Nearest) :=
   atan2RatWithPeriodPrecRound y x 360 53 m
-#guard (R (pw 5000) one').1
-  == (F "1007958012753983/17592186044416" 53) <<< AzInt.ofInt (-5000)
+#guard toString (R (pw 5000) one').1 == "4.0564330500725343e-1504"
 #guard (R (pw 5000) one').2 == .gt
-#guard R one' (pw 5000) == (F "90" 53, .gt)
-#guard R one' (pw 5000) .Floor == (F "6333186975989759/70368744177664" 53, .lt)
-#guard R (-one') (pw 5000) == (F "-90" 53, .lt)
-#guard R one' (-(pw 5000)) == (F "90" 53, .lt)
-#guard R (-one') (-(pw 5000)) == (F "-90" 53, .gt)
-#guard R (pw 5000) (-one') == (F "180" 53, .gt)
-#guard R (pw 5000) (-one') .Floor == (F "6333186975989759/35184372088832" 53, .lt)
-#guard R (-(pw 5000)) (-one') == (F "-180" 53, .lt)
+#guard D (R one' (pw 5000)) == ("9.0e1", .gt)
+#guard D (R one' (pw 5000) .Floor) == ("89.99999999999999", .lt)
+#guard D (R (-one') (pw 5000)) == ("-9.0e1", .lt)
+#guard D (R one' (-(pw 5000))) == ("9.0e1", .lt)
+#guard D (R (-one') (-(pw 5000))) == ("-9.0e1", .gt)
+#guard D (R (pw 5000) (-one')) == ("1.8e2", .gt)
+#guard D (R (pw 5000) (-one') .Floor) == ("179.99999999999997", .lt)
+#guard D (R (-(pw 5000)) (-one')) == ("-1.8e2", .lt)
 -- the rational arctangent with a period at a huge argument
-#guard atanRatWithPeriodPrecRound (pw 5000)⁻¹ 360 53 .Nearest == (F "90" 53, .gt)
-#guard atanRatWithPeriodPrecRound (-(pw 5000)⁻¹) 360 53 .Ceiling
-  == (F "-6333186975989759/70368744177664" 53, .gt)
+#guard D (atanRatWithPeriodPrecRound (pw 5000)⁻¹ 360 53 .Nearest) == ("9.0e1", .gt)
+#guard D (atanRatWithPeriodPrecRound (-(pw 5000)⁻¹) 360 53 .Ceiling) == ("-89.99999999999999", .gt)

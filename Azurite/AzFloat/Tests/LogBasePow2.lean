@@ -11,6 +11,7 @@ import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Log2
 import Azurite.AzFloat.LogBasePow2
 import Azurite.AzFloat.ToString
+import Azurite.AzFloat.OfString
 import Azurite.AzRat.Parse
 import Azurite.AzFloat.Ln
 
@@ -24,65 +25,69 @@ Exact cases, agreement with `log₂` for `k = ±1`, and `log₁₆ 10 = log₂ 1
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def K (n : Int) : AzInt := AzInt.ofInt n
 private def L (x : AzFloat) (k : Int) (p : Nat) (m : RoundingMode := .Nearest) :=
   logBasePow2PrecRound x (K k) p m
 
 -- special values
-#guard L nan 4 10 == (nan, .eq)
-#guard L one 0 10 == (nan, .eq)                              -- base 1
-#guard L (infinity true) 4 10 == (infinity true, .eq)
-#guard L (infinity true) (-4) 10 == (infinity false, .eq)
-#guard L (infinity false) 4 10 == (nan, .eq)
-#guard L zero 4 10 == (infinity false, .eq)
-#guard L zero (-4) 10 == (infinity true, .eq)
-#guard L (F "-8" 53) 3 10 == (nan, .eq)
+#guard D (L nan 4 10) == ("NaN", .eq)
+#guard D (L one 0 10) == ("NaN", .eq)  -- base 1
+#guard D (L (infinity true) 4 10) == ("Infinity", .eq)
+#guard D (L (infinity true) (-4) 10) == ("-Infinity", .eq)
+#guard D (L (infinity false) 4 10) == ("NaN", .eq)
+#guard D (L zero 4 10) == ("-Infinity", .eq)
+#guard D (L zero (-4) 10) == ("Infinity", .eq)
+#guard D (L (X "-8" 53) 3 10) == ("NaN", .eq)
 
 -- exact powers of two: `(e − 1) / k`, rounded once
-#guard L (F "1" 53) 4 53 == (zero, .eq)
-#guard L (F "16" 53) 4 53 == (F "1" 53, .eq)
-#guard L (F "256" 53) 4 53 == (F "2" 53, .eq)
-#guard L (F "2" 53) 4 53 == (F "1/4" 53, .eq)
-#guard L (F "8" 53) 4 53 == (F "3/4" 53, .eq)
-#guard L (F "8" 53) (-4) 53 == (F "-3/4" 53, .eq)
-#guard L (F "1/8" 53) (-4) 53 == (F "3/4" 53, .eq)
-#guard L (F "2" 53) 3 53 == ofAzRatRound (Q "1/3") 53 .Nearest  -- 1/3 rounded
-#guard L (F "2" 53) 3 53 .Up == ofAzRatRound (Q "1/3") 53 .Up
-#guard L (F "4" 53) 3 53 .Floor == ofAzRatRound (Q "2/3") 53 .Floor
-#guard L (F "1024" 53) 10 1 == (F "1" 1, .eq)
-#guard L (F "1024" 53) 1 53 == log2PrecRound (F "1024" 53) 53 .Nearest
+#guard D (L (X "1" 53) 4 53) == ("0.0", .eq)
+#guard D (L (X "16" 53) 4 53) == ("1.0", .eq)
+#guard D (L (X "256" 53) 4 53) == ("2.0", .eq)
+#guard D (L (X "2" 53) 4 53) == ("0.25", .eq)
+#guard D (L (X "8" 53) 4 53) == ("0.75", .eq)
+#guard D (L (X "8" 53) (-4) 53) == ("-0.75", .eq)
+#guard D (L (X "0.125" 53) (-4) 53) == ("0.75", .eq)
+#guard D (L (X "2" 53) 3 53) == ("0.3333333333333333", .lt)  -- 1/3 rounded
+#guard D (L (X "2" 53) 3 53 .Up) == ("0.33333333333333337", .gt)
+#guard D (L (X "4" 53) 3 53 .Floor) == ("0.6666666666666666", .lt)
+#guard D (L (X "1024" 53) 10 1) == ("1.0", .eq)
+#guard L (X "1024" 53) 1 53 == log2PrecRound (X "1024" 53) 53 .Nearest
 
 -- `k = ±1` agrees with `log₂`
-#guard L (F "10" 53) 1 53 == log2PrecRound (F "10" 53) 53 .Nearest
-#guard L (F "3" 53) 1 20 .Floor == log2PrecRound (F "3" 53) 20 .Floor
-#guard L (F "10" 53) (-1) 53 == (-(log2PrecRound (F "10" 53) 53 .Nearest).1, .gt)
-#guard L (F "1/3" 53) (-1) 20 .Ceiling == log2PrecRound (F "3" 53) 20 .Ceiling
+#guard L (X "10" 53) 1 53 == log2PrecRound (X "10" 53) 53 .Nearest
+#guard L (X "3" 53) 1 20 .Floor == log2PrecRound (X "3" 53) 20 .Floor
+#guard L (X "10" 53) (-1) 53 == (-(log2PrecRound (X "10" 53) 53 .Nearest).1, .gt)
+#guard L (X "0.3333333333333333" 53) (-1) 20 .Ceiling == log2PrecRound (X "3" 53) 20 .Ceiling
 
 -- `log₁₆ 10 = 0.830482023721840586967579857372347543966207848256145153013…`
 private def ref16 : AzRat :=
   Q ("830482023721840586967579857372347543966207848256145153013/1"
     ++ "".pushn '0' 57)
-#guard (L (F "10" 53) 4 150).1 == ofAzRat ref16 150
-#guard (L (F "10" 53) 4 150 .Floor).1 == (ofAzRatRound ref16 150 .Floor).1
-#guard (L (F "10" 53) (-4) 150).1 == ofAzRat (-ref16) 150
+#guard toString ((L (X "10" 53) 4 150).1) == "0.830482023721840586967579857372347543966207848"
+#guard toString ((L (X "10" 53) 4 150 .Floor).1)
+  == "0.830482023721840586967579857372347543966207848"
+#guard toString ((L (X "10" 53) (-4) 150).1) == "-0.830482023721840586967579857372347543966207848"
 -- `log₁₆ (5/8) = (log₂ 10 − 4) / 4`
 private def ref58 : AzRat :=
   Q ("-13561438102252753042593611410212196482703372139508387759/8" ++ "".pushn '0' 55)
-#guard (L (F "5/8" 53) 4 150).1 == ofAzRat ref58 150
-#guard (L (F "10" 53) 4 150).2 == .lt ∨ (L (F "10" 53) 4 150).2 == .gt
+#guard toString ((L (X "0.625" 53) 4 150).1) == "-0.1695179762781594130324201426276524560337921517"
+#guard (L (X "10" 53) 4 150).2 == .lt ∨ (L (X "10" 53) 4 150).2 == .gt
 -- `log_{2^1000} 10`: a large base
 private def ref1000 : AzRat :=
   Q ("332192809488736234787031942948939017586483139302458061205/1" ++ "".pushn '0' 59)
-#guard (L (F "10" 53) 1000 100).1 == ofAzRat ref1000 100
+#guard toString ((L (X "10" 53) 1000 100).1) == "0.00332192809488736234787031942949"
 
 -- default precision
-#guard logBasePow2 (F "256" 10) (K 4) == F "2" 10
-#guard logBasePow2 (F "10" 53) (K 1) == log2 (F "10" 53)
+#guard toString (logBasePow2 (X "256" 10) (K 4)) == "2.0"
+#guard logBasePow2 (X "10" 53) (K 1) == log2 (X "10" 53)
 
 -- precomputed constants: the same results
-#guard logBasePow2With (LnConsts.forPrecision 53) (F "10" 53) (K 3) == logBasePow2 (F "10" 53) (K 3)
-#guard logBasePow2With (LnConsts.forPrecision 53) (F "10" 53) (K (-2))
-  == logBasePow2 (F "10" 53) (K (-2))
-#guard logBasePow2With (LnConsts.forPrecision 53) (F "8" 53) (K 3) == logBasePow2 (F "8" 53) (K 3)
-#guard logBasePow2With (LnConsts.forPrecision 53) (F "10" 53) (K 0) == logBasePow2 (F "10" 53) (K 0)
+#guard logBasePow2With (LnConsts.forPrecision 53) (X "10" 53) (K 3) == logBasePow2 (X "10" 53) (K 3)
+#guard logBasePow2With (LnConsts.forPrecision 53) (X "10" 53) (K (-2))
+  == logBasePow2 (X "10" 53) (K (-2))
+#guard logBasePow2With (LnConsts.forPrecision 53) (X "8" 53) (K 3) == logBasePow2 (X "8" 53) (K 3)
+#guard logBasePow2With (LnConsts.forPrecision 53) (X "10" 53) (K 0) == logBasePow2 (X "10" 53) (K 0)

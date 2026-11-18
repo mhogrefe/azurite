@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.AsechRat
 import Azurite.AzFloat.Asech
 import Azurite.AzFloat.LnRat
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -27,62 +28,63 @@ representable arguments, 200-bit strings, and a tiny rational (where `asech q` r
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def h (x : AzFloat) (k : Int) : AzFloat := x <<< AzInt.ofInt k
 private def T (q : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   asechRatPrecRound (Q q) p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard T "0" 53 == (infinity true, .eq)
-#guard T "0" 0 == (infinity true, .eq)
-#guard T "1" 53 == (zero, .eq)
-#guard T "3/3" 0 == (zero, .eq)
-#guard T "2" 53 == (nan, .eq)
-#guard T "1000001/1000000" 53 == (nan, .eq)
-#guard T "-1/2" 53 == (nan, .eq)
-#guard T "-1" 53 == (nan, .eq)
-#guard T "-3" 53 == (nan, .eq)
-#guard T "1/3" 0 == (nan, .eq)
+#guard D (T "0" 53) == ("Infinity", .eq)
+#guard D (T "0" 0) == ("Infinity", .eq)
+#guard D (T "1" 53) == ("0.0", .eq)
+#guard D (T "3/3" 0) == ("0.0", .eq)
+#guard D (T "2" 53) == ("NaN", .eq)
+#guard D (T "1000001/1000000" 53) == ("NaN", .eq)
+#guard D (T "-1/2" 53) == ("NaN", .eq)
+#guard D (T "-1" 53) == ("NaN", .eq)
+#guard D (T "-3" 53) == ("NaN", .eq)
+#guard D (T "1/3" 0) == ("NaN", .eq)
 
 -- correctly rounded values at exact rationals
-#guard T "1/2" 53 == (F "5931051093853237/4503599627370496" 53, .gt)
-#guard T "1/3" 53 == (F "7938707516150823/4503599627370496" 53, .gt)
-#guard T "2/7" 53 == (F "4334370792049413/2251799813685248" 53, .gt)
-#guard T "7/22" 53 == (F "8160300771249005/4503599627370496" 53, .gt)
-#guard T "113/355" 53 == (F "4079194724512939/2251799813685248" 53, .gt)
-#guard T "99/100" 53 == (F "5116609459402097/36028797018963968" 53, .gt)
-#guard T "999999999/1000000000" 53 == (F "3299853898363415/73786976294838206464" 53, .lt)
-#guard T "1/1000" 53 == (F "2139463772410805/281474976710656" 53, .gt)
-#guard T "1/1000000007" 53 == (F "6028184357298717/281474976710656" 53, .gt)
-#guard T "3/1125899906842624" 53 == (F "2410262760849161/70368744177664" 53, .lt)
-#guard T "1/3000000000000000000000000000000" 53 == (F "1246746126101009/17592186044416" 53, .lt)
-#guard T "2999999999999999999999999999999/3000000000000000000000000000000" 53
-  == (F "1035032380897329/1267650600228229401496703205376" 53, .gt)
-#guard T "1/3" 53 .Floor == (F "3969353758075411/2251799813685248" 53, .lt)
-#guard T "2/7" 53 .Floor == (F "8668741584098825/4503599627370496" 53, .lt)
-#guard T "99/100" 53 .Floor == (F "319788091212631/2251799813685248" 53, .lt)
-#guard T "1/1000000007" 53 .Floor == (F "1507046089324679/70368744177664" 53, .lt)
-#guard T "1/3" 53 .Ceiling == (F "7938707516150823/4503599627370496" 53, .gt)
-#guard T "2/7" 53 .Ceiling == (F "4334370792049413/2251799813685248" 53, .gt)
-#guard T "99/100" 53 .Ceiling == (F "5116609459402097/36028797018963968" 53, .gt)
-#guard T "1/1000000007" 53 .Ceiling == (F "6028184357298717/281474976710656" 53, .gt)
-#guard T "1/3" 20 == (F "924187/524288" 20, .lt)
-#guard T "1/3" 1 == (F "2" 1, .gt)
-#guard T "7/22" 2 == (F "2" 2, .gt)
-#guard T "1/3" 113
-  == (F "9152706614154291559812342711297187/5192296858534827628530496329220096" 113, .lt)
-#guard T "5/7" 200
-  == (h (F "696619474465246027754818035546008576481904682180959016208361" 200) (-199), .gt)
+#guard D (T "1/2" 53) == ("1.3169578969248168", .gt)
+#guard D (T "1/3" 53) == ("1.762747174039086", .gt)
+#guard D (T "2/7" 53) == ("1.9248473002384139", .gt)
+#guard D (T "7/22" 53) == ("1.8119507608214136", .gt)
+#guard D (T "113/355" 53) == ("1.811526362033495", .gt)
+#guard D (T "99/100" 53) == ("0.14201444074607708", .gt)
+#guard D (T "999999999/1000000000" 53) == ("0.000044721359568629694", .lt)
+#guard D (T "1/1000" 53) == ("7.600902209541989", .gt)
+#guard D (T "1/1000000007" 53) == ("21.416413024506358", .gt)
+#guard D (T "3/1125899906842624" 53) == ("34.2518939198891", .lt)
+#guard D (T "1/3000000000000000000000000000000" 53) == ("70.86931225904942", .lt)
+#guard D (T "2999999999999999999999999999999/3000000000000000000000000000000" 53) ==
+  ("8.16496580927726e-16", .gt)
+#guard D (T "1/3" 53 .Floor) == ("1.7627471740390859", .lt)
+#guard D (T "2/7" 53 .Floor) == ("1.9248473002384137", .lt)
+#guard D (T "99/100" 53 .Floor) == ("0.14201444074607705", .lt)
+#guard D (T "1/1000000007" 53 .Floor) == ("21.416413024506355", .lt)
+#guard D (T "1/3" 53 .Ceiling) == ("1.762747174039086", .gt)
+#guard D (T "2/7" 53 .Ceiling) == ("1.9248473002384139", .gt)
+#guard D (T "99/100" 53 .Ceiling) == ("0.14201444074607708", .gt)
+#guard D (T "1/1000000007" 53 .Ceiling) == ("21.416413024506358", .gt)
+#guard D (T "1/3" 20) == ("1.762747", .lt)
+#guard D (T "1/3" 1) == ("2.0", .gt)
+#guard D (T "7/22" 2) == ("2.0", .gt)
+#guard D (T "1/3" 113) == ("1.7627471740390860504652186499595846", .lt)
+#guard D (T "5/7" 200) == ("0.867014726490565103950520269501467375464496489945643731323534", .gt)
 
 -- agreement with the float `asech` at representable arguments
-#guard T "3/4" 53 == asechPrecRound (F "3/4" 53) 53 .Nearest
-#guard T "5/1024" 53 .Floor == asechPrecRound (F "5/1024" 53) 53 .Floor
-#guard T "1023/1024" 20 .Ceiling == asechPrecRound (F "1023/1024" 53) 20 .Ceiling
+#guard T "3/4" 53 == asechPrecRound (X "0.75" 53) 53 .Nearest
+#guard T "5/1024" 53 .Floor == asechPrecRound (X "0.0048828125" 53) 53 .Floor
+#guard T "1023/1024" 20 .Ceiling == asechPrecRound (X "0.9990234375" 53) 20 .Ceiling
 #guard asechRat (Q "1/3") 53 == (T "1/3" 53).1
-#guard (toString (asechRat (Q "1/3") 200)).startsWith
-  "1.762747174039086050465218649959584618056320656523270821"
-#guard (toString (asechRat (Q "7/22") 200)).startsWith
-  "1.811950760821413556235972813109322036695962129898042791"
+#guard toString (asechRat (Q "1/3") 200) == "1.7627471740390860504652186499595846180563206565232708\
+  21506592"
+#guard toString (asechRat (Q "7/22") 200) == "1.811950760821413556235972813109322036695962129898042\
+  791003144"
 
 -- a tiny rational: `asech q` rounds like `ln (2/q)`
 private def pw (k : Nat) : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 1) <<< k)

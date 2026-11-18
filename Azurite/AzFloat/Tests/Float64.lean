@@ -31,17 +31,17 @@ private def minSub : Float := Float.ofBits 1
 
 /-! ## `ofFloat64` is exact -/
 
-#guard ofFloat64 2.5 == F "5/2" 53
-#guard ofFloat64 0.1 == F "1/10" 53
-#guard ofFloat64 (-3.0) == F "-3" 53
-#guard ofFloat64 1.0 == F "1" 53
-#guard ofFloat64 0.0 == zero
-#guard ofFloat64 (-0.0) == zero
+#guard toString (ofFloat64 2.5) == "2.5"
+#guard toString (ofFloat64 0.1) == "0.1"
+#guard toString (ofFloat64 (-3.0)) == "-3.0"
+#guard toString (ofFloat64 1.0) == "1.0"
+#guard toString (ofFloat64 0.0) == "0.0"
+#guard toString (ofFloat64 (-0.0)) == "0.0"
 #guard ofFloat64 inf == infinity true
 #guard ofFloat64 (-inf) == infinity false
 #guard (ofFloat64 (0.0 / 0.0)).isNaN
-#guard ofFloat64 maxF == setPrec ((F "9007199254740991" 53) <<< 971) 53
-#guard ofFloat64 minSub == setPrec (one >>> 1074) 53
+#guard toString (ofFloat64 maxF) == "1.7976931348623157e308"
+#guard toString (ofFloat64 minSub) == "4.9406564584124654e-324"
 #guard ofFloat64 (Float.ofBits 0x000FFFFFFFFFFFFF)
   == setPrec ((F "4503599627370495" 52) >>> 1074) 53
 

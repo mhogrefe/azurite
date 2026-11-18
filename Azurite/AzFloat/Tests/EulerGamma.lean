@@ -25,27 +25,26 @@ open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
-#guard eulerGammaPrecRound 1 .Nearest == (F "1/2" 1, .lt)
-#guard eulerGammaPrecRound 1 .Floor == (F "1/2" 1, .lt)
-#guard eulerGammaPrecRound 1 .Ceiling == (F "1" 1, .gt)
-#guard eulerGammaPrecRound 2 .Nearest == (F "1/2" 2, .lt)
-#guard eulerGammaPrecRound 2 .Floor == (F "1/2" 2, .lt)
-#guard eulerGammaPrecRound 2 .Ceiling == (F "3/4" 2, .gt)
-#guard eulerGammaPrecRound 3 .Nearest == (F "5/8" 3, .gt)
-#guard eulerGammaPrecRound 3 .Floor == (F "1/2" 3, .lt)
-#guard eulerGammaPrecRound 3 .Ceiling == (F "5/8" 3, .gt)
-#guard eulerGammaPrecRound 53 .Nearest == (F "5199096506725913/9007199254740992" 53, .gt)
-#guard eulerGammaPrecRound 53 .Floor == (F "649887063340739/1125899906842624" 53, .lt)
-#guard eulerGammaPrecRound 53 .Ceiling == (F "5199096506725913/9007199254740992" 53, .gt)
-#guard eulerGammaPrecRound 100 .Nearest
-  == (F "45731736504597791087659990913/79228162514264337593543950336" 100, .lt)
-#guard eulerGammaPrecRound 100 .Floor
-  == (F "45731736504597791087659990913/79228162514264337593543950336" 100, .lt)
-#guard eulerGammaPrecRound 100 .Ceiling
-  == (F "731707784073564657402559854609/1267650600228229401496703205376" 100, .gt)
+#guard D (eulerGammaPrecRound 1 .Nearest) == ("0.5", .lt)
+#guard D (eulerGammaPrecRound 1 .Floor) == ("0.5", .lt)
+#guard D (eulerGammaPrecRound 1 .Ceiling) == ("1.0", .gt)
+#guard D (eulerGammaPrecRound 2 .Nearest) == ("0.5", .lt)
+#guard D (eulerGammaPrecRound 2 .Floor) == ("0.5", .lt)
+#guard D (eulerGammaPrecRound 2 .Ceiling) == ("0.8", .gt)
+#guard D (eulerGammaPrecRound 3 .Nearest) == ("0.6", .gt)
+#guard D (eulerGammaPrecRound 3 .Floor) == ("0.5", .lt)
+#guard D (eulerGammaPrecRound 3 .Ceiling) == ("0.6", .gt)
+#guard D (eulerGammaPrecRound 53 .Nearest) == ("0.5772156649015329", .gt)
+#guard D (eulerGammaPrecRound 53 .Floor) == ("0.5772156649015328", .lt)
+#guard D (eulerGammaPrecRound 53 .Ceiling) == ("0.5772156649015329", .gt)
+#guard D (eulerGammaPrecRound 100 .Nearest) == ("0.577215664901532860606512090082", .lt)
+#guard D (eulerGammaPrecRound 100 .Floor) == ("0.577215664901532860606512090082", .lt)
+#guard D (eulerGammaPrecRound 100 .Ceiling) == ("0.577215664901532860606512090083", .gt)
 
-#guard eulerGammaPrecRound 0 .Nearest == (nan, .eq)
+#guard D (eulerGammaPrecRound 0 .Nearest) == ("NaN", .eq)
 #guard (eulerGammaPrecRound 200 .Floor).2 == .lt
 #guard (eulerGammaPrecRound 200 .Ceiling).2 == .gt
 #guard toString (eulerGamma 53) == "0.5772156649015329"

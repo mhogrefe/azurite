@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.SinWithPeriod
 import Azurite.AzFloat.SinRatWithPeriod
 import Azurite.AzFloat.ToString
@@ -28,72 +29,74 @@ rationals.
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def S (q : String) (u : UInt64) (p : Nat) (m : RoundingMode := .Nearest) :=
   sinRatWithPeriodPrecRound (Q q) u p m
-private def half : AzFloat := F "1/2" 53
-private def nhalf : AzFloat := F "-1/2" 53
+private def half : AzFloat := X "0.5" 53
+private def nhalf : AzFloat := X "-0.5" 53
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard S "1/3" 0 53 == (nan, .eq)
-#guard S "0" 0 53 == (nan, .eq)
-#guard S "1/3" 360 0 == (nan, .eq)
-#guard S "0" 360 0 == (zero, .eq)
-#guard S "0" 360 53 == (zero, .eq)
+#guard D (S "1/3" 0 53) == ("NaN", .eq)
+#guard D (S "0" 0 53) == ("NaN", .eq)
+#guard D (S "1/3" 360 0) == ("NaN", .eq)
+#guard D (S "0" 360 0) == ("0.0", .eq)
+#guard D (S "0" 360 53) == ("0.0", .eq)
 
 -- exact values
-#guard S "1/12" 1 53 == (half, .eq)
-#guard S "5/12" 1 53 == (half, .eq)
-#guard S "7/12" 1 53 == (nhalf, .eq)
-#guard S "11/12" 1 53 == (nhalf, .eq)
-#guard S "-1/12" 1 53 == (nhalf, .eq)
-#guard S "-7/12" 1 53 == (half, .eq)
-#guard S "1/4" 1 53 == (F "1" 53, .eq)
-#guard S "-1/4" 1 53 == (F "-1" 53, .eq)
-#guard S "3/4" 1 53 == (F "-1" 53, .eq)
-#guard S "1/2" 1 53 == (zero, .eq)
-#guard S "7/12" 7 53 == (half, .eq)
-#guard S "1001/7" 13 53 == (zero, .eq)
-#guard S "45/2" 90 53 == (F "1" 53, .eq)
-#guard S "-45/2" 90 53 == (F "-1" 53, .eq)
-#guard S "30" 360 53 == (half, .eq)
-#guard S "-1350" 360 53 == (F "1" 53, .eq)
-#guard S "1/12" 1 7 .Floor == (F "1/2" 7, .eq)
+#guard D (S "1/12" 1 53) == ("0.5", .eq)
+#guard D (S "5/12" 1 53) == ("0.5", .eq)
+#guard D (S "7/12" 1 53) == ("-0.5", .eq)
+#guard D (S "11/12" 1 53) == ("-0.5", .eq)
+#guard D (S "-1/12" 1 53) == ("-0.5", .eq)
+#guard D (S "-7/12" 1 53) == ("0.5", .eq)
+#guard D (S "1/4" 1 53) == ("1.0", .eq)
+#guard D (S "-1/4" 1 53) == ("-1.0", .eq)
+#guard D (S "3/4" 1 53) == ("-1.0", .eq)
+#guard D (S "1/2" 1 53) == ("0.0", .eq)
+#guard D (S "7/12" 7 53) == ("0.5", .eq)
+#guard D (S "1001/7" 13 53) == ("0.0", .eq)
+#guard D (S "45/2" 90 53) == ("1.0", .eq)
+#guard D (S "-45/2" 90 53) == ("-1.0", .eq)
+#guard D (S "30" 360 53) == ("0.5", .eq)
+#guard D (S "-1350" 360 53) == ("1.0", .eq)
+#guard D (S "1/12" 1 7 .Floor) == ("0.5", .eq)
 
 -- correctly rounded irrational values
-#guard S "1/3" 7 53 == (F "5309837174569895/18014398509481984" 53, .lt)
-#guard S "1/3" 7 53 .Ceiling == (F "663729646821237/2251799813685248" 53, .gt)
-#guard S "22/7" 360 53 == (F "7901216278647547/144115188075855872" 53, .gt)
-#guard S "-22/7" 360 53 == (F "-7901216278647547/144115188075855872" 53, .lt)
-#guard S "22/7" 360 53 .Floor == (F "3950608139323773/72057594037927936" 53, .lt)
-#guard S "-22/7" 360 53 .Floor == (F "-7901216278647547/144115188075855872" 53, .lt)
-#guard S "1/10" 1 53 == (F "2647149443198255/4503599627370496" 53, .gt)
-#guard S "1/10" 1 53 .Floor == (F "5294298886396509/9007199254740992" 53, .lt)
-#guard S "1/3" 1 53 == (F "3900231685776981/4503599627370496" 53, .lt)
-#guard S "-2/3" 1 53 == (F "3900231685776981/4503599627370496" 53, .lt)
-#guard S "1/7" 1 53 == (F "7042111946219083/9007199254740992" 53, .lt)
-#guard S "3000000000000000000000000000001/3" 360 53
-  == (F "-2215277531410213/2251799813685248" 53, .gt)
+#guard D (S "1/3" 7 53) == ("0.2947551744109042", .lt)
+#guard D (S "1/3" 7 53 .Ceiling) == ("0.29475517441090426", .gt)
+#guard D (S "22/7" 360 53) == ("0.05482570146936002", .gt)
+#guard D (S "-22/7" 360 53) == ("-0.05482570146936002", .lt)
+#guard D (S "22/7" 360 53 .Floor) == ("0.054825701469360014", .lt)
+#guard D (S "-22/7" 360 53 .Floor) == ("-0.05482570146936002", .lt)
+#guard D (S "1/10" 1 53) == ("0.5877852522924731", .gt)
+#guard D (S "1/10" 1 53 .Floor) == ("0.587785252292473", .lt)
+#guard D (S "1/3" 1 53) == ("0.8660254037844386", .lt)
+#guard D (S "-2/3" 1 53) == ("0.8660254037844386", .lt)
+#guard D (S "1/7" 1 53) == ("0.7818314824680298", .lt)
+#guard D (S "3000000000000000000000000000001/3" 360 53) == ("-0.9837808485225588", .gt)
 #guard toString (sinRatWithPeriod (Q "1/7") 1 200)
   == "0.781831482468029808708444526674057750232334518708687528980635"
 
 -- agreement with the float variant at representable arguments
-#guard S "45" 360 53 == sinWithPeriodPrecRound (F "45" 53) 360 53 .Nearest
-#guard S "-5/2" 7 53 == sinWithPeriodPrecRound (F "-5/2" 53) 7 53 .Nearest
-#guard S "1" 1000 53 .Floor == sinWithPeriodPrecRound (F "1" 53) 1000 53 .Floor
+#guard S "45" 360 53 == sinWithPeriodPrecRound (X "45" 53) 360 53 .Nearest
+#guard S "-5/2" 7 53 == sinWithPeriodPrecRound (X "-2.5" 53) 7 53 .Nearest
+#guard S "1" 1000 53 .Floor == sinWithPeriodPrecRound (X "1" 53) 1000 53 .Floor
 
 -- the tiny path (`±1/(3·2^1000)`): `sin y` rounds like a value just below `y = 2πq/u`
 private def tinyQ : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 3) <<< (1000 : Nat))
 private def tinyE : AzInt := AzInt.ofInt (-1000)
-private def degLo : AzFloat := (F "1676856356036371/288230376151711744" 53) <<< tinyE
-private def degHi : AzFloat := (F "6707425424145485/1152921504606846976" 53) <<< tinyE
-private def turnLo : AzFloat := (F "4716158501352293/2251799813685248" 53) <<< tinyE
-private def turnHi : AzFloat := (F "2358079250676147/1125899906842624" 53) <<< tinyE
-#guard sinRatWithPeriodPrecRound tinyQ 360 53 .Nearest == (degLo, .lt)
-#guard sinRatWithPeriodPrecRound tinyQ 360 53 .Ceiling == (degHi, .gt)
-#guard sinRatWithPeriodPrecRound (-tinyQ) 360 53 .Nearest == (-degLo, .gt)
-#guard sinRatWithPeriodPrecRound (-tinyQ) 360 53 .Floor == (-degHi, .lt)
-#guard sinRatWithPeriodPrecRound tinyQ 1 53 .Nearest == (turnHi, .gt)
-#guard sinRatWithPeriodPrecRound tinyQ 1 53 .Floor == (turnLo, .lt)
+private def degLo : AzFloat := (X "0.005817764173314432" 53) <<< tinyE
+private def degHi : AzFloat := (X "0.005817764173314433" 53) <<< tinyE
+private def turnLo : AzFloat := (X "2.0943951023931953" 53) <<< tinyE
+private def turnHi : AzFloat := (X "2.0943951023931957" 53) <<< tinyE
+#guard D (sinRatWithPeriodPrecRound tinyQ 360 53 .Nearest) == ("5.4295076439858145e-304", .lt)
+#guard D (sinRatWithPeriodPrecRound tinyQ 360 53 .Ceiling) == ("5.429507643985815e-304", .gt)
+#guard D (sinRatWithPeriodPrecRound (-tinyQ) 360 53 .Nearest) == ("-5.4295076439858145e-304", .gt)
+#guard D (sinRatWithPeriodPrecRound (-tinyQ) 360 53 .Floor) == ("-5.429507643985815e-304", .lt)
+#guard D (sinRatWithPeriodPrecRound tinyQ 1 53 .Nearest) == ("1.9546227518348934e-301", .gt)
+#guard D (sinRatWithPeriodPrecRound tinyQ 1 53 .Floor) == ("1.954622751834893e-301", .lt)
 #guard (sinPeriodTiny? false tinyQ.num (tinyQ.den * AzNat.ofNat 360) (AzInt.ofInt 0)
   (ratExpBound tinyQ + AzInt.ofInt 2) 53 .Nearest).isSome

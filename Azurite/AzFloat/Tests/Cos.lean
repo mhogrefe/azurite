@@ -11,6 +11,7 @@ import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Cos
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.OfString
 
 /-!
 # Tests for `cos`
@@ -25,58 +26,61 @@ float arguments, rounded to 53 bits with exact rationals.
 
 open Azurite Azurite.AzFloat
 
-private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 private def C (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := cosPrecRound x p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard C nan 53 == (nan, .eq)
-#guard C (infinity true) 53 == (nan, .eq)
-#guard C (infinity false) 53 == (nan, .eq)
-#guard C zero 53 == (F "1" 53, .eq)
-#guard C zero 0 == (nan, .eq)
-#guard C (F "1" 53) 0 == (nan, .eq)
+#guard D (C nan 53) == ("NaN", .eq)
+#guard D (C (infinity true) 53) == ("NaN", .eq)
+#guard D (C (infinity false) 53) == ("NaN", .eq)
+#guard D (C zero 53) == ("1.0", .eq)
+#guard D (C zero 0) == ("NaN", .eq)
+#guard D (C (X "1" 53) 0) == ("NaN", .eq)
 
 -- correctly rounded values
-#guard C (F "1/2" 53) 53 == (F "494035062339541/562949953421312" 53, .gt)
-#guard C (F "1" 53) 53 == (F "1216652631687587/2251799813685248" 53, .gt)
-#guard C (F "-1" 53) 53 == (F "1216652631687587/2251799813685248" 53, .gt)
-#guard C (F "3" 53) 53 == (F "-4458529838789353/4503599627370496" 53, .gt)
-#guard C (F "1/1024" 53) 53 == (F "9007194959774037/9007199254740992" 53, .lt)
-#guard C (F "100" 53) 53 == (F "7767077903818719/9007199254740992" 53, .lt)
-#guard C (F "-1000" 53) 53 == (F "5065460396847547/9007199254740992" 53, .lt)
-#guard C (F "1000000000000" 53) 53 == (F "7128714540216867/9007199254740992" 53, .lt)
-#guard C (F "1152921504606846976" 53) 53 == (F "-5015173257324871/9007199254740992" 53, .gt)
-#guard C (F "-7/5" 53) 53 == (F "6123711691446027/36028797018963968" 53, .gt)
-#guard C (F "22/7" 53) 53 == (F "-4503596026893703/4503599627370496" 53, .lt)
-#guard C (F "884279719003555/281474976710656" 53) 53 == (F "-1" 53, .lt)
-#guard C (F "1/1267650600228229401496703205376" 53) 53 == (F "1" 53, .gt)
+#guard D (C (X "0.5" 53) 53) == ("0.8775825618903728", .gt)
+#guard D (C (X "1" 53) 53) == ("0.5403023058681398", .gt)
+#guard D (C (X "-1" 53) 53) == ("0.5403023058681398", .gt)
+#guard D (C (X "3" 53) 53) == ("-0.9899924966004454", .gt)
+#guard D (C (X "0.0009765625" 53) 53) == ("0.9999995231628797", .lt)
+#guard D (C (X "100" 53) 53) == ("0.8623188722876839", .lt)
+#guard D (C (X "-1000" 53) 53) == ("0.5623790762907029", .lt)
+#guard D (C (X "1000000000000" 53) 53) == ("0.7914463018528902", .lt)
+#guard D (C (X "1152921504606846976" 53) 53) == ("-0.5567960822766417", .gt)
+#guard D (C (X "-1.4" 53) 53) == ("0.16996714290024104", .gt)
+#guard D (C (X "3.142857142857143" 53) 53) == ("-0.999999200533553", .lt)
+#guard D (C (X "3.141592653589793" 53) 53) == ("-1.0", .lt)
+#guard D (C (X "7.888609052210118e-31" 53) 53) == ("1.0", .gt)
 
 -- directed modes and other precisions
-#guard C (F "1" 53) 53 .Floor == (F "4866610526750347/9007199254740992" 53, .lt)
-#guard C (F "1" 53) 53 .Ceiling == (F "1216652631687587/2251799813685248" 53, .gt)
-#guard C (F "3" 53) 53 .Floor == (F "-8917059677578707/9007199254740992" 53, .lt)
-#guard C (F "3" 53) 53 .Ceiling == (F "-4458529838789353/4503599627370496" 53, .gt)
-#guard C (F "3" 53) 20 == (F "-519041/524288" 20, .gt)
-#guard cos (F "1" 53) == F "1216652631687587/2251799813685248" 53
-#guard toString (cos (F "1" 200))
+#guard D (C (X "1" 53) 53 .Floor) == ("0.5403023058681397", .lt)
+#guard D (C (X "1" 53) 53 .Ceiling) == ("0.5403023058681398", .gt)
+#guard D (C (X "3" 53) 53 .Floor) == ("-0.9899924966004455", .lt)
+#guard D (C (X "3" 53) 53 .Ceiling) == ("-0.9899924966004454", .gt)
+#guard D (C (X "3" 53) 20) == ("-0.989992", .gt)
+#guard toString (cos (X "1" 53)) == "0.5403023058681398"
+#guard toString (cos (X "1" 200))
   == "0.540302305868139717400936607442976603732310420617922227670097"
-#guard toString (cos (F "100" 200))
+#guard toString (cos (X "100" 200))
   == "0.862318872287683934101938513950842535510084008535510829280162"
 
 -- tiny arguments: the cost does not depend on the exponent (`2^(−2^30)` is immediate)
 private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
-private def tinyX : AzFloat := (F "1" 53) <<< tinyE
-private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
-#guard cosPrecRound tinyX 53 .Nearest == (F "1" 53, .gt)
-#guard cosPrecRound tinyX 53 .Ceiling == (F "1" 53, .gt)
-#guard cosPrecRound tinyX 53 .Floor == (belowOne, .lt)
-#guard cosPrecRound (-tinyX) 53 .Floor == (belowOne, .lt)
-#guard cosPrecRound ((F "1/3" 200) <<< tinyE) 10 .Nearest == (F "1" 10, .gt)
-#guard cos tinyX == F "1" 53
+private def tinyX : AzFloat := (X "1" 53) <<< tinyE
+private def belowOne : AzFloat := X "0.9999999999999999" 53
+#guard D (cosPrecRound tinyX 53 .Nearest) == ("1.0", .gt)
+#guard D (cosPrecRound tinyX 53 .Ceiling) == ("1.0", .gt)
+#guard D (cosPrecRound tinyX 53 .Floor) == ("0.9999999999999999", .lt)
+#guard D (cosPrecRound (-tinyX) 53 .Floor) == ("0.9999999999999999", .lt)
+#guard D (cosPrecRound ((X "0.3333333333333333333333333333333333333333333333333333333333334\
+  " 200) <<< tinyE) 10 .Nearest) == ("1.0", .gt)
+#guard toString (cos tinyX) == "1.0"
 -- the tiny path and the loop agree where both apply
-#guard cosPrecRound ((F "1" 53) <<< AzInt.ofInt (-130)) 53 .Floor == (belowOne, .lt)
+#guard D (cosPrecRound ((X "1" 53) <<< AzInt.ofInt (-130)) 53 .Floor) == ("0.9999999999999999", .lt)
 
 -- a huge argument (`2^1000`; reference with a 700-digit `π`): only `π` and the exact remainder
 -- are computed at the reduction precision, the series runs at `w + 12` bits
-#guard C ((F "1" 53) <<< AzInt.ofInt 1000) 53 == (F "8892322134394901/9007199254740992" 53, .lt)
+#guard D (C ((X "1" 53) <<< AzInt.ofInt 1000) 53) == ("0.9872460775989135", .lt)

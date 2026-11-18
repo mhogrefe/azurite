@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.Pow2M1Rat
 import Azurite.AzFloat.PowBaseM1
 import Azurite.AzFloat.PowBaseM1Rat
@@ -29,46 +30,49 @@ correctly rounded values of `3^(1/3) − 1`, `10^(−1/3) − 1`, `7^(22/7) − 
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
-private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+/-- A float input from its decimal spelling, rounded to nearest at `p` bits. -/
+private def X (s : String) (p : Nat) : AzFloat := (ofDecimalString s p).get!
 /-- The rational `digits / 10^zeros`. -/
 private def R (digits : String) (zeros : Nat) : AzRat := Q (digits ++ "/1" ++ "".pushn '0' zeros)
 private def E (u : UInt64) (q : String) (p : Nat) (m : RoundingMode := .Nearest) :=
   powBaseM1RatPrecRound u (Q q) p m
+/-- A result as its decimal output and its comparison tag. -/
+private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r.2)
 
 -- special values
-#guard E 0 "0" 53 == (zero, .eq)
-#guard E 0 "0" 0 == (zero, .eq)
-#guard E 0 "1/3" 53 == (F "-1" 53, .eq)
-#guard E 0 "1/3" 0 == (nan, .eq)
-#guard E 0 "-1/3" 53 == (infinity true, .eq)
-#guard E 0 "-1/3" 0 == (infinity true, .eq)
-#guard E 1 "1/3" 53 == (zero, .eq)
-#guard E 1 "-1000" 0 == (zero, .eq)
-#guard E 7 "0" 53 == (zero, .eq)
-#guard E 7 "0" 0 == (zero, .eq)
-#guard E 7 "1/3" 0 == (nan, .eq)
-#guard powBaseM1Rat 0 (Q "-2") 53 == infinity true
-#guard powBaseM1Rat 5 (Q "0") 53 == zero
+#guard D (E 0 "0" 53) == ("0.0", .eq)
+#guard D (E 0 "0" 0) == ("0.0", .eq)
+#guard D (E 0 "1/3" 53) == ("-1.0", .eq)
+#guard D (E 0 "1/3" 0) == ("NaN", .eq)
+#guard D (E 0 "-1/3" 53) == ("Infinity", .eq)
+#guard D (E 0 "-1/3" 0) == ("Infinity", .eq)
+#guard D (E 1 "1/3" 53) == ("0.0", .eq)
+#guard D (E 1 "-1000" 0) == ("0.0", .eq)
+#guard D (E 7 "0" 53) == ("0.0", .eq)
+#guard D (E 7 "0" 0) == ("0.0", .eq)
+#guard D (E 7 "1/3" 0) == ("NaN", .eq)
+#guard toString (powBaseM1Rat 0 (Q "-2") 53) == "Infinity"
+#guard toString (powBaseM1Rat 5 (Q "0") 53) == "0.0"
 
 -- exact rational powers
-#guard E 8 "1/3" 53 == (F "1" 53, .eq)
-#guard E 8 "-2/3" 53 == (F "-3/4" 53, .eq)
-#guard E 27 "4/3" 53 == (F "80" 53, .eq)
-#guard E 1000 "-1/3" 53 == ofAzRatRound (Q "-9/10") 53 .Nearest
-#guard E 1000 "-1/3" 53 .Floor == ofAzRatRound (Q "-9/10") 53 .Floor
-#guard E 1024 "1/10" 53 == (F "1" 53, .eq)
-#guard E 1024 "-3/10" 53 == (F "-7/8" 53, .eq)
-#guard E 2 "10/2" 53 == (F "31" 53, .eq)
-#guard E 3 "40" 20 == ofAzRatRound (Q "12157665459056928800") 20 .Nearest
-#guard E 3 "-40" 20 .Ceiling
-  == ofAzRatRound (Q "-12157665459056928800/12157665459056928801") 20 .Ceiling
+#guard D (E 8 "1/3" 53) == ("1.0", .eq)
+#guard D (E 8 "-2/3" 53) == ("-0.75", .eq)
+#guard D (E 27 "4/3" 53) == ("8.0e1", .eq)
+#guard D (E 1000 "-1/3" 53) == ("-0.9", .lt)
+#guard D (E 1000 "-1/3" 53 .Floor) == ("-0.9", .lt)
+#guard D (E 1024 "1/10" 53) == ("1.0", .eq)
+#guard D (E 1024 "-3/10" 53) == ("-0.875", .eq)
+#guard D (E 2 "10/2" 53) == ("31.0", .eq)
+#guard D (E 3 "40" 20) == ("1.215766e19", .lt)
+#guard D (E 3 "-40" 20 .Ceiling) == ("-0.999999", .gt)
 #guard (E 1024 "1/11" 53).2 != .eq
-#guard powBaseM1Rat 8 (Q "1/3") 53 == F "1" 53
+#guard toString (powBaseM1Rat 8 (Q "1/3") 53) == "1.0"
 
 -- agreement with the float `u^x − 1` and with `2^q − 1`
-#guard E 3 "1/2" 150 == powBaseM1PrecRound 3 (F "1/2" 53) 150 .Nearest
-#guard E 7 "-7/4" 150 .Floor == powBaseM1PrecRound 7 (F "-7/4" 53) 150 .Floor
-#guard E 10 "1/1073741824" 150 == powBaseM1PrecRound 10 (F "1/1073741824" 53) 150 .Nearest
+#guard E 3 "1/2" 150 == powBaseM1PrecRound 3 (X "0.5" 53) 150 .Nearest
+#guard E 7 "-7/4" 150 .Floor == powBaseM1PrecRound 7 (X "-1.75" 53) 150 .Floor
+#guard E 10 "1/1073741824" 150 == powBaseM1PrecRound 10 (X "0.000000000931322574615478515625" 53)
+    150 .Nearest
 #guard E 2 "1/3" 150 == pow2M1RatPrecRound (Q "1/3") 150 .Nearest
 #guard E 2 "-10/3" 150 .Ceiling == pow2M1RatPrecRound (Q "-10/3") 150 .Ceiling
 #guard E 2 "1/1000000" 150 == pow2M1RatPrecRound (Q "1/1000000") 150 .Nearest
@@ -119,33 +123,38 @@ private def ref10NegBig : AzRat :=
     "3911242313211578765212256") 200
 
 -- correctly rounded irrational values
-#guard (E 3 "1/3" 150).1 == ofAzRat ref3Third 150
-#guard E 3 "1/3" 150 .Floor == ofAzRatRound ref3Third 150 .Floor
-#guard E 3 "1/3" 150 .Ceiling == ofAzRatRound ref3Third 150 .Ceiling
-#guard (E 10 "-1/3" 150).1 == ofAzRat ref10NegThird 150
-#guard E 10 "-1/3" 150 .Up == ofAzRatRound ref10NegThird 150 .Up
-#guard (E 7 "22/7" 150).1 == ofAzRat ref7_22_7 150
-#guard E 7 "22/7" 150 .Down == ofAzRatRound ref7_22_7 150 .Down
-#guard (E 12345 "1/10" 150).1 == ofAzRat ref12345Tenth 150
+#guard toString ((E 3 "1/3" 150).1) == "0.4422495703074083823216383107801095883918692535"
+#guard D (E 3 "1/3" 150 .Floor) == ("0.4422495703074083823216383107801095883918692535", .lt)
+#guard D (E 3 "1/3" 150 .Ceiling) == ("0.4422495703074083823216383107801095883918692538", .gt)
+#guard toString ((E 10 "-1/3" 150).1) == "-0.535841116638722110758992364908055342344865087"
+#guard D (E 10 "-1/3" 150 .Up) == ("-0.535841116638722110758992364908055342344865088", .lt)
+#guard toString ((E 7 "22/7" 150).1) == "451.9209519803504605905992747045902373786538522"
+#guard D (E 7 "22/7" 150 .Down) == ("451.920951980350460590599274704590237378653852", .lt)
+#guard toString ((E 12345 "1/10" 150).1) == "1.56536467030951051511632997501874319975817513"
 #guard (E 18446744073709551615 "1/7" 150).1 == ofAzRat refMaxSeventh 150
-#guard (E 6 "301/3" 150).1 == ofAzRat ref6Big 150
-#guard (E 10 "-401/6" 150).1 == ofAzRat ref10NegBig 150
-#guard E 10 "-401/6" 150 .Ceiling == ofAzRatRound ref10NegBig 150 .Ceiling
-#guard powBaseM1Rat 10 (Q "-1/3") 53 == ofAzRat ref10NegThird 53
-#guard powBaseM1Rat 3 (Q "1/3") 200 == ofAzRat ref3Third 200
+#guard toString ((E 6 "301/3" 150).1) == "1.187158724442726293435019232164744577588801714e78"
+#guard toString ((E 10 "-401/6" 150).1) == "-1.0"
+#guard D (E 10 "-401/6" 150 .Ceiling) == ("-0.999999999999999999999999999999999999999999999", .gt)
+#guard toString (powBaseM1Rat 10 (Q "-1/3") 53) == "-0.5358411166387221"
+#guard toString (powBaseM1Rat 3 (Q "1/3") 200) == "0.4422495703074083823216383107801095883918692534\
+  993505775464163"
 
 -- small and tiny arguments: the cancellation is compensated
-#guard (E 10 "1/1000000" 150).1 == ofAzRat ref10Micro 150
-#guard E 10 "1/1000000" 150 .Floor == ofAzRatRound ref10Micro 150 .Floor
-#guard (E 10 "-1/1000000" 150).1 == ofAzRat ref10NegMicro 150
-#guard E 10 "-1/1000000" 150 .Ceiling == ofAzRatRound ref10NegMicro 150 .Ceiling
-#guard (E 10 "1/1000000000000000000000000000000000000000000000000000000000000" 53).1
-  == ofAzRat ref10Tiny 53
-#guard (E 10 "1/1000000000000000000000000000000000000000000000000000000000000" 300).1
-  == ofAzRat ref10Tiny 300
-#guard E 10 "-1/1000000000000000000000000000000000000000000000000000000000000" 300 .Ceiling
-  == ofAzRatRound ref10NegTiny 300 .Ceiling
-#guard powBaseM1Rat 10 (Q "-1/1000000") 53 == ofAzRat ref10NegMicro 53
+#guard toString ((E 10 "1/1000000" 150).1) == "2.302587743945135602980545900009792650478115167e-6"
+#guard D (E 10 "1/1000000" 150 .Floor) == ("2.302587743945135602980545900009792650478115164e-6\
+  ", .lt)
+#guard toString ((E 10 "-1/1000000" 150).1) == "-2.30258244204702512224002504051845613840651456e-6"
+#guard D (E 10 "-1/1000000" 150 .Ceiling) == ("-2.30258244204702512224002504051845613840651456e-6\
+  ", .gt)
+#guard toString ((E 10 "1/1000000000000000000000000000000000000000000000000000000000000" 53).1)
+  == "2.3025850929940456e-60"
+#guard toString ((E 10 "1/1000000000000000000000000000000000000000000000000000000000000" 300).1)
+  == "2.302585092994045684017991454684364207601101488628772976033330551916627848876357761069191502e\
+  -60"
+#guard D (E 10 "-1/1000000000000000000000000000000000000000000000000000000000000" 300 .Ceiling)
+  == ("-2.30258509299404568401799145468436420760110148862877297603332525001851737047834719940280290\
+  7e-60", .gt)
+#guard toString (powBaseM1Rat 10 (Q "-1/1000000") 53) == "-2.302582442047025e-6"
 
 -- directed modes are ordered
 #guard (E 7 "5/7" 60 .Floor).2 == .lt
@@ -168,10 +177,10 @@ private def rescale (r : AzFloat × Ordering) : AzFloat × Ordering :=
 private def big3 : AzFloat × Ordering :=
   let sh : Int := (Q ("9549794856605563740070467985241666727522968810983092175470230050049636"
     ++ "697480851670010552523856060425328708852050992822989")).num.toNat
-  ((F "8158923442829460" 53) <<< AzInt.ofInt (sh), .lt)
+  ((X "8158923442829460" 53) <<< AzInt.ofInt (sh), .lt)
 private def big10 : AzFloat × Ordering :=
   let sh : Int := (Q ("16014397907901874572694325517271509893986724198514539137838752")).num.toNat
-  ((F "6652583142272300" 53) <<< AzInt.ofInt (sh), .gt)
+  ((X "6652583142272300" 53) <<< AzInt.ofInt (sh), .gt)
 private def qBig : String :=
   "180757491466083601275914342040210831203079405498045645898146"
     ++ "15495784533354117888362407517472960964820051322203809232453633/3"
@@ -180,20 +189,20 @@ private def q200 : String :=
     ++ "8"
 #guard E 3 qBig 53 == big3
 #guard E 10 q200 53 == big10
-#guard E 10 ("-" ++ q200) 53 == (F "-1" 53, .lt)
+#guard E 10 ("-" ++ q200) 53 == (X "-1" 53, .lt)
 
 -- a hugely negative exponent: the value is within `2^(−|x|/2)` above `−1`, and one test
 -- (`expM1NearNegOne?`) rounds it at a cost independent of `|x|`
-private def m1Above : AzFloat := F "-9007199254740991/9007199254740992" 53
+private def m1Above : AzFloat := X "-0.9999999999999999" 53
 private def hugeNegX : AzRat :=
   -((AzNat.ofNat 1) <<< (100000 : Nat)).toAzRat * Q "1/3"
 private def negX : AzRat := Q "-2001/2"
-#guard powBaseM1RatPrecRound 10 hugeNegX 53 .Nearest == (F "-1" 53, .lt)
-#guard powBaseM1RatPrecRound 10 hugeNegX 53 .Floor == (F "-1" 53, .lt)
+#guard powBaseM1RatPrecRound 10 hugeNegX 53 .Nearest == (X "-1" 53, .lt)
+#guard powBaseM1RatPrecRound 10 hugeNegX 53 .Floor == (X "-1" 53, .lt)
 #guard powBaseM1RatPrecRound 10 hugeNegX 53 .Ceiling == (m1Above, .gt)
-#guard powBaseM1RatPrecRound 10 negX 53 .Nearest == (F "-1" 53, .lt)
-#guard powBaseM1RatPrecRound 10 negX 53 .Floor == (F "-1" 53, .lt)
+#guard powBaseM1RatPrecRound 10 negX 53 .Nearest == (X "-1" 53, .lt)
+#guard powBaseM1RatPrecRound 10 negX 53 .Floor == (X "-1" 53, .lt)
 #guard powBaseM1RatPrecRound 10 negX 53 .Ceiling == (m1Above, .gt)
 #guard expM1NearNegOne? true 126 53 .Nearest == none
-#guard expM1NearNegOne? true 127 53 .Nearest == some (F "-1" 53, .lt)
+#guard expM1NearNegOne? true 127 53 .Nearest == some (X "-1" 53, .lt)
 #guard expM1NearNegOne? false 1000 53 .Nearest == none
