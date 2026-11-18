@@ -78,6 +78,8 @@ import Azurite.AzFloat.Tests.CothRat
 import Azurite.AzFloat.Tests.Csc
 import Azurite.AzFloat.Tests.Csch
 import Azurite.AzFloat.Tests.CschRat
+import Azurite.AzFloat.Tests.Digamma
+import Azurite.AzFloat.Tests.DigammaRat
 import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat
 import Azurite.AzFloat.Tests.Dottie

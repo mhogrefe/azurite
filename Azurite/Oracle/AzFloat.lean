@@ -51,6 +51,8 @@ import Azurite.AzFloat.LambertW
 import Azurite.AzFloat.TreeT
 import Azurite.AzFloat.Gd
 import Azurite.AzFloat.GdRat
+import Azurite.AzFloat.GdInv
+import Azurite.AzFloat.GdInvRat
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.LnP1
 import Azurite.AzFloat.Log2
@@ -1523,6 +1525,16 @@ def checkFloatGudermannian : String → Verdict :=
 `AzFloat.gdRatPrecRound`. -/
 def checkFloatGudermannianRational : String → Verdict :=
   checkFloatOfRational "gudermannian_rational" AzFloat.gdRatPrecRound
+
+/-- `Float`'s `inverse_gudermannian` family, against `AzFloat.gdInvPrecRound`; the sign of a zero
+result is not compared. -/
+def checkFloatInverseGudermannian : String → Verdict :=
+  checkFloatUnaryWith "inverse_gudermannian" AzFloat.gdInvPrecRound
+
+/-- `Float::inverse_gudermannian_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.gdInvRatPrecRound`. -/
+def checkFloatInverseGudermannianRational : String → Verdict :=
+  checkFloatOfRational "inverse_gudermannian_rational" AzFloat.gdInvRatPrecRound
 
 /-- An associated-function line `T::f(x, a…) = r`, `T` the dialect's type, rewritten as the method
 line `(x).f(a…) = r`, so the method checkers read it; any other line is unchanged. -/

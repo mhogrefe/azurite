@@ -8492,6 +8492,51 @@ non-integer: `(num / den).isOdd`.  Proofs (`Equiv/LnAbsGammaRat.lean`):
 `lnGammaRat` of `az_float_gamma` at negative arguments): the same as the float function
 (0.5–0.7 ms at 53 bits, 0.9–1.6 at 200, 4–12 at 1000).
 
+### 4. The digamma function `ψ(x)` (DONE 2026-11-17, fuel-based, UNTIMED)
+
+User request.  `digammaPrecRound x p mode`, `digamma x` (`AzFloat/Digamma.lean`);
+`digammaRatPrecRound q p mode`, `digammaRat q p` (`AzFloat/DigammaRat.lean`); the pieces in
+`AzFloat/DigammaBracket.lean`, the analysis in `Transcendental/DigammaStirling.lean`; `Equiv`
+and `Tests` for each.
+
+* **`x > 0`**: the shift and the asymptotic series, as for `ln Γ` (whose shift
+  `lnGammaShift`, table size `lnGammaTerms` and working precision are reused):
+  `ψ(x) = ψ(y) − ∑_{i<δ} 1/(x + i)`, `ψ(y) = ln y − 1/(2y) + ∑ (−1)^k c_k / y^(2k) + r`,
+  `c_k = T_k / (4^(2k) − 2^(2k)) = B_{2k}/(2k)` up to sign — a tangent number over an
+  integer, no rational reduction.  The remainder is between `0` and the first omitted term
+  (`psiNu_eq_sum_add`, from `DLMF.dlmf_5_11_ii_psi_real`, which was already proven), so the
+  loop `psiSumLoop` stops where it likes.  It sums `−ν`, whose signs are those of Stirling's
+  series: `stirlingClose_spec` is reused as it is.
+* **`x < 0`**: `ψ(x) = ψ(1 − x) − π cot (π x)` (`DLMF.psiR_one_sub`).  With `k` the integer
+  next to `x` (`gammaNearInt`, `gammaFracEncl` — shared with `Γ`) and `a = |x − k|`,
+  `cot (π x) = ± cot (π a)`; `digammaCot` takes sine and cosine of `π a` from one
+  `sinCosBracket`, the sine with `sinLostBits` so that it stays relatively accurate next to a
+  pole.  The cosine changes sign at the half-integers: new signed operations `Encl.mulPos`,
+  `Encl.divPos` (any sign times/over a positive enclosure).
+* **Tiny arguments** (`digammaTiny?`, `digammaRatTiny?`): `−1/x − 2 < ψ(x) < −1/x` for
+  `0 < |x| ≤ 1/4` (`psiR_near_zero`: three steps of the recurrence, then
+  `ln y − 1/(2y) − 1/(12y²) ≤ ψ(y) ≤ ln y − 1/(2y)` at `y ∈ [2.75, 3.25]` with
+  `2 − e/y ≤ ln y ≤ y/e`).  `−1/x` is a float when `x` is a power of two, so it sits at the
+  open side of the test: `ψ(2^(−2^30))` is immediate.
+* **Special values**: `ψ(+∞) = +∞`; `ψ(0) = −∞` (the limit from the right — there is no
+  negative zero; MPFR gives `−∞` at `+0`); `NaN` at `−1, −2, …` (as MPFR), at `−∞` and `NaN`.
+  `Spec.digamma`.  To confirm with the user if Malachite differs.
+* **Contract**: `digammaPrecRound_eq_or`, `digammaRatPrecRound_eq_or` — correctly rounded or
+  `(nan, .eq)` when the ten doublings run out.  No irrationality is known, not even for
+  `ψ(1) = −γ`.  The zeros (`1.4616…`, one between consecutive poles) need no code: next to
+  one the loop doubles until the value separates from `0` (`ψ(1.4616321449683623) ≈
+  −9.2·10⁻¹⁷` comes out at 53 bits).
+* The proofs went through at the first attempt almost everywhere: the enclosure layer
+  (`IsEncl.add/sub/mul/div`, `lnOfEncl_pos`, `gammaFracEncl_spec`,
+  `lnAbsGammaApproxOf_valid_or_none`, `zivLoop_eq_of_ne_nan_or_none`) carries a new function of
+  this kind with about 350 lines of proof.
+* Tests: `ψ(1) = −γ`, `ψ(1/2)`, `ψ(1/4)`, `ψ(1/3)`, `ψ(2/3)` against their closed forms'
+  known digits, both sides of the zero, `10³⁰`, `10³⁰⁰`, `3·2^(2^20)` against `ln`, next to
+  the pole `−1`, a half-integer, the zero `−0.504…`, `±10⁻⁴⁰`, `2^(−2^30)`, 200 and 1000 bits.
+* Rows `digamma`, `digammaRat` in `az_float_families family:misc`; not yet timed.  Expected:
+  about `ln Γ` (the harmonic sum is `δ` divisions where `ln Γ` has `δ` multiplications).
+* Next in the order: the zeros `psiZero n`, then Beta / `ln` Beta / Pochhammer.
+
 ### Perf 14. Lambert `W₀`: the top of the `Float` range (DONE 2026-11-17)
 
 Reported from the Malachite port.  `seedFloat` rejected only arguments whose `Float`

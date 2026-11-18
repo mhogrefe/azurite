@@ -146,6 +146,9 @@ import Azurite.AzFloat.CscBracket
 import Azurite.AzFloat.Csch
 import Azurite.AzFloat.CschBracket
 import Azurite.AzFloat.CschRat
+import Azurite.AzFloat.Digamma
+import Azurite.AzFloat.DigammaBracket
+import Azurite.AzFloat.DigammaRat
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.DivRat
 import Azurite.AzFloat.Dottie
@@ -246,6 +249,9 @@ import Azurite.AzFloat.Equiv.Csc
 import Azurite.AzFloat.Equiv.CscBracket
 import Azurite.AzFloat.Equiv.Csch
 import Azurite.AzFloat.Equiv.CschBracket
+import Azurite.AzFloat.Equiv.Digamma
+import Azurite.AzFloat.Equiv.DigammaBracket
+import Azurite.AzFloat.Equiv.DigammaRat
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
@@ -3128,6 +3134,7 @@ import Azurite.Sci.Options
 import Azurite.Transcendental.Catalan
 import Azurite.Transcendental.CatalanIrrational
 import Azurite.Transcendental.Cos
+import Azurite.Transcendental.DigammaStirling
 import Azurite.Transcendental.Dottie
 import Azurite.Transcendental.EulerGamma
 import Azurite.Transcendental.Exp
