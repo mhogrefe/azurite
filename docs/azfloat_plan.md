@@ -8736,6 +8736,73 @@ before → after:
   with the others); it was not reproduced before the rewrite, so its cause stays unknown.
 * Still open: the tiny-argument path; `AzRat` arguments; the `ln |B|` driver.
 
+### 5a. The Beta function of two rationals (DONE 2026-11-18, fuel-based, TIMED)
+
+User request.  `betaRatPrecRound a b p mode`, `betaRat a b p` (`AzFloat/BetaRat.lean`,
+`Equiv/BetaRat.lean`, `Tests/BetaRat.lean`).
+
+* The bracket was made generic first: `lnAbsBetaEncl A B S ea eb es Fa Fb Fs w ws` takes the
+  three arguments as enclosure functions of the working precision and the three distances to
+  an integer as functions of theirs (`lnAbsBetaEncl_spec`, `betaEnclOf_spec`); the float
+  function is the instance with point enclosures and `Encl.add` for the sum
+  (`lnAbsBetaCore`), the rational one the instance with `lnGammaRatEncl` of `a`, `b` and of
+  the exact rational `a + b`, and `gammaRatFrac` (the nearest integer by `AzRat.round`).
+* Special values as for floats; **the exact zero is one test on the reduced sum** (`den = 1`
+  and `num = 0` or negative; `nonpos_int_iff`).
+* Exact values: a positive integer `b ≤ 64` (`b = 1` included) with an `a` whose numerator and
+  denominator have at most `2p + 1024` bits together — `betaIntQuot N D n`, factored out of
+  the float function (`betaIntQuot_eq`): the integer product and one correctly rounded float
+  division, for any denominator `D`.
+* **Contract**: `betaRatPrecRound_eq_or`.
+* Timings (`az_float_families family:misc`, ms at 53 / 200 / 1000 bits): `B(1/3, 5/2)`
+  1.06 / 2.53 / 24.2; `B(150, 5/2)` 0.89 / 2.13 / 22.5; `B(−7/3, 5/2)` 1.28 / 2.83 / 25.9;
+  `B(−1/3, −7/3)` 1.65 / 3.54 / 28.0 — the float function's; `B(1/3, 50)` and `B(40, 50)`
+  0.017 / 0.017 / 0.020 (exact; the rational `1/3` stays short, where the float `1/3` grows
+  with the precision); `B(1/3, −7/3) = 0` in 1 µs.
+* Tests: closed forms (`B(1/3, 2/3) = 2π/√3`, …), the exact rationals (`B(1/3, 2) = 9/4`,
+  `B(−1/2, 2) = −4`), zeros, poles, symmetry, agreement with the float function.
+
+### Perf 17. Wright `ω`: very negative arguments (DONE 2026-11-18, measured)
+
+Suggestion from the port to Malachite, passed on by the user.  There the fallback
+(`lambertBracket`) was taken in 4910 of 1.6 million bracket evaluations, all for very negative
+arguments (shortest: `q = −316990021309512686572654174207/15` at `p = 1`): `ω(x) ≈ eˣ` is so
+small that the residual `n + ln n − x` resolves a candidate only at a working precision of the
+order of the *exponent* of `eˣ`, while `omegaWork` adds its bit length.
+
+* **Bounds** (`WrightOmega.bounds_of_nonpos`): for `x ≤ 0`, with `E = eˣ`,
+  `E − E² ≤ ω ≤ E − E² + 2E³`.  From `ω e^ω = E`: `1 − ω ≤ e^(−ω)` gives the lower bound;
+  `1 + ω ≤ e^ω` gives `ω ≤ E − ω²`, and `ω ≥ E − E² ≥ 0` then `ω ≤ E − (E − E²)²`.  (The
+  suggestion had `3/2 E³` from `e^(−ω) < 1 − ω + ω²/2`, rounded up to `2`; this route needs
+  the first-order inequality only.)
+* **Bracket** (`omegaNegEncl`): `[⌊E₁ − ⌈E₂²⌉⌋, ⌈⌈E₂ − ⌊E₁²⌋⌉ + 2⌈E₂³⌉⌉]` on an enclosure
+  `[E₁, E₂]` of `eˣ` at `max(64, w + 16)` bits, taken when the upper 64-bit rounding of `x` is
+  at most `−(⌊7(w+8)/20⌋ + 1)` (`omegaNegTest`: then `e^(2x) < 2^(−w−8)`), before any
+  candidate.
+* **Termination** without a width estimate: the width bound `wrightEps` is the old one or, at
+  the levels where the test holds, *the width of the bracket itself* (`omegaNegWidth`); for a
+  fixed `x` the test fails from some level on (`exists_omegaNegTest_false`), so that term is
+  eventually `0` and the bound still tends to zero (`tendsto_wrightEps`).  The old bracket is
+  `wrightBracketMain`.
+* **One exponential, not two**: `expAt`, `expRatAt` were the `Floor` and the `Ceiling`
+  rounding of `eˣ` — two full evaluations.  They are now `enclOfFloor`: the rounding down at
+  `P + 2` bits and `⌈lo (1 + 2^(−P))⌉`, of relative width below `4 · 2^(−P)`
+  (`enclOfFloor_spec`), which is what `XEncl` asks.
+* Timings (ms at 53 / 200 / 1000 bits; `exp(−1000)` 0.146 / 0.252 / 0.840): `ω(−1000)`
+  0.48 → 0.22, 0.69 → 0.34, 1.69 → 0.93; the other rows unchanged (`ω(−10)` is not negative
+  enough at these levels and keeps the candidate path, 0.34 / 0.57 / 1.66).  The example
+  from Malachite and four more very negative arguments are tests (equal to the rounding of
+  `e^q` in the same mode).
+* **The oracle item of the same message** (done at the user's request, in
+  `Azurite/Oracle/AzFloat.lean`, left unstaged with the user's own edits there):
+  `wrightOmegaInput` replaces a float `x ≤ −2³¹` (negative, exponent at least `32`) by `−2³¹`,
+  and `wrightOmegaRatInput` a rational `q ≤ −2³¹` by `−(2³¹ + 2⁻⁷)` — the pattern of
+  `expInput` and `ratExpInput`: `0 < ω(x) < eˣ < 2^(−2³¹)` is far below half of Malachite's
+  smallest positive value, so every such `x` underflows the same way in every mode.  Checked
+  here on `−2^(2³⁰−4)` and `−(10⁴⁰+1)/3`: zero under `Nearest`, `Floor`, `Down`, the smallest
+  positive value under `Ceiling`, `Up`, in well under a second.  The Malachite demo itself
+  (`demo_float_wright_omega_extreme_debug`) was not run from here.
+
 ### Perf 14. Lambert `W₀`: the top of the `Float` range (DONE 2026-11-17)
 
 Reported from the Malachite port.  `seedFloat` rejected only arguments whose `Float`

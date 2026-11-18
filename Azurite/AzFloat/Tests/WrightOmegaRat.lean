@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.ExpRat
 import Azurite.AzFloat.OfString
 import Azurite.AzFloat.ToString
 import Azurite.AzFloat.WrightOmega
@@ -65,6 +66,17 @@ private def big : AzRat := Q ("1" ++ "".pushn '0' 399 ++ "1/3")
 #guard wrightOmegaRatPrecRound big 53 .Nearest == ofAzRatRound big 53 .Nearest
 #guard (wrightOmegaRatPrecRound big 53 .Floor).2 == .lt
 #guard (wrightOmegaRatPrecRound big 53 .Ceiling).1 == (ofAzRatRound big 53 .Ceiling).1
+
+-- very negative arguments: the bracket from `e^q` (the candidate path ended in the fallback
+-- for the first of these)
+private def veryNeg : AzRat := Q "-316990021309512686572654174207/15"
+#guard wrightOmegaRatPrecRound veryNeg 1 .Nearest == expRatPrecRound veryNeg 1 .Nearest
+#guard wrightOmegaRatPrecRound veryNeg 1 .Floor == expRatPrecRound veryNeg 1 .Floor
+#guard wrightOmegaRatPrecRound veryNeg 53 .Ceiling == expRatPrecRound veryNeg 53 .Ceiling
+#guard W "-100" 53 == expRatPrecRound (Q "-100") 53 .Nearest
+#guard W "-5000" 53 .Floor == expRatPrecRound (Q "-5000") 53 .Floor
+#guard W "-300" 200 == expRatPrecRound (Q "-300") 200 .Nearest
+#guard W "-1500" 1000 .Ceiling == expRatPrecRound (Q "-1500") 1000 .Ceiling
 
 -- other precisions
 #guard D (W "1/3" 1) == ("0.5", .lt)

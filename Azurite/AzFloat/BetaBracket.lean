@@ -107,11 +107,11 @@ def betaBits (ea eb es : AzInt) : Nat :=
   max (max (gammaLnBits ea) (gammaLnBits eb)) (gammaLnBits es)
 
 /-- `(neg, b)`: the sign of `B(a, b)` and an enclosure `b` of `ln |B(a, b)|` at level `w` (with
-the sines at level `ws`); `none` when a piece is missing. -/
-def lnAbsBetaCore (a b : AzFloat) (w ws : Nat) : Option (Bool × Encl) :=
-  let ea := expOf a
-  let eb := expOf b
-  let es := (if ea ≤ eb then eb else ea) + 1
+the sines at level `ws`), for arguments given by enclosures: `A V`, `B V`, `S V` enclose `a`,
+`b`, `a + b` (below `2^ea`, `2^eb`, `2^es`) at the working precision `V`, and `Fa W`, `Fb W`,
+`Fs W` give their distances to an integer.  `none` when a piece is missing. -/
+def lnAbsBetaEncl (A B S : Nat → Encl) (ea eb es : AzInt)
+    (Fa Fb Fs : Nat → Option (Bool × AzInt × Encl)) (w ws : Nat) : Option (Bool × Encl) :=
   let L := lnGammaShiftExp w
   let V := w + 2 * L + 8 + 2 * w.log2
   let pe := fun (e : AzInt) => max (L + 1) (if e.sign then e.abs.toNat else 0)
@@ -119,15 +119,30 @@ def lnAbsBetaCore (a b : AzFloat) (w ws : Nat) : Option (Bool × Encl) :=
   let T := AzNat.tangentNumbers M
   let tol := powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)
   let Pi := Encl.pi V
-  let S := Encl.add V (Encl.exact a) (Encl.exact b)
-  match lnGammaPiece (Encl.exact a) ea (fun _ => gammaFloatFrac a (ws + 16)) Pi L V M T tol ws,
-    lnGammaPiece (Encl.exact b) eb (fun _ => gammaFloatFrac b (ws + 16)) Pi L V M T tol ws,
-    lnGammaPiece S es (fun _ => betaSumFrac a b (ws + 16)) Pi L V M T tol ws with
+  match lnGammaPiece (A V) ea (fun _ => Fa (ws + 16)) Pi L V M T tol ws,
+    lnGammaPiece (B V) eb (fun _ => Fb (ws + 16)) Pi L V M T tol ws,
+    lnGammaPiece (S V) es (fun _ => Fs (ws + 16)) Pi L V M T tol ws with
   | some (na, ta, qa), some (nb, tb, qb), some (ns, ts, qs) =>
     some ((na != nb) != ns,
       Encl.add V (Encl.sub V (Encl.add V ta tb) ts)
         (Encl.half (lnOfEncl (Encl.div V (Encl.mul V qa qb) qs) V)))
   | _, _, _ => none
+
+/-- The exponential of `lnAbsBetaEncl` at Ziv level `w`: the sign of `B(a, b)` and a positive
+enclosure of `|B(a, b)|`. -/
+def betaEnclOf (A B S : Nat → Encl) (ea eb es : AzInt)
+    (Fa Fb Fs : Nat → Option (Bool × AzInt × Encl)) (w : Nat) : Option (Bool × Encl) :=
+  (lnAbsBetaEncl A B S ea eb es Fa Fb Fs (w + betaBits ea eb es) w).bind fun r =>
+    (gammaExpEncl false r.2 w).map fun g => (r.1, g)
+
+/-- `lnAbsBetaEncl` for floats `a`, `b`: the sign of `B(a, b)` and an enclosure of
+`ln |B(a, b)|`. -/
+def lnAbsBetaCore (a b : AzFloat) (w ws : Nat) : Option (Bool × Encl) :=
+  let ea := expOf a
+  let eb := expOf b
+  lnAbsBetaEncl (fun _ => Encl.exact a) (fun _ => Encl.exact b)
+    (fun V => Encl.add V (Encl.exact a) (Encl.exact b)) ea eb ((if ea ≤ eb then eb else ea) + 1)
+    (gammaFloatFrac a) (gammaFloatFrac b) (betaSumFrac a b) w ws
 
 /-- `(neg, b)`: the sign of `B(a, b)` and a positive enclosure `b` of `|B(a, b)|` at Ziv level
 `w`; `none` when the pieces do not give one at this level. -/

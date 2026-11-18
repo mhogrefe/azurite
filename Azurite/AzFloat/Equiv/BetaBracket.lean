@@ -213,25 +213,30 @@ theorem lnGammaPiece_spec {X : Encl} {v : ℝ} (hX : IsEncl X v) {e : AzInt}
         ring
     · exact absurd h (by simp)
 
-/-- **`lnAbsBetaCore` answers with the sign of `B(a, b)` and an enclosure of
-`ln |B(a, b)|`.** -/
-theorem lnAbsBetaCore_spec {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av : EReal))
-    (hb : b.toVal = some (bv : EReal)) {w : ℕ} (hw : 64 ≤ w) {ws : ℕ} (hws : 64 ≤ ws)
-    {neg : Bool} {r : Encl} (h : lnAbsBetaCore a b w ws = some (neg, r)) :
-    0 < (if neg then -1 else 1) * (Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv)) ∧
+/-- **`lnAbsBetaEncl` answers with the sign of `Γ(a) Γ(b) / Γ(s)` and an enclosure of the
+logarithm of its absolute value**, for arguments given by enclosures. -/
+theorem lnAbsBetaEncl_spec {A B S : ℕ → Encl} {av bv sv : ℝ}
+    (hA : ∀ V, 64 ≤ V → IsEncl (A V) av) (hB : ∀ V, 64 ≤ V → IsEncl (B V) bv)
+    (hS : ∀ V, 64 ≤ V → IsEncl (S V) sv) {ea eb es : AzInt}
+    {Fa Fb Fs : ℕ → Option (Bool × AzInt × Encl)}
+    (hFa : ∀ W σ k E, 64 ≤ W → Fa W = some (σ, k, E) →
+      IsEnclPos E ((if σ then -1 else 1) * (av - k.toInt)))
+    (hFb : ∀ W σ k E, 64 ≤ W → Fb W = some (σ, k, E) →
+      IsEnclPos E ((if σ then -1 else 1) * (bv - k.toInt)))
+    (hFs : ∀ W σ k E, 64 ≤ W → Fs W = some (σ, k, E) →
+      IsEnclPos E ((if σ then -1 else 1) * (sv - k.toInt)))
+    {w : ℕ} (hw : 64 ≤ w) {ws : ℕ} (hws : 64 ≤ ws) {neg : Bool} {r : Encl}
+    (h : lnAbsBetaEncl A B S ea eb es Fa Fb Fs w ws = some (neg, r)) :
+    0 < (if neg then -1 else 1) * (Real.Gamma av * Real.Gamma bv / Real.Gamma sv) ∧
       IsEncl r (Real.log ((if neg then -1 else 1)
-        * (Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv)))) := by
-  unfold lnAbsBetaCore at h
+        * (Real.Gamma av * Real.Gamma bv / Real.Gamma sv))) := by
+  unfold lnAbsBetaEncl at h
   dsimp only at h
   set L := lnGammaShiftExp w
   set V := w + 2 * L + 8 + 2 * w.log2 with hVdef
   have hV : 64 ≤ V := by omega
   have : NeZero V := ⟨by omega⟩
   have hV2 : 2 ≤ V := by omega
-  have : NeZero (ws + 16) := ⟨by omega⟩
-  have hA : IsEncl (Encl.exact a) av := ⟨av, av, ha, ha, le_rfl, le_rfl⟩
-  have hB : IsEncl (Encl.exact b) bv := ⟨bv, bv, hb, hb, le_rfl, le_rfl⟩
-  have hS := hA.add (w := V) hB
   have hPi := enclosesPos_pi hV
   have hM : ∀ x y z : ℕ, 1 ≤ max (max (lnGammaTerms w x) (lnGammaTerms w y))
       (lnGammaTerms w z) := fun x y z =>
@@ -240,20 +245,20 @@ theorem lnAbsBetaCore_spec {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (a
   · rename_i na ta qa nb tb qb ns ts qs h1 h2 h3
     rw [Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
-    obtain ⟨tav, qav, e1, e2, e3, e4⟩ := lnGammaPiece_spec hA
-      (fun σ k A hF => gammaFloatFrac_spec ha hF) hPi hV (hM _ _ _) hws h1
-    obtain ⟨tbv, qbv, f1, f2, f3, f4⟩ := lnGammaPiece_spec hB
-      (fun σ k A hF => gammaFloatFrac_spec hb hF) hPi hV (hM _ _ _) hws h2
-    obtain ⟨tsv, qsv, g1, g2, g3, g4⟩ := lnGammaPiece_spec hS
-      (fun σ k A hF => betaSumFrac_spec ha hb hF) hPi hV (hM _ _ _) hws h3
+    obtain ⟨tav, qav, e1, e2, e3, e4⟩ := lnGammaPiece_spec (hA V hV)
+      (fun σ k E hF => hFa _ σ k E (by omega) hF) hPi hV (hM _ _ _) hws h1
+    obtain ⟨tbv, qbv, f1, f2, f3, f4⟩ := lnGammaPiece_spec (hB V hV)
+      (fun σ k E hF => hFb _ σ k E (by omega) hF) hPi hV (hM _ _ _) hws h2
+    obtain ⟨tsv, qsv, g1, g2, g3, g4⟩ := lnGammaPiece_spec (hS V hV)
+      (fun σ k E hF => hFs _ σ k E (by omega) hF) hPi hV (hM _ _ _) hws h3
     have hqa : 0 < qav := by obtain ⟨l, u, -, -, h0, h1', -⟩ := e2; linarith
     have hqb : 0 < qbv := by obtain ⟨l, u, -, -, h0, h1', -⟩ := f2; linarith
     have hqs : 0 < qsv := by obtain ⟨l, u, -, -, h0, h1', -⟩ := g2; linarith
     have hval : (if ((na != nb) != ns) = true then (-1 : ℝ) else 1)
-        * (Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv))
+        * (Real.Gamma av * Real.Gamma bv / Real.Gamma sv)
         = ((if na = true then (-1 : ℝ) else 1) * Real.Gamma av)
           * ((if nb = true then (-1 : ℝ) else 1) * Real.Gamma bv)
-          / ((if ns = true then (-1 : ℝ) else 1) * Real.Gamma (av + bv)) := by
+          / ((if ns = true then (-1 : ℝ) else 1) * Real.Gamma sv) := by
       cases na <;> cases nb <;> cases ns <;> simp [neg_div, div_neg]
     rw [hval]
     refine ⟨div_pos (mul_pos e3 f3) g3, ?_⟩
@@ -264,6 +269,59 @@ theorem lnAbsBetaCore_spec {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (a
       Real.log_div (mul_pos hqa hqb).ne' hqs.ne', Real.log_mul hqa.ne' hqb.ne']
     ring
   · exact absurd h (by simp)
+
+/-- **`betaEnclOf` answers with the sign and a positive enclosure of `|Γ(a) Γ(b) / Γ(s)|`.** -/
+theorem betaEnclOf_spec {A B S : ℕ → Encl} {av bv sv : ℝ}
+    (hA : ∀ V, 64 ≤ V → IsEncl (A V) av) (hB : ∀ V, 64 ≤ V → IsEncl (B V) bv)
+    (hS : ∀ V, 64 ≤ V → IsEncl (S V) sv) {ea eb es : AzInt}
+    {Fa Fb Fs : ℕ → Option (Bool × AzInt × Encl)}
+    (hFa : ∀ W σ k E, 64 ≤ W → Fa W = some (σ, k, E) →
+      IsEnclPos E ((if σ then -1 else 1) * (av - k.toInt)))
+    (hFb : ∀ W σ k E, 64 ≤ W → Fb W = some (σ, k, E) →
+      IsEnclPos E ((if σ then -1 else 1) * (bv - k.toInt)))
+    (hFs : ∀ W σ k E, 64 ≤ W → Fs W = some (σ, k, E) →
+      IsEnclPos E ((if σ then -1 else 1) * (sv - k.toInt)))
+    {w : ℕ} (hw : 64 ≤ w) {neg : Bool} {r : Encl}
+    (h : betaEnclOf A B S ea eb es Fa Fb Fs w = some (neg, r)) :
+    IsEnclPos r ((if neg then -1 else 1)
+      * (Real.Gamma av * Real.Gamma bv / Real.Gamma sv)) := by
+  unfold betaEnclOf at h
+  obtain ⟨c, hc, hr⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨neg', Lg⟩ := c
+  obtain ⟨g, hg, hgeq⟩ := Option.map_eq_some_iff.mp hr
+  rw [Prod.mk.injEq] at hgeq
+  obtain ⟨rfl, rfl⟩ := hgeq
+  obtain ⟨hpos, hL⟩ := lnAbsBetaEncl_spec hA hB hS hFa hFb hFs (by omega) hw hc
+  have := gammaExpEncl_spec hL hw hg
+  simp only [Bool.false_eq_true, ↓reduceIte] at this
+  rwa [Real.exp_log hpos] at this
+
+/-- **`lnAbsBetaCore` answers with the sign of `B(a, b)` and an enclosure of
+`ln |B(a, b)|`.** -/
+theorem lnAbsBetaCore_spec {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av : EReal))
+    (hb : b.toVal = some (bv : EReal)) {w : ℕ} (hw : 64 ≤ w) {ws : ℕ} (hws : 64 ≤ ws)
+    {neg : Bool} {r : Encl} (h : lnAbsBetaCore a b w ws = some (neg, r)) :
+    0 < (if neg then -1 else 1) * (Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv)) ∧
+      IsEncl r (Real.log ((if neg then -1 else 1)
+        * (Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv)))) := by
+  have hA : IsEncl (Encl.exact a) av := ⟨av, av, ha, ha, le_rfl, le_rfl⟩
+  have hB : IsEncl (Encl.exact b) bv := ⟨bv, bv, hb, hb, le_rfl, le_rfl⟩
+  unfold lnAbsBetaCore at h
+  refine lnAbsBetaEncl_spec ?_ ?_ ?_ ?_ ?_ ?_ hw hws h
+  · exact fun _ _ => hA
+  · exact fun _ _ => hB
+  · intro V hV
+    have : NeZero V := ⟨by omega⟩
+    exact hA.add hB
+  · intro W σ k E hW hF
+    have : NeZero W := ⟨by omega⟩
+    exact gammaFloatFrac_spec ha hF
+  · intro W σ k E hW hF
+    have : NeZero W := ⟨by omega⟩
+    exact gammaFloatFrac_spec hb hF
+  · intro W σ k E hW hF
+    have : NeZero W := ⟨by omega⟩
+    exact betaSumFrac_spec ha hb hF
 
 /-- **`betaCore` answers with the sign and a positive enclosure of
 `|Γ(a) Γ(b) / Γ(a + b)|`.** -/

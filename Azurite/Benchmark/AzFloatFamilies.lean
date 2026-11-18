@@ -101,6 +101,7 @@ import Azurite.AzFloat.Ln
 import Azurite.AzFloat.LambertW
 import Azurite.AzFloat.LogBaseExact
 import Azurite.AzFloat.Beta
+import Azurite.AzFloat.BetaRat
 import Azurite.AzFloat.LnGamma
 import Azurite.AzFloat.DigammaRat
 import Azurite.AzFloat.PsiZero
@@ -349,6 +350,11 @@ private def misc : List Entry :=
    F "lnGamma" lnGammaPrecRound [a "1/3", a "150"],
    F "beta x 5/2" (fun x => betaPrecRound x fiveHalves) [a "1/3", a "150", a "-7/3"],
    F "beta x -7/3" (fun x => betaPrecRound x (-sevenThirds)) [a "1/3", a "-1/3"],
+   R "betaRat q 5/2" (fun q => betaRatPrecRound q (AzRat.parse "5/2").get!)
+     [a "1/3", a "150", a "-7/3"],
+   R "betaRat q -7/3" (fun q => betaRatPrecRound q (AzRat.parse "-7/3").get!)
+     [a "1/3", a "-1/3"],
+   R "betaRat q 50" (fun q => betaRatPrecRound q (AzRat.parse "50").get!) [a "1/3", a "40"],
    F "beta x 3" (fun x => betaPrecRound x three) [a "1/3", a "-7/3"],
    F "beta x 50" (fun x => betaPrecRound x fifty) [a "1/3", a "40"],
    F "psiZero 0" (fun _ => psiZeroPrecRound 0) [a "1"],

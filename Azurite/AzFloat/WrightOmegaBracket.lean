@@ -30,11 +30,16 @@ for a large `x` the exponential is astronomically larger than `ω(x) ≈ x − l
   logarithms.
 * **The fallback.**  The candidate is never trusted: if the enclosure is not narrower than
   `2^(−w)` relative, the bracket is that of `W₀` at `eˣ` (`lambertBracket`, with `eˣ` entering
-  through its `Floor`/`Ceiling` roundings `expAt`, `expRatAt`), whose width is proven to tend
+  through the enclosures `expAt`, `expRatAt`), whose width is proven to tend
   to zero.  It only serves the termination proof.
 * **Large arguments** (`wrightOmegaHuge?`): `x − ln x < ω(x) < x`, and `x` can be a float, so
   the loop would need about as many bits as the exponent of `x` to see on which side of it the
   value lies; the inequalities settle the rounding by one test.
+
+* **Very negative arguments** (`omegaNegTest`, `omegaNegEncl`): when `e^(2x) < 2^(−w−8)`, the
+  bracket is `[eˣ − e^(2x), eˣ − e^(2x) + 2e^(3x)]` on an enclosure of `eˣ`, without a
+  candidate.  (Suggested from the Malachite port, where the candidate path reached the
+  fallback for such arguments.)
 
 The proofs are in `Equiv/WrightOmegaBracket.lean`.
 -/
@@ -43,13 +48,22 @@ namespace Azurite.AzFloat
 
 /-! ### The target -/
 
-/-- The enclosure function of `eˣ` for a float `x`: its `Floor` and `Ceiling` roundings. -/
-def expAt (x : AzFloat) : Nat → AzFloat × AzFloat :=
-  fun P => ((expPrecRound x P .Floor).1, (expPrecRound x P .Ceiling).1)
+/-- An enclosure `[lo, ⌈lo (1 + 2^(−P))⌉]` from the rounding down `lo` of a positive number at
+`P + 2` bits: its relative width is below `4 · 2^(−P)`, for one evaluation instead of the two
+of a `Floor` and a `Ceiling` rounding. -/
+def enclOfFloor (lo : AzFloat) (P : Nat) : AzFloat × AzFloat :=
+  (lo, (mulPrecRound lo
+    (addPrecRound one (powerOf2 (-(AzNat.ofNat P).toAzInt)) (P + 2) .Ceiling).1 (P + 2)
+    .Ceiling).1)
 
-/-- The enclosure function of `e^q` for a rational `q`: its `Floor` and `Ceiling` roundings. -/
+/-- The enclosure function of `eˣ` for a float `x`: from its rounding down at `P + 2` bits. -/
+def expAt (x : AzFloat) : Nat → AzFloat × AzFloat :=
+  fun P => enclOfFloor (expPrecRound x (P + 2) .Floor).1 P
+
+/-- The enclosure function of `e^q` for a rational `q`: from its rounding down at `P + 2`
+bits. -/
 def expRatAt (q : AzRat) : Nat → AzFloat × AzFloat :=
-  fun P => ((expRatPrecRound q P .Floor).1, (expRatPrecRound q P .Ceiling).1)
+  fun P => enclOfFloor (expRatPrecRound q (P + 2) .Floor).1 P
 
 /-- Is the value of `x` equal to `1`? -/
 def isOne (x : AzFloat) : Bool := le x one && le one x
@@ -121,9 +135,9 @@ bracket of the logarithm at level `P` is about `2 lg P` bits wider than `2^(−P
 bit length of the exponent of `n`, at least `64`. -/
 def omegaWork (n : AzFloat) (w : Nat) : Nat := max 64 (w + 24 + 2 * w.log2 + expSize n)
 
-/-- The bracket of `ω(x)` at Ziv level `w`: the enclosure around the candidate when it is
-narrower than `2^(−w)` relative, otherwise the bracket of `W₀` at `eˣ`. -/
-def wrightBracket (xAt eAt : Nat → AzFloat × AzFloat)
+/-- The bracket of `ω(x)` at Ziv level `w` from the candidate: the enclosure around it when it
+is narrower than `2^(−w)` relative, otherwise the bracket of `W₀` at `eˣ`. -/
+def wrightBracketMain (xAt eAt : Nat → AzFloat × AzFloat)
     (hs : ∀ M e : AzInt, ∃ k, (sideAt eAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
     (w : Nat) : AzFloat × AzFloat :=
   let n := omegaCandidate xAt (w / 2 + 8)
@@ -132,6 +146,36 @@ def wrightBracket (xAt eAt : Nat → AzFloat × AzFloat)
     && le (subPrecRound I.2 I.1 64 .Ceiling).1 (I.1 <<< (-(AzNat.ofNat w).toAzInt))
   then I
   else lambertBracket true eAt none (aprioriW0Pos eAt 64) hs w
+
+/-! ### Very negative arguments -/
+
+/-- Is `x` so negative that `e^(2x) < 2^(−w−8)`: is the upper 64-bit rounding of `x` at most
+`−(⌊7(w + 8)/20⌋ + 1)`?  (`e^(−0.7) < 1/2`.) -/
+def omegaNegTest (xAt : Nat → AzFloat × AzFloat) (w : Nat) : Bool :=
+  le (xAt 64).2 (-(ofAzNat (AzNat.ofNat (7 * (w + 8) / 20 + 1))))
+
+/-- The enclosure of `ω(x)` for `x ≤ 0` from an enclosure `[E₁, E₂]` of `E = eˣ` at precision
+`P`: `[⌊E₁ − ⌈E₂²⌉⌋, ⌈⌈E₂ − ⌊E₁²⌋⌉ + 2⌈E₂³⌉⌉]`, from `E − E² ≤ ω(x) ≤ E − E² + 2E³`
+(`WrightOmega.bounds_of_nonpos`).  Its relative width is about `2E²` beyond the rounding. -/
+def omegaNegEncl (E : Encl) (P : Nat) : Encl :=
+  let sq := (mulPrecRound E.2 E.2 P .Ceiling).1
+  let cube := (mulPrecRound sq E.2 P .Ceiling).1
+  ((subPrecRound E.1 sq P .Floor).1,
+    (addPrecRound (subPrecRound E.2 (mulPrecRound E.1 E.1 P .Floor).1 P .Ceiling).1
+      (cube <<< AzInt.ofInt 1) P .Ceiling).1)
+
+/-- The bracket of `ω(x)` at Ziv level `w`.  **A very negative `x`** (`omegaNegTest`) is
+bracketed directly from `eˣ` (`omegaNegEncl`): there `ω(x) ≈ eˣ` is so small that the residual
+`n + ln n − x` of a candidate resolves it only at a working precision of the order of the
+*exponent* of `eˣ` — the candidate path would end in the fallback — while the bracket from `eˣ`
+is narrower than `2^(−w)` relative at once, for one exponential.  For a fixed `x` the test
+fails from some `w` on, so the proven convergence of `wrightBracketMain` still ends the
+loop. -/
+def wrightBracket (xAt eAt : Nat → AzFloat × AzFloat)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt eAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
+    (w : Nat) : AzFloat × AzFloat :=
+  if omegaNegTest xAt w then omegaNegEncl (eAt (max 64 (w + 16))) (max 64 (w + 16))
+  else wrightBracketMain xAt eAt hs w
 
 /-- The bracket as a pair of `Roundable`s. -/
 def wrightApprox (xAt eAt : Nat → AzFloat × AzFloat)

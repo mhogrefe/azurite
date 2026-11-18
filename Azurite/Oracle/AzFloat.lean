@@ -33,6 +33,7 @@ import Azurite.AzFloat.Lemniscate
 import Azurite.AzFloat.GaussConstant
 import Azurite.AzFloat.PiConstants
 import Azurite.AzFloat.Pi
+import Azurite.AzFloat.Catalan
 import Azurite.AzFloat.EulerGamma
 import Azurite.AzFloat.GelfondSchneider
 import Azurite.AzFloat.Ramanujan
@@ -750,6 +751,7 @@ def irrationalConstants : List (String × (Nat → RoundingMode → AzFloat × O
     ("ramanujans_constant", AzFloat.ramanujanPrecRound),
     ("gelfond_schneider_constant", AzFloat.gelfondSchneiderPrecRound),
     ("eulers_constant", AzFloat.eulerGammaPrecRound), ("cbrt_2", AzFloat.cbrt2PrecRound),
+    ("catalans_constant", AzFloat.catalanConstantPrecRound),
     ("dottie_number", AzFloat.dottiePrecRound)]
 
 /-- `c_prec_round(p, rm) = (z, o)` or `c_prec(p) = (z, o)` for one of the
@@ -1537,14 +1539,41 @@ def checkFloatInverseGudermannian : String → Verdict :=
 def checkFloatInverseGudermannianRational : String → Verdict :=
   checkFloatOfRational "inverse_gudermannian_rational" AzFloat.gdInvRatPrecRound
 
-/-- `Float`'s `wright_omega` family, against `AzFloat.wrightOmegaPrecRound`. -/
+/-- `x` replaced by an input whose `ω(x)` Malachite rounds identically, for the very negative `x`
+at which Azurite, whose exponent is unbounded, cannot compute `ω(x)` in practice (it is about
+`e^x`, and `e^x` for `x` near `-2^(2^30)` needs on the order of `2^30` bits of `ln 2`). For
+`x ≤ -2^31`, `0 < ω(x) < e^x ≤ e^(-2^31) < 2^(-2^31)`, far below half of Malachite's smallest
+positive value, so `ω(x)` underflows the same way in every mode: `x` becomes `-2^31`. Every other
+`x` is unchanged; a large positive `x` needs no substitute, since `ω(x)` is just below `x`. -/
+def wrightOmegaInput (x : AzFloat) : AzFloat :=
+  match x with
+  | .finite false e _ _ _ =>
+    if AzInt.ofInt 32 ≤ e then -(AzFloat.one <<< (31 : Nat)) else x
+  | _ => x
+
+/-- `wrightOmegaInput` for a rational: `q ≤ -2^31` becomes `-(2^31 + 2^-7)`. -/
+def wrightOmegaRatInput (q : AzRat) : AzRat :=
+  if q.num ≠ 0 ∧ q.sign = false ∧ 31 ≤ q.floorLogBase2Abs then
+    AzRat.ofAzInts (-(AzNat.ofNat (2 ^ (31 + 7) + 1)).toAzInt) (AzNat.ofNat (2 ^ 7)).toAzInt
+  else q
+
+/-- `AzFloat.wrightOmegaPrecRound` at `wrightOmegaInput x`; see `wrightOmegaInput`. -/
+def malachiteWrightOmega (x : AzFloat) (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  AzFloat.wrightOmegaPrecRound (wrightOmegaInput x) p m
+
+/-- `AzFloat.wrightOmegaRatPrecRound` at `wrightOmegaRatInput q`. -/
+def malachiteWrightOmegaRat (q : AzRat) (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  AzFloat.wrightOmegaRatPrecRound (wrightOmegaRatInput q) p m
+
+/-- `Float`'s `wright_omega` family, against `AzFloat.wrightOmegaPrecRound` (through
+`malachiteWrightOmega`), in Malachite's exponent range. -/
 def checkFloatWrightOmega : String → Verdict :=
-  checkFloatUnaryWith "wright_omega" AzFloat.wrightOmegaPrecRound
+  checkFloatUnaryWith "wright_omega" malachiteWrightOmega
 
 /-- `Float::wright_omega_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
-`AzFloat.wrightOmegaRatPrecRound`. -/
+`AzFloat.wrightOmegaRatPrecRound` (through `malachiteWrightOmegaRat`). -/
 def checkFloatWrightOmegaRational : String → Verdict :=
-  checkFloatOfRational "wright_omega_rational" AzFloat.wrightOmegaRatPrecRound
+  checkFloatOfRational "wright_omega_rational" malachiteWrightOmegaRat
 
 /-- An associated-function line `T::f(x, a…) = r`, `T` the dialect's type, rewritten as the method
 line `(x).f(a…) = r`, so the method checkers read it; any other line is unchanged. -/

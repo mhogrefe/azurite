@@ -273,6 +273,49 @@ theorem factorial_mul_pow_div_prod {N D : ℝ} (hD : D ≠ 0) (c : ℝ) (n : ℕ
   rw [Finset.prod_congr rfl hterm, Finset.prod_div_distrib, Finset.prod_const, Finset.card_range,
     div_div_eq_mul_div]
 
+/-- A real that is neither `0` nor a negative integer is not minus a natural number. -/
+theorem ne_neg_nat_of_not_pole {av : ℝ} (ha0 : av ≠ 0) (hnp : ¬ (av < 0 ∧ ∃ k : ℤ, av = k)) :
+    ∀ m : ℕ, av ≠ -m := by
+  intro m hm
+  rcases Nat.eq_zero_or_pos m with rfl | hm0
+  · exact ha0 (by simpa using hm)
+  · refine hnp ⟨?_, -(m : ℤ), by rw [hm]; push_cast; rfl⟩
+    have : (0 : ℝ) < m := by exact_mod_cast hm0
+    linarith
+
+/-- `Γ` vanishes (in Mathlib's convention) at the non-positive integers. -/
+theorem gamma_eq_zero_of_nonpos_int {sv : ℝ} (hle : sv ≤ 0) {k : ℤ} (hk : sv = k) :
+    Real.Gamma sv = 0 := by
+  rw [Real.Gamma_eq_zero_iff]
+  refine ⟨(-k).toNat, ?_⟩
+  have hk0 : k ≤ 0 := by exact_mod_cast (hk ▸ hle : (k : ℝ) ≤ 0)
+  rw [hk]
+  have : (((-k).toNat : ℤ) : ℝ) = -(k : ℝ) := by
+    rw [Int.toNat_of_nonneg (by omega)]; push_cast; rfl
+  rw [show (((-k).toNat : ℕ) : ℝ) = (((-k).toNat : ℤ) : ℝ) by push_cast; rfl, this, neg_neg]
+
+/-- **`betaIntQuot N D n` is the rounding of `B(N/D, n)`**, `n ≥ 1`, off the poles. -/
+theorem betaIntQuot_eq {N D : AzInt} {av : ℝ} (hD : (0 : ℝ) < (D.toInt : ℝ))
+    (hN : (N.toInt : ℝ) / (D.toInt : ℝ) = av) (hx : ∀ m : ℕ, av ≠ -m) {n : ℕ} (hn : 1 ≤ n)
+    (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    betaIntQuot N D n p mode = roundVal p mode
+      (some ((Real.Gamma av * Real.Gamma n / Real.Gamma (av + n) : ℝ) : EReal)) := by
+  have hPne : ((risingInt N D n).toInt : ℝ) ≠ 0 := by
+    rw [toInt_risingInt]
+    push_cast
+    refine Finset.prod_ne_zero_iff.mpr fun j _ h0 => hx j ?_
+    rw [← hN]
+    field_simp
+    linarith
+  unfold betaIntQuot
+  rw [divPrecRound_eq_liftVal₂, liftVal₂, toVal_ofAzInt, toVal_ofAzInt, Option.bind_some,
+    Option.bind_some, Spec.div_coe_coe _ _ hPne, beta_nat_eq hx hn]
+  congr 3
+  rw [AzInt.toInt_mul, AzInt.toInt_pow, toInt_risingInt, AzRat.toInt_toAzInt',
+    AzNat.toNat_factorial, ← hN]
+  push_cast
+  exact factorial_mul_pow_div_prod hD.ne' _ n
+
 /-- **The exact path answers with the rounding of `B(a, b)`.** -/
 theorem betaSmallInt?_eq {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av : EReal))
     (hb : b.toVal = some (bv : EReal)) (ha0 : av ≠ 0) (hnp : ¬ (av < 0 ∧ ∃ k : ℤ, av = k))
@@ -301,32 +344,14 @@ theorem betaSmallInt?_eq {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av 
   have hnk : (n : ℤ) = k := by rw [hn, AzInt.abs_toNat_eq, hkt, abs_of_pos hk0]
   have hbn : bv = (n : ℕ) := by rw [hk]; exact_mod_cast hnk.symm
   have hn1 : 1 ≤ n := by omega
-  have hx : ∀ m : ℕ, av ≠ -m := by
-    intro m hm
-    rcases Nat.eq_zero_or_pos m with rfl | hm0
-    · exact ha0 (by simpa using hm)
-    · refine hnp ⟨?_, -(m : ℤ), by rw [hm]; push_cast; rfl⟩
-      have : (0 : ℝ) < m := by exact_mod_cast hm0
-      linarith
-  dsimp only
   have hden : (0 : ℝ) < q.den.toNat := den_pos_real q
-  have hN : ((AzInt.mkNorm q.sign q.num).toInt : ℝ) / (q.den.toNat : ℝ) = av := by
-    rw [hav, coe_toRat_eq_sign_mul, AzNat.toInt_mkNorm]
+  have hN : ((AzInt.mkNorm q.sign q.num).toInt : ℝ) / ((q.den.toAzInt).toInt : ℝ) = av := by
+    rw [hav, coe_toRat_eq_sign_mul, AzNat.toInt_mkNorm, AzRat.toInt_toAzInt']
     cases q.sign <;> simp [neg_div]
-  have hPne : ((risingInt (AzInt.mkNorm q.sign q.num) q.den.toAzInt n).toInt : ℝ) ≠ 0 := by
-    rw [toInt_risingInt, AzRat.toInt_toAzInt']
-    push_cast
-    refine Finset.prod_ne_zero_iff.mpr fun j _ h0 => hx j ?_
-    rw [← hN]
-    field_simp
-    linarith
-  rw [divPrecRound_eq_liftVal₂, liftVal₂, toVal_ofAzInt, toVal_ofAzInt, Option.bind_some,
-    Option.bind_some, Spec.div_coe_coe _ _ hPne, hbn, beta_nat_eq hx hn1]
-  congr 3
-  rw [AzInt.toInt_mul, AzInt.toInt_pow, toInt_risingInt, AzRat.toInt_toAzInt',
-    AzRat.toInt_toAzInt', AzNat.toNat_factorial, ← hN]
-  push_cast
-  exact factorial_mul_pow_div_prod hden.ne' _ n
+  dsimp only
+  rw [hbn]
+  exact betaIntQuot_eq (by rw [AzRat.toInt_toAzInt']; exact_mod_cast hden) hN
+    (ne_neg_nat_of_not_pole ha0 hnp) hn1 p mode
 
 /-- **`betaReal` is the correct rounding of `Spec.beta` on finite arguments, or the fuel ran
 out.** -/
@@ -380,14 +405,7 @@ theorem betaReal_eq_or {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av : 
   · left
     rw [ite_eq_left hs]
     obtain ⟨hle, k, hk⟩ := (sumIsNonposInt_iff ha hb).mp hs
-    have hG : Real.Gamma (av + bv) = 0 := by
-      rw [Real.Gamma_eq_zero_iff]
-      refine ⟨(-k).toNat, ?_⟩
-      have hk0 : k ≤ 0 := by exact_mod_cast (hk ▸ hle : (k : ℝ) ≤ 0)
-      rw [hk]
-      have : (((-k).toNat : ℤ) : ℝ) = -(k : ℝ) := by
-        rw [Int.toNat_of_nonneg (by omega)]; push_cast; rfl
-      rw [show (((-k).toNat : ℕ) : ℝ) = (((-k).toNat : ℤ) : ℝ) by push_cast; rfl, this, neg_neg]
+    have hG := gamma_eq_zero_of_nonpos_int hle hk
     rw [hG, div_zero, EReal.coe_zero, roundVal_zero]
   rw [ite_eq_right hs]
   rcases eq_or_ne (zivLoop (betaApprox a b) p mode gammaFuel (max 64 (p + 32)))

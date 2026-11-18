@@ -20,8 +20,10 @@ import Azurite.AzFloat.Equiv.RatPowRat
 
 * `expAt_encl`, `expRatAt_encl`: the enclosure functions of `eˣ`.
 * `omegaEncl_spec`: the enclosure around **any** positive candidate contains `ω(x)`.
-* `wrightBracket_spec`: the bracket encloses `ω(x)` with a width bound `omegaEps` that tends to
-  zero (`tendsto_omegaEps`) — `ω 2^(−w)` from the acceptance test, or the bound of the
+* `omegaNegEncl_spec`: the bracket from `eˣ` for a very negative `x`; it is used at finitely
+  many levels (`exists_omegaNegTest_false`), so the width bound `wrightEps` still tends to zero.
+* `wrightBracketMain_spec`: the bracket encloses `ω(x)` with a width bound `omegaEps` that tends
+  to zero (`tendsto_omegaEps`) — `ω 2^(−w)` from the acceptance test, or the bound of the
   `W₀` bracket at `eˣ`.
 * `OmegaTarget`, `omegaSideCert`, `omegaZivCert`: the certificates of the driver for a rational
   `x ≠ 1` (`ω(x)` is irrational, and no grid point `m` has `m eᵐ = eˣ`).
@@ -34,32 +36,61 @@ namespace Azurite.AzFloat
 
 /-! ### The target -/
 
+/-- **`enclOfFloor`**: from the rounding down `r` of `v > 0` at `P + 2` bits, an enclosure of
+`v` of width at most `4 v 2^(−P)`. -/
+theorem enclOfFloor_spec {lo : AzFloat} {r v : ℝ} (hlo : lo.toVal = some (r : EReal))
+    (hv : 0 < v) (h1 : r ≤ v) {P : ℕ} (h2 : v ≤ r + 2 * |v| * (1 / 2 : ℝ) ^ (P + 2)) :
+    ∃ l h : ℝ, (enclOfFloor lo P).1.toVal = some (l : EReal) ∧
+      (enclOfFloor lo P).2.toVal = some (h : EReal) ∧ l ≤ v ∧ v ≤ h ∧
+      h - l ≤ 4 * |v| * (1 / 2 : ℝ) ^ P := by
+  have : NeZero (P + 2) := ⟨by omega⟩
+  set ε := (1 / 2 : ℝ) ^ P with hε
+  have hε0 : 0 < ε := by positivity
+  have hε1 : ε ≤ 1 := pow_le_one₀ (by norm_num) (by norm_num)
+  have hpow : (1 / 2 : ℝ) ^ (P + 2) = ε / 4 := by rw [pow_add, hε]; ring
+  rw [abs_of_pos hv, hpow] at h2
+  rw [abs_of_pos hv]
+  have hr0 : 0 ≤ r := by nlinarith
+  have hp : (powerOf2 (-(AzNat.ofNat P).toAzInt)).toVal = some ((ε : ℝ) : EReal) := by
+    rw [toVal_powerOf2, AzInt.toInt_neg, AzNat.toInt_toAzInt, AzNat.toNat_ofNat, zpow_neg,
+      zpow_natCast, hε, one_div_pow, one_div]
+  obtain ⟨o, ho, ho1, ho2⟩ := addCeiling_abs toVal_one' hp (P + 2)
+  rw [abs_of_pos (by linarith), hpow] at ho2
+  obtain ⟨h, hh, hh1, hh2⟩ := mulCeiling_abs hlo ho (P + 2)
+  rw [abs_of_nonneg (mul_nonneg hr0 (by linarith)), hpow] at hh2
+  refine ⟨r, h, hlo, hh, h1, ?_, ?_⟩
+  · -- `v ≤ r (1 + ε) ≤ r o ≤ h`
+    have : r * (1 + ε) ≤ r * o := mul_le_mul_of_nonneg_left ho1 hr0
+    nlinarith
+  · -- `h ≤ r o (1 + ε/2)`, `o ≤ (1 + ε)(1 + ε/2)`, `r ≤ v`
+    have ho3 : o ≤ (1 + ε) * (1 + ε / 2) := by nlinarith
+    have hro : r * o ≤ v * ((1 + ε) * (1 + ε / 2)) :=
+      mul_le_mul h1 ho3 (by linarith) hv.le
+    have hh3 : h ≤ v * ((1 + ε) * (1 + ε / 2)) * (1 + ε / 2) := by nlinarith
+    have hrl : v * (1 - ε / 2) ≤ r := by nlinarith
+    have hpoly : (1 + ε) * (1 + ε / 2) * (1 + ε / 2) - (1 - ε / 2) ≤ 4 * ε := by
+      nlinarith [mul_nonneg hε0.le hε0.le, mul_nonneg (mul_nonneg hε0.le hε0.le) hε0.le]
+    nlinarith [mul_le_mul_of_nonneg_left hpoly hv.le]
+
 theorem expAt_encl {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
-    XEncl (expAt x) (Real.exp xv) := fun P hP => by
-  have : NeZero P := ⟨by omega⟩
-  have hf : expPrecRound x P .Floor = roundVal P .Floor (some ((Real.exp xv : ℝ) : EReal)) := by
+    XEncl (expAt x) (Real.exp xv) := fun P _ => by
+  have : NeZero (P + 2) := ⟨by omega⟩
+  have hf : expPrecRound x (P + 2) .Floor
+      = roundVal (P + 2) .Floor (some ((Real.exp xv : ℝ) : EReal)) := by
     rw [expPrecRound_eq_liftVal, liftVal, hx, Option.bind_some, Spec.exp_coe]
-  have hc : expPrecRound x P .Ceiling
-      = roundVal P .Ceiling (some ((Real.exp xv : ℝ) : EReal)) := by
-    rw [expPrecRound_eq_liftVal, liftVal, hx, Option.bind_some, Spec.exp_coe]
-  obtain ⟨r₁, h₁, h₁1, h₁2⟩ := roundVal_floor_abs P (Real.exp xv)
-  obtain ⟨r₂, h₂, h₂1, h₂2⟩ := roundVal_ceiling_abs P (Real.exp xv)
-  refine ⟨r₁, r₂, ?_, ?_, h₁1, h₂1, by linarith⟩
-  · show (expPrecRound x P .Floor).1.toVal = _
-    rw [hf]; exact h₁
-  · show (expPrecRound x P .Ceiling).1.toVal = _
-    rw [hc]; exact h₂
+  obtain ⟨r, hr, hr1, hr2⟩ := roundVal_floor_abs (P + 2) (Real.exp xv)
+  rw [← hf] at hr
+  exact enclOfFloor_spec hr (Real.exp_pos xv) hr1 hr2
 
 theorem expRatAt_encl (q : AzRat) :
-    XEncl (expRatAt q) (Real.exp ((AzRat.toRat q : ℚ) : ℝ)) := fun P hP => by
-  have : NeZero P := ⟨by omega⟩
-  obtain ⟨r₁, h₁, h₁1, h₁2⟩ := roundVal_floor_abs P (Real.exp ((AzRat.toRat q : ℚ) : ℝ))
-  obtain ⟨r₂, h₂, h₂1, h₂2⟩ := roundVal_ceiling_abs P (Real.exp ((AzRat.toRat q : ℚ) : ℝ))
-  refine ⟨r₁, r₂, ?_, ?_, h₁1, h₂1, by linarith⟩
-  · show (expRatPrecRound q P .Floor).1.toVal = _
-    rw [expRatPrecRound_eq, Spec.exp_coe]; exact h₁
-  · show (expRatPrecRound q P .Ceiling).1.toVal = _
-    rw [expRatPrecRound_eq, Spec.exp_coe]; exact h₂
+    XEncl (expRatAt q) (Real.exp ((AzRat.toRat q : ℚ) : ℝ)) := fun P _ => by
+  have : NeZero (P + 2) := ⟨by omega⟩
+  obtain ⟨r, hr, hr1, hr2⟩ := roundVal_floor_abs (P + 2) (Real.exp ((AzRat.toRat q : ℚ) : ℝ))
+  have hf : expRatPrecRound q (P + 2) .Floor
+      = roundVal (P + 2) .Floor (some ((Real.exp ((AzRat.toRat q : ℚ) : ℝ) : ℝ) : EReal)) := by
+    rw [expRatPrecRound_eq, Spec.exp_coe]
+  rw [← hf] at hr
+  exact enclOfFloor_spec hr (Real.exp_pos _) hr1 hr2
 
 theorem isOne_iff {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
     isOne x = true ↔ xv = 1 := by
@@ -221,18 +252,18 @@ theorem tendsto_omegaEps (a₀ b₀ ω : ℝ) (hab : a₀ ≤ b₀) :
   rw [max_self] at this
   exact this
 
-/-- `wrightBracket` encloses `ω(x)`, with width at most `omegaEps a₀ b₀ ω w`. -/
-theorem wrightBracket_spec {xAt eAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+/-- `wrightBracketMain` encloses `ω(x)`, with width at most `omegaEps a₀ b₀ ω w`. -/
+theorem wrightBracketMain_spec {xAt eAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
     (hE : XEncl eAt (Real.exp xv)) {a₀ b₀ : ℝ}
     (ha₀ : (aprioriW0Pos eAt 64).1.toVal = some (a₀ : EReal))
     (hb₀ : (aprioriW0Pos eAt 64).2.toVal = some (b₀ : EReal))
     (haW : a₀ ≤ wrightOmegaReal xv) (hWb : wrightOmegaReal xv ≤ b₀)
     (hs : ∀ M e : AzInt, ∃ k, (sideAt eAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) (w : ℕ) :
-    ∃ lo hi : ℝ, (wrightBracket xAt eAt hs w).1.toVal = some (lo : EReal) ∧
-      (wrightBracket xAt eAt hs w).2.toVal = some (hi : EReal) ∧ lo ≤ wrightOmegaReal xv ∧
+    ∃ lo hi : ℝ, (wrightBracketMain xAt eAt hs w).1.toVal = some (lo : EReal) ∧
+      (wrightBracketMain xAt eAt hs w).2.toVal = some (hi : EReal) ∧ lo ≤ wrightOmegaReal xv ∧
       wrightOmegaReal xv ≤ hi ∧ hi - lo ≤ omegaEps a₀ b₀ (wrightOmegaReal xv) w := by
   have hω := wrightOmegaReal_pos xv
-  unfold wrightBracket
+  unfold wrightBracketMain
   simp only
   split_ifs with hc
   · rw [Bool.and_eq_true, Bool.and_eq_true] at hc
@@ -255,6 +286,118 @@ theorem wrightBracket_spec {xAt eAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX
       ⟨fun _ => by linarith, fun h => (Bool.false_ne_true h.symm).elim⟩ hs w
     exact ⟨lo, hi, hlo, hhi, h1, h2, le_max_of_le_right hw⟩
 
+/-! ### Very negative arguments -/
+
+/-- The test places `x` at or below `0`. -/
+theorem nonpos_of_omegaNegTest {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    {w : ℕ} (h : omegaNegTest xAt w = true) : xv ≤ 0 := by
+  obtain ⟨lo, hi, -, hhi, -, h2, -⟩ := hX 64 le_rfl
+  unfold omegaNegTest at h
+  have hn : (-(ofAzNat (AzNat.ofNat (7 * (w + 8) / 20 + 1)))).toVal
+      = some ((-((7 * (w + 8) / 20 + 1 : ℕ) : ℝ) : ℝ) : EReal) := by
+    rw [toVal_neg, toVal_ofAzNat_ofNat, Option.map_some, EReal.coe_neg]
+  rw [le_eq_true_iff hhi hn] at h
+  have : (0 : ℝ) ≤ ((7 * (w + 8) / 20 + 1 : ℕ) : ℝ) := Nat.cast_nonneg _
+  linarith
+
+/-- For a fixed target the test fails from some level on. -/
+theorem exists_omegaNegTest_false {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv) :
+    ∃ W : ℕ, ∀ w, W ≤ w → omegaNegTest xAt w = false := by
+  obtain ⟨lo, hi, -, hhi, -, -, -⟩ := hX 64 le_rfl
+  refine ⟨4 * (⌈-hi⌉₊ + 1), fun w hw => ?_⟩
+  rw [← Bool.not_eq_true]
+  intro h
+  unfold omegaNegTest at h
+  have hn : (-(ofAzNat (AzNat.ofNat (7 * (w + 8) / 20 + 1)))).toVal
+      = some ((-((7 * (w + 8) / 20 + 1 : ℕ) : ℝ) : ℝ) : EReal) := by
+    rw [toVal_neg, toVal_ofAzNat_ofNat, Option.map_some, EReal.coe_neg]
+  rw [le_eq_true_iff hhi hn] at h
+  have h1 : ⌈-hi⌉₊ + 1 ≤ 7 * (w + 8) / 20 + 1 := by omega
+  have h2 : (-hi : ℝ) ≤ ⌈-hi⌉₊ := Nat.le_ceil _
+  have h3 : ((⌈-hi⌉₊ + 1 : ℕ) : ℝ) ≤ ((7 * (w + 8) / 20 + 1 : ℕ) : ℝ) := by exact_mod_cast h1
+  push_cast at h3 h
+  linarith
+
+/-- **The bracket from `eˣ` contains `ω(x)`** for `x ≤ 0`. -/
+theorem omegaNegEncl_spec {eAt : ℕ → AzFloat × AzFloat} {xv : ℝ}
+    (hE : XEncl eAt (Real.exp xv)) (hx : xv ≤ 0) {P : ℕ} (hP : 64 ≤ P) :
+    IsEncl (omegaNegEncl (eAt P) P) (wrightOmegaReal xv) := by
+  have : NeZero P := ⟨by omega⟩
+  obtain ⟨hlow, hup⟩ := bounds_of_nonpos hx
+  obtain ⟨E₁, E₂, hE₁, hE₂, h1, h2, hwid⟩ := hE P hP
+  set E := Real.exp xv
+  have hE0 : 0 < E := Real.exp_pos xv
+  have hu : (1 / 2 : ℝ) ^ P ≤ 1 / 8 := by
+    calc (1 / 2 : ℝ) ^ P ≤ (1 / 2 : ℝ) ^ 3 :=
+          pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
+      _ = 1 / 8 := by norm_num
+  have hE₁0 : 0 ≤ E₁ := by
+    rw [abs_of_pos hE0] at hwid
+    nlinarith
+  have hE₂0 : 0 < E₂ := by linarith
+  obtain ⟨sq, hsq, hsq1, -⟩ := mulCeiling_abs hE₂ hE₂ P
+  obtain ⟨cube, hcube, hcube1, -⟩ := mulCeiling_abs hsq hE₂ P
+  obtain ⟨lo, hlo, hlo1, -⟩ := subFloor_abs hE₁ hsq P
+  obtain ⟨sl, hsl, hsl1, -⟩ := mulFloor_abs hE₁ hE₁ P
+  obtain ⟨t, ht, ht1, -⟩ := subCeiling_abs hE₂ hsl P
+  obtain ⟨hi, hhi, hhi1, -⟩ := addCeiling_abs ht (toVal_twice hcube) P
+  have hsqE : E ^ 2 ≤ sq := by nlinarith
+  have hslE : sl ≤ E ^ 2 := by nlinarith
+  have hcubeE : E ^ 3 ≤ cube := by
+    have : E ^ 3 = E ^ 2 * E := by ring
+    rw [this]
+    exact le_trans (mul_le_mul hsqE h2 hE0.le (by nlinarith)) hcube1
+  unfold omegaNegEncl
+  exact ⟨lo, hi, hlo, hhi, by linarith, by linarith⟩
+
+/-- The width of the bracket from `eˣ` at the levels where it is used, `0` elsewhere. -/
+noncomputable def omegaNegWidth (xAt eAt : ℕ → AzFloat × AzFloat) (w : ℕ) : ℝ :=
+  if omegaNegTest xAt w = true then
+    fval (omegaNegEncl (eAt (max 64 (w + 16))) (max 64 (w + 16))).2
+      - fval (omegaNegEncl (eAt (max 64 (w + 16))) (max 64 (w + 16))).1
+  else 0
+
+/-- The width bound of `wrightBracket` at level `w`. -/
+noncomputable def wrightEps (xAt eAt : ℕ → AzFloat × AzFloat) (a₀ b₀ ω : ℝ) (w : ℕ) : ℝ :=
+  max (omegaEps a₀ b₀ ω w) (omegaNegWidth xAt eAt w)
+
+/-- The width bound tends to zero: the bracket from `eˣ` is used at finitely many levels. -/
+theorem tendsto_wrightEps {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    (eAt : ℕ → AzFloat × AzFloat) (a₀ b₀ ω : ℝ) (hab : a₀ ≤ b₀) :
+    Filter.Tendsto (wrightEps xAt eAt a₀ b₀ ω) Filter.atTop (nhds 0) := by
+  obtain ⟨W, hW⟩ := exists_omegaNegTest_false hX
+  have h0 : Filter.Tendsto (omegaNegWidth xAt eAt) Filter.atTop (nhds 0) := by
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [Filter.eventually_ge_atTop W] with w hw
+    unfold omegaNegWidth
+    rw [ite_eq_right (by rw [hW w hw]; simp)]
+  have := (tendsto_omegaEps a₀ b₀ ω hab).max h0
+  rw [max_self] at this
+  exact this
+
+/-- `wrightBracket` encloses `ω(x)`, with width at most `wrightEps xAt eAt a₀ b₀ ω w`. -/
+theorem wrightBracket_spec {xAt eAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    (hE : XEncl eAt (Real.exp xv)) {a₀ b₀ : ℝ}
+    (ha₀ : (aprioriW0Pos eAt 64).1.toVal = some (a₀ : EReal))
+    (hb₀ : (aprioriW0Pos eAt 64).2.toVal = some (b₀ : EReal))
+    (haW : a₀ ≤ wrightOmegaReal xv) (hWb : wrightOmegaReal xv ≤ b₀)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt eAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) (w : ℕ) :
+    ∃ lo hi : ℝ, (wrightBracket xAt eAt hs w).1.toVal = some (lo : EReal) ∧
+      (wrightBracket xAt eAt hs w).2.toVal = some (hi : EReal) ∧ lo ≤ wrightOmegaReal xv ∧
+      wrightOmegaReal xv ≤ hi ∧
+      hi - lo ≤ wrightEps xAt eAt a₀ b₀ (wrightOmegaReal xv) w := by
+  unfold wrightBracket
+  by_cases hc : omegaNegTest xAt w = true
+  · rw [ite_eq_left hc]
+    obtain ⟨lo, hi, hlo, hhi, h1, h2⟩ := omegaNegEncl_spec hE (nonpos_of_omegaNegTest hX hc)
+      (le_max_left 64 (w + 16))
+    refine ⟨lo, hi, hlo, hhi, h1, h2, le_max_of_le_right ?_⟩
+    unfold omegaNegWidth
+    rw [ite_eq_left hc, fval_of_toVal_coe hlo, fval_of_toVal_coe hhi]
+  · rw [ite_eq_right hc]
+    obtain ⟨lo, hi, hlo, hhi, h1, h2, hw⟩ := wrightBracketMain_spec hX hE ha₀ hb₀ haW hWb hs w
+    exact ⟨lo, hi, hlo, hhi, h1, h2, le_max_of_le_left hw⟩
+
 /-- `wrightApprox` brackets `ω(x)` by `Roundable`s. -/
 theorem wrightApprox_spec {xAt eAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
     (hE : XEncl eAt (Real.exp xv)) {a₀ b₀ : ℝ}
@@ -264,7 +407,8 @@ theorem wrightApprox_spec {xAt eAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX 
     (hs : ∀ M e : AzInt, ∃ k, (sideAt eAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) (w : ℕ) :
     ∃ lv hv : ℝ, Rounds (wrightApprox xAt eAt hs w).1 lv ∧
       Rounds (wrightApprox xAt eAt hs w).2 hv ∧ lv ≤ wrightOmegaReal xv ∧
-      wrightOmegaReal xv ≤ hv ∧ hv - lv ≤ omegaEps a₀ b₀ (wrightOmegaReal xv) w := by
+      wrightOmegaReal xv ≤ hv ∧
+      hv - lv ≤ wrightEps xAt eAt a₀ b₀ (wrightOmegaReal xv) w := by
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hw⟩ := wrightBracket_spec hX hE ha₀ hb₀ haW hWb hs w
   have hR1 := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
   rw [fval_of_toVal_coe hlo] at hR1
@@ -300,7 +444,8 @@ theorem omegaZivCert (p : ℕ) [NeZero p] (mode : RoundingMode) {xAt eAt : ℕ �
     rw [hr]
     exact irrational_wrightOmegaReal (by rintro rfl; exact h1 (by rw [hr, Rat.cast_one]))
   exact exists_isSome_of_irrational_threshold p mode (wrightApprox xAt eAt hs) hirr
-    (omegaEps a₀ b₀ (wrightOmegaReal xv)) (tendsto_omegaEps a₀ b₀ _ (haW.trans hWb)) 0
+    (wrightEps xAt eAt a₀ b₀ (wrightOmegaReal xv))
+    (tendsto_wrightEps hX eAt a₀ b₀ _ (haW.trans hWb)) 0
     (fun w _ => wrightApprox_spec hX hE ha₀ hb₀ haW hWb hs w) _
     (by unfold zivGuardBits; omega)
 

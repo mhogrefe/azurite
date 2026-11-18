@@ -120,6 +120,7 @@ import Azurite.AzFloat.AtanhRat
 import Azurite.AzFloat.Basic
 import Azurite.AzFloat.Beta
 import Azurite.AzFloat.BetaBracket
+import Azurite.AzFloat.BetaRat
 import Azurite.AzFloat.Catalan
 import Azurite.AzFloat.CatalanBracket
 import Azurite.AzFloat.Cbrt
@@ -227,6 +228,7 @@ import Azurite.AzFloat.Equiv.AtanhBracket
 import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Beta
 import Azurite.AzFloat.Equiv.BetaBracket
+import Azurite.AzFloat.Equiv.BetaRat
 import Azurite.AzFloat.Equiv.Catalan
 import Azurite.AzFloat.Equiv.CatalanBracket
 import Azurite.AzFloat.Equiv.Cbrt

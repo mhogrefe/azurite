@@ -67,6 +67,12 @@ def risingInt (N D : AzInt) : Nat → AzInt
   | 0 => 1
   | i + 1 => risingInt N D i * (N + (i : AzInt) * D)
 
+/-- `B(N/D, n) = (n − 1)! Dⁿ / ∏_{j<n} (N + j D)` for a positive integer `n`, as one correctly
+rounded division of two exact floats (a rational would cost a gcd of two long numbers). -/
+def betaIntQuot (N D : AzInt) (n p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  divPrecRound (ofAzInt ((AzNat.factorial (n - 1)).toAzInt * D.pow n))
+    (ofAzInt (risingInt N D n)) p mode
+
 /-- Is `a` short enough for the exact path: its precision and the size of its exponent
 together at most `2p + 1024` bits? -/
 def betaIntModerate (a : AzFloat) (p : Nat) : Bool :=
@@ -76,18 +82,15 @@ def betaIntModerate (a : AzFloat) (p : Nat) : Bool :=
 
 /-- **`B(a, n)` for a positive integer `n ≤ 64`** and a short `a`: the rational number
 `(n − 1)! / (a (a + 1) ⋯ (a + n − 1))`, rounded directly — no `Γ`, and no doubt left when the
-value is a float.  With `a = N/D`, `D` a power of two, it is `(n − 1)! Dⁿ / ∏ (N + j D)`: the
-product is taken on integers, and the quotient is one correctly rounded division of two
-exact floats (a rational would cost a gcd of two long numbers).  `none` when `b` is not such an
+value is a float.  With `a = N/D`, `D` a power of two, it is `betaIntQuot N D n`: the product
+is taken on integers.  `none` when `b` is not such an
 integer or `a` is not short. -/
 def betaSmallInt? (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
     Option (AzFloat × Ordering) :=
   if isInteger b && lt zero b && le b (ofAzNat (AzNat.ofNat 64)) && betaIntModerate a p then
     a.toAzRat?.map fun q =>
       let n := (truncToAzInt b).abs.toNat
-      let D := q.den.toAzInt
-      divPrecRound (ofAzInt ((AzNat.factorial (n - 1)).toAzInt * D.pow n))
-        (ofAzInt (risingInt (AzInt.mkNorm q.sign q.num) D n)) p mode
+      betaIntQuot (AzInt.mkNorm q.sign q.num) q.den.toAzInt n p mode
   else none
 
 /-- The bracket of `B(a, b)` as a pair of `Roundable`s, strict on both sides; the dummy bracket

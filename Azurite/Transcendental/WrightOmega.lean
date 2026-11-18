@@ -24,6 +24,8 @@ The analytic facts behind `AzFloat.wrightOmegaPrecRound` (`AzFloat/WrightOmega.l
   `ω ∈ n − [d]·[c]` has a width of the order `d²`: a candidate with half the bits wanted is
   enough.
 * **Large arguments** (`bounds_of_one_lt`): `x − ln x < ω(x) < x` for `x > 1`.
+* **Very negative arguments** (`bounds_of_nonpos`): `eˣ − e^(2x) ≤ ω(x) ≤ eˣ − e^(2x) + 2 e^(3x)`
+  for `x ≤ 0`.
 * **Irrationality** of `ω(r)` for a rational `r ≠ 1` (`ln ω` would be rational), and no
   rational `m` has `m eᵐ = eʳ` then.  `ω(1) = 1`.
 -/
@@ -208,6 +210,37 @@ theorem bounds_of_one_lt {x : ℝ} (hx : 1 < x) :
   have hl : 0 < log (wrightOmegaReal x) := Real.log_pos h1
   have hlt : wrightOmegaReal x < x := by linarith
   exact ⟨by linarith [Real.log_lt_log hω hlt], hlt⟩
+
+/-- **Very negative arguments**: `eˣ − e^(2x) ≤ ω(x) ≤ eˣ − e^(2x) + 2 e^(3x)` for `x ≤ 0`
+(from `ω e^ω = eˣ` with `1 + ω ≤ e^ω` and `1 − ω ≤ e^(−ω)`; the lower bound holds for every
+`x`). -/
+theorem bounds_of_nonpos {x : ℝ} (hx : x ≤ 0) :
+    exp x - exp x ^ 2 ≤ wrightOmegaReal x ∧
+      wrightOmegaReal x ≤ exp x - exp x ^ 2 + 2 * exp x ^ 3 := by
+  have hω := wrightOmegaReal_pos x
+  have he := wrightOmegaReal_mul_exp x
+  set ω := wrightOmegaReal x
+  set E := exp x
+  have hE0 : 0 < E := exp_pos x
+  have hE1 : E ≤ 1 := by
+    have := exp_le_exp.mpr hx
+    rwa [exp_zero] at this
+  have h1 : 1 + ω ≤ exp ω := by linarith [add_one_le_exp ω]
+  have h2 : 1 - ω ≤ exp (-ω) := by linarith [add_one_le_exp (-ω)]
+  have hωE : ω ≤ E := by nlinarith [exp_pos ω]
+  have hrep : ω = E * exp (-ω) := by
+    rw [exp_neg, ← he]
+    field_simp
+  have hlow : E - E ^ 2 ≤ ω := by
+    have : E * (1 - ω) ≤ E * exp (-ω) := mul_le_mul_of_nonneg_left h2 hE0.le
+    nlinarith
+  refine ⟨hlow, ?_⟩
+  have hm0 : 0 ≤ E - E ^ 2 := by nlinarith
+  have hup : ω * (1 + ω) ≤ E := by
+    rw [← he]
+    exact mul_le_mul_of_nonneg_left h1 hω.le
+  have hsq : (E - E ^ 2) ^ 2 ≤ ω ^ 2 := pow_le_pow_left₀ hm0 hlow 2
+  nlinarith [pow_nonneg hE0.le 4]
 
 /-- A positive rational `m` with `m + ln m` rational is `1`. -/
 theorem eq_one_of_add_log_rat {m r : ℚ} (hm : 0 < m) (h : (m : ℝ) + log m = r) : m = 1 := by
