@@ -501,6 +501,22 @@ def checkBigExponentFloatSinPi : String → Verdict := withBigExponentFloatNames
 def checkBigExponentFloatSinPiRational : String → Verdict :=
   withBigExponentFloatNames checkFloatSinPiRational
 
+def checkBigExponentFloatSinCos : String → Verdict := withBigExponentFloatNames checkFloatSinCos
+
+def checkBigExponentFloatSinCosRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinCosRational
+
+def checkBigExponentFloatSinCosWithPeriod : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinCosWithPeriod
+
+def checkBigExponentFloatSinCosWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinCosWithPeriodRational
+
+def checkBigExponentFloatSinCosPi : String → Verdict := withBigExponentFloatNames checkFloatSinCosPi
+
+def checkBigExponentFloatSinCosPiRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinCosPiRational
+
 /-- `y·z`, formed exactly. -/
 def exactProduct (y z : AzFloat) : AzFloat :=
   (AzFloat.mulPrecRound y z (exactProductPrecision [y, z]) .Nearest).1
