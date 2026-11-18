@@ -101,6 +101,7 @@ import Azurite.AzFloat.Ln
 import Azurite.AzFloat.LambertW
 import Azurite.AzFloat.LogBaseExact
 import Azurite.AzFloat.DigammaRat
+import Azurite.AzFloat.PsiZero
 import Azurite.AzFloat.WrightOmega
 import Azurite.AzFloat.Conversion
 import Azurite.AzRat.Parse
@@ -339,6 +340,9 @@ private def misc : List Entry :=
    F "ln" lnPrecRound [a "1/3"], F "exp" expPrecRound [a "-1000"],
    F "wrightOmega" wrightOmegaPrecRound wl, R "wrightOmegaRat" wrightOmegaRatPrecRound wl,
    F "digamma" digammaPrecRound dl, R "digammaRat" digammaRatPrecRound dl,
+   F "psiZero 0" (fun _ => psiZeroPrecRound 0) [a "1"],
+   F "psiZero 1" (fun _ => psiZeroPrecRound 1) [a "1"],
+   F "psiZero 1000" (fun _ => psiZeroPrecRound 1000) [a "1"],
    F "treeT0" treeT0PrecRound tl, R "treeT0Rat" treeT0RatPrecRound tl,
    F "treeTm1" treeTm1PrecRound [a "1/3", a "1/10", tiny],
    R "treeTm1Rat" treeTm1RatPrecRound [a "1/3", a "1/10", tiny],

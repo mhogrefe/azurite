@@ -8086,7 +8086,7 @@ Files: `AzFloat/TreeT.lean`, `Equiv/TreeT.lean`, `Tests/TreeT.lean`.
   arguments, rationals.
 * Cost: that of `W` (about 3.5 exponentials).  Not timed separately.
 
-## The Wright `ω` function (DONE 2026-11-17, fuel-free, UNTIMED)
+## The Wright `ω` function (DONE 2026-11-17, fuel-free, TIMED 2026-11-18)
 
 User request.  `ω(x) = W₀(eˣ)`, the positive root of `y + ln y = x` (DLMF 4.13.1_2;
 `Azurite.DLMF.wrightOmegaReal`; the complex `wrightOmega` is in `Section13Omega`).  Files:
@@ -8132,7 +8132,14 @@ User request.  `ω(x) = W₀(eˣ)`, the positive root of `y + ln y = x` (DLMF 4.
   agreement with `W₀(eˣ)`, 1000 bits; rationals.
 * Cost: about two logarithms (one at full precision, the Newton steps up to half), the
   exponential for a very negative `x`.  Rows `wrightOmega`, `wrightOmegaRat` (and `ln`, `exp`
-  for reference) in `az_float_families family:misc`; not yet timed.
+  for reference) in `az_float_families family:misc`.
+* **Timings (2026-11-18, compiled, ms at 53 / 200 / 1000 bits; `ln` 0.09 / 0.15 / 0.59,
+  `exp` 0.14 / 0.24 / 0.82, `W₀` 1.20 / 1.61 / 3.54).**  `ω(1/3)`: 0.32 / 0.53 / 1.52;
+  `ω(−10)`: 0.33 / 0.55 / 1.59; `ω(1000)`: 0.33 / 0.55 / 1.62; `ω(10¹⁶)`: 0.27 / 0.47 / 1.41;
+  `ω(−1000)` (seed outside the `Float` range, one exponential): 0.48 / 0.69 / 1.69.  The
+  rational function is the same.  So 3.5 logarithms at 53 bits, 2.6 at 1000, and a quarter to
+  a half of `W₀`.  The first run was 0.47 ms at 53 bits: `omegaSeed` computed its fallback
+  seed (an exponential or a logarithm at 64 bits) eagerly in a `let`; it is a thunk now.
 
 ## Gudermannian `gd` (DONE 2026-11-16, fuel-free, interpreter-timed)
 
@@ -8492,7 +8499,7 @@ non-integer: `(num / den).isOdd`.  Proofs (`Equiv/LnAbsGammaRat.lean`):
 `lnGammaRat` of `az_float_gamma` at negative arguments): the same as the float function
 (0.5–0.7 ms at 53 bits, 0.9–1.6 at 200, 4–12 at 1000).
 
-### 4. The digamma function `ψ(x)` (DONE 2026-11-17, fuel-based, UNTIMED)
+### 4. The digamma function `ψ(x)` (DONE 2026-11-17, fuel-based, TIMED 2026-11-18)
 
 User request.  `digammaPrecRound x p mode`, `digamma x` (`AzFloat/Digamma.lean`);
 `digammaRatPrecRound q p mode`, `digammaRat q p` (`AzFloat/DigammaRat.lean`); the pieces in
@@ -8533,9 +8540,95 @@ and `Tests` for each.
 * Tests: `ψ(1) = −γ`, `ψ(1/2)`, `ψ(1/4)`, `ψ(1/3)`, `ψ(2/3)` against their closed forms'
   known digits, both sides of the zero, `10³⁰`, `10³⁰⁰`, `3·2^(2^20)` against `ln`, next to
   the pole `−1`, a half-integer, the zero `−0.504…`, `±10⁻⁴⁰`, `2^(−2^30)`, 200 and 1000 bits.
-* Rows `digamma`, `digammaRat` in `az_float_families family:misc`; not yet timed.  Expected:
-  about `ln Γ` (the harmonic sum is `δ` divisions where `ln Γ` has `δ` multiplications).
+* **Timings (2026-11-18, `az_float_families family:misc`, ms at 53 / 200 / 1000 bits).**
+  `ψ(1/3)`: 0.35 / 1.05 / 14.6; `ψ(3/2)`: 0.34 / 1.05 / 13.1; `ψ(150)` (no shift at 53 and
+  200 bits): 0.15 / 0.43 / 11.1; `ψ(−201/2)`: 0.36 / 0.77 / 12.3; `ψ(−1099511627777/10)`:
+  0.48 / 1.20 / 13.7; `ψ(2^(−100)/3)`: 0.34 / 1.01 / 13.7.  The rational function is the same.
+  Against `ln Γ(3/2)` (0.385 / 0.97 / 9.2): equal up to 200 bits, 1.5× at 1000 — the
+  harmonic sum is `δ` divisions on enclosures where `ln Γ` has `δ` multiplications.
+  Open: the harmonic sum by binary splitting on integers when `x` has a short significand,
+  or pairing `1/(x+i) + 1/(x+i+1)`.
 * Next in the order: the zeros `psiZero n`, then Beta / `ln` Beta / Pochhammer.
+
+### 4a. The real zeros of `ψ` (DONE 2026-11-17, fuel-based, TIMED 2026-11-18)
+
+User request.  `psiZeroPrecRound n p mode`, `psiZero n p` (`AzFloat/PsiZero.lean`): the zero
+`xₙ` of DLMF Table 5.4.1 — `x₀ = 1.4616…` (the minimum of `Γ` on `(0, ∞)`), and for `n ≥ 1`
+the zero in `(−n, −n + 1)`.  Analysis in `Transcendental/PsiZero.lean`, proofs in
+`Equiv/PsiZero.lean`, tests in `Tests/PsiZero.lean`.
+
+* **Specification value** `psiZeroAt n`: `psiZeroPos` (from `DLMF.dlmf_5_3_F1_min`,
+  `1 < x₀ < 3/2`) for `n = 0`, `DLMF.psiZero n` for `n ≥ 1` (`DLMF.psiZero 0` is junk `0`
+  and was left as it is).
+* **Enclosure without `ψ′`.**  The slope of `ψ` is bounded below from the recurrence alone:
+  `1/a − 1/b ≤ ψ(b) − ψ(a)` for `0 < a ≤ b` (first term of the series of the difference) and
+  `y − x ≤ ψ(y) − ψ(x)` on `(−n, −n + 1)` (the term `k = n − 1`, where `x + k`, `y + k` lie
+  in `(−1, 0)`).  So one enclosure `[D]` of `ψ(c)` at a point `c` of the interval gives
+  `|xₙ − c| ≤ max |D|` (`4 max |D|` for `n = 0`, `c ∈ (0, 2]`), and the interval membership is
+  two float comparisons.  The true slope at the zero is about `π² + ln² n`, so the bound
+  costs about 4 bits for small `n`.
+* **Candidate** (unverified): seed `−n + π⁻¹ arctan (π / ln n)` (5.4.20; `−1/2` at `n = 1`,
+  good to `4·10⁻³`), `x₀` a `Float` constant; secant steps on the midpoints of `digammaEncl`,
+  at 64 bits until two iterates agree to `2^(−44)`, then on a plan `t ← 5t/8 + 8`.
+  **The value of `ψ` must be taken at `5t/4` bits, not `t`**: in the next step it is the old
+  value, the difference of the two values is of the order of the error `2^(−5t/8)` of the
+  point, and it has to carry the `3t/5` bits that step gains.  With level `t + 16` the bracket
+  was `0.9 w` bits wide at every size (`2^(−1800)` at `w = 2000`), with any ratio.
+* **Cost**: about 3.4 evaluations of `ψ` at the final precision (the candidate 2.4, the
+  enclosure 1).
+* **Contract**: `psiZeroPrecRound_eq_or` — correctly rounded or `(nan, .eq)`; nothing is
+  known about the arithmetic nature of the zeros.
+* Tests: `x₀, …, x₁₀` against the fifteen digits of DLMF Table 5.4.1, `x₀` and `x₁` to 1000
+  bits (the leading 100 digits agree with the literature), `n = 100, 1000, 10⁶, 10²⁹`,
+  directed modes, and an independent check that `ψ` changes sign between the zero rounded
+  down and rounded up (53 and 300 bits).
+* **Timings (2026-11-18, `az_float_families family:misc`, ms at 53 / 200 / 1000 bits).**
+  `x₀`: 2.6 / 6.7 / 50.7; `x₁`: 5.0 / 10.1 / 55.9; `x₁₀₀₀`: 2.8 / 4.8 / 18.4.  At 1000 bits
+  that is 3.6 to 4 evaluations of `ψ` (14 ms each near `0`, less at `1000`), as designed.
+  At 53 bits it is 8 to 14: the 64-bit phase (three evaluations for `x₀`, about six from the
+  asymptotic seed for `x₁`) and four planned steps (`133 ← 91 ← 64 ← 48`) cost more than the
+  final ones.  Open: start the plan from the accuracy the 64-bit phase really reached; a
+  `Float` seed for `x₁`.
+* Not done: `Γ(xₙ)`, the other column of Table 5.4.1 (`gammaPrecRound` at the rounded zero is
+  accurate to nearly full precision since `Γ′(xₙ) = 0`, but not correctly rounded).
+
+### Perf 15. `ψ` and its zeros (DONE 2026-11-18, measured)
+
+User request after the timings of steps 4 and 4a.  `az_float_families family:misc`, ms at
+53 / 200 / 1000 bits, before → after:
+
+| | 53 | 200 | 1000 |
+|---|---|---|---|
+| `ψ(1/3)` | 0.35 → 0.28 | 1.05 → 0.87 | 14.6 → 9.5 |
+| `ψ(3/2)` | 0.34 → 0.28 | 1.05 → 0.84 | 13.1 → 8.9 |
+| `ψ(150)` | 0.15 → 0.15 | 0.43 → 0.43 | 11.1 → 7.9 |
+| `ψ(−201/2)` | 0.36 → 0.36 | 0.77 → 0.77 | 12.3 → 9.2 |
+| `x₀` | 2.6 → 0.72 | 6.7 → 3.6 | 50.7 → 33.0 |
+| `x₁` | 5.0 → 1.17 | 10.1 → 5.1 | 55.9 → 37.9 |
+| `x₁₀₀₀` | 2.8 → 0.69 | 4.8 → 2.6 | 18.4 → 16.5 |
+
+* **The shift sum of `ψ`** (`harmonicEncl`, `harmonicLoop`).  It was `δ` enclosure divisions,
+  i.e. `2δ` float divisions.  Now two consecutive terms share one division,
+  `1/y + 1/(y+1) = (2y+1)/(y(y+1))`, and the division is taken once, rounded down, at
+  `y = ⌈b + i⌉` for the upper end `b` of the enclosure `[a, b]` of `x`: every quotient is
+  below its terms and within `K₀ = (b/a)((1+ε)/(1−ε))³`, `ε = 2^(1−V)`, of them
+  (`harmonic_pair`, `harmonic_single`), so the upper end is `⌈up · ⌈b/a⌉(1 + 2^(6−V))⌉` with
+  `up` the same quotients summed upwards (`gamma_cube_le`).  Per term: half a division and
+  half a multiplication instead of two divisions.  `ψ` now costs what `ln Γ` costs at every
+  precision (`ln Γ(3/2)`: 0.385 / 0.97 / 9.2).  Binary splitting further would not help: on
+  floats of full precision a merge costs three multiplications.
+* **The zeros at low precision.**  (a) A `Float` Newton iteration with `ψ`, `ψ′` from the
+  recurrence and five asymptotic terms (`psiFloat`, `psi1Float`, `psiZeroFloatSeed`) replaces
+  the 64-bit secant phase (three to six evaluations of `ψ`): seed good to about 48 bits, slope
+  to about 44.  (b) One step `x₀ − ψ(x₀)/s` with that slope gives about 90 bits
+  (`psiZeroFirst`), and the secant plan is entered above 90 only.  (c) The candidate is asked
+  for `w + 4` bits, not `w + 16`: measured widths at `w = 85` are `2^(−90)` to `2^(−101)` for
+  `n = 0 … 11`, `10², …, 10²⁹`.  So at 53 bits: one evaluation for the candidate and one for
+  the enclosure (was eight to fourteen).  The old seed and 64-bit phase remain as the fallback
+  for an `n` outside the `Float` range (`10⁴⁰⁰`: width `2^(−89)`).
+* Not done: at 1000 bits a zero still costs 3.6 evaluations of `ψ`; a correction step using
+  an enclosure of `ψ′` (the trigamma function, when it exists) would make the verification
+  the last Newton step, as for the Wright `ω` function, and bring that to about 2.
 
 ### Perf 14. Lambert `W₀`: the top of the `Float` range (DONE 2026-11-17)
 

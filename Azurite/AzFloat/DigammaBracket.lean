@@ -24,6 +24,8 @@ are reused):
 `0` and the first omitted term (`psiNu_eq_sum_add`, `Transcendental/DigammaStirling.lean`).
 The loop `psiSumLoop` sums the series of `−ν(y) = ln y − 1/(2y) − ψ(y)`, whose signs are those
 of Stirling's series, and closes it by the term it stops at.
+The shift sum (`harmonicEncl`) takes one division for two terms, rounded down at the upper end
+of the enclosure of `x`; the upper end of the sum is the same sum times a factor just above `1`.
 
 **`x < 0`** (not an integer): the reflection formula (DLMF 5.5.4)
 `ψ(x) = ψ(1 − x) − π cot (π x)`.  With an integer `k` next to `x` and `a = |x − k|`,
@@ -92,11 +94,34 @@ def digammaStirlingEncl (V M : Nat) (Y : Encl) (tol : AzFloat) : Encl :=
   let N := psiSumLoop V (AzNat.tangentNumbers M) inv2 tol (M - 1) 1 inv2 (Encl.exact zero)
   Encl.sub V (Encl.sub V (lnOfEncl Y V) (Encl.half inv)) N
 
-/-- The sum `∑_{j<i} 1/(x + j)` on enclosures. -/
-def harmonicEncl (V : Nat) (X : Encl) : Nat → Encl
-  | 0 => Encl.exact zero
-  | i + 1 => Encl.add V (harmonicEncl V X i)
-      (Encl.div V (Encl.exact one) (Encl.add V X (Encl.nat i)))
+/-- The lower sums of `∑_{i ≤ j < i+m} 1/(x + j)` from a float `b ≥ x`: `lo` and `up` are the
+sum of the quotients below rounded down and up.  Two consecutive terms take one division,
+`1/y + 1/(y + 1) = (2y + 1)/(y (y + 1))` at `y = ⌈b + i⌉`, with the numerator rounded down and
+the denominator up; a last single term is `⌊1/y⌋`. -/
+def harmonicLoop (V : Nat) (b : AzFloat) : Nat → Nat → AzFloat → AzFloat → AzFloat × AzFloat
+  | 0, _, lo, up => (lo, up)
+  | 1, i, lo, up =>
+    let y := (addPrecRound b (ofAzNat (AzNat.ofNat i)) V .Ceiling).1
+    let q := (divPrecRound one y V .Floor).1
+    ((addPrecRound lo q V .Floor).1, (addPrecRound up q V .Ceiling).1)
+  | m + 2, i, lo, up =>
+    let y := (addPrecRound b (ofAzNat (AzNat.ofNat i)) V .Ceiling).1
+    let N := (addPrecRound y (addPrecRound y one V .Floor).1 V .Floor).1
+    let D := (mulPrecRound y (addPrecRound y one V .Ceiling).1 V .Ceiling).1
+    let q := (divPrecRound N D V .Floor).1
+    harmonicLoop V b m (i + 2) (addPrecRound lo q V .Floor).1 (addPrecRound up q V .Ceiling).1
+
+/-- The sum `∑_{j<i} 1/(x + j)` from an enclosure `X = [a, b]` of `x > 0`.  Every quotient is
+taken once, rounded down, at the upper end `b` (`harmonicLoop`): each is a lower bound of its
+terms, and within the factor `(b/a) ((1 + ε)/(1 − ε))³`, `ε = 2^(1−V)`, of them — so the upper
+end is the sum of the quotients times `⌈b/a⌉ (1 + 2^(6−V))`, and the sum costs one division
+for two terms instead of four. -/
+def harmonicEncl (V : Nat) (X : Encl) (i : Nat) : Encl :=
+  let s := harmonicLoop V X.2 i 0 zero zero
+  let K := (mulPrecRound (divPrecRound X.2 X.1 V .Ceiling).1
+    (addPrecRound one (powerOf2 (AzInt.ofInt 6 - (AzNat.ofNat V).toAzInt)) V .Ceiling).1 V
+    .Ceiling).1
+  (s.1, (mulPrecRound s.2 K V .Ceiling).1)
 
 /-- The bracket of `ψ(x)` at Ziv level `w` from an enclosure `X` of `x > 0` (positive lower
 end) with `x < 2^e`: the shift, the number of terms and the working precision of

@@ -67,7 +67,8 @@ below `e^(1+x)`, where a Newton step stays positive.  Outside the `Float` range 
 `−700`, where `eˣ` leaves the normal range) the same start values at 64 bits: they are within a
 relative `eˣ`, respectively `ln x / x`, of `ω(x)`. -/
 def omegaSeed (x : AzFloat) : AzFloat :=
-  let big := if lt x one then (expPrecRound x 64 .Nearest).1
+  let big : Unit → AzFloat := fun _ =>
+    if lt x one then (expPrecRound x 64 .Nearest).1
     else (subPrecRound x (lnPrecRound x 64 .Nearest).1 64 .Nearest).1
   let xf := toFloat64 x
   if xf.isFinite && xf ≥ -700 then
@@ -75,8 +76,8 @@ def omegaSeed (x : AzFloat) : AzFloat :=
       else if xf ≤ 2 then 0.5671432904097838 + 0.36 * xf
       else xf - Float.log xf
     let y := omegaFloat xf 8 y₀
-    if y.isFinite && y > 0 then ofFloat64 y else big
-  else big
+    if y.isFinite && y > 0 then ofFloat64 y else big ()
+  else big ()
 
 /-- Newton steps (`logSeedStep`) from a seed with about `48` bits up to `target` bits, planned
 backwards: the step to `target` bits starts from `target/2 + 8`, so every step is limited by

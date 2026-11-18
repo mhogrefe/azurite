@@ -214,14 +214,283 @@ theorem digammaStirlingEncl_spec {V : ℕ} (hV : 64 ≤ V) {M : ℕ} (hM : 1 ≤
   field_simp
   ring
 
+/-! #### The shift sum: one division for two terms -/
+
+/-- `1/(x + j) ≤ (b/a) · 1/(b + j)` for `0 < a ≤ x ≤ b`, `j ≥ 0`. -/
+theorem one_div_add_le_mul {a b x j : ℝ} (ha : 0 < a) (hax : a ≤ x) (hab : a ≤ b)
+    (hj : 0 ≤ j) : 1 / (x + j) ≤ b / a * (1 / (b + j)) := by
+  have hb : 0 < b := lt_of_lt_of_le ha hab
+  rw [div_mul_div_comm, mul_one, div_le_div_iff₀ (by linarith) (by positivity)]
+  nlinarith [mul_nonneg hj (sub_nonneg.mpr hab), mul_nonneg hb.le (sub_nonneg.mpr hax)]
+
+/-- `((1 + E)/(1 − E))³ ≤ 1 + 32 E` for `0 ≤ E ≤ 1/64`. -/
+theorem gamma_cube_le {E : ℝ} (h0 : 0 ≤ E) (h1 : E ≤ 1 / 64) :
+    ((1 + E) / (1 - E)) ^ 3 ≤ 1 + 32 * E := by
+  have hg : (1 + E) / (1 - E) ≤ 1 + 3 * E := by
+    rw [div_le_iff₀ (by linarith)]
+    nlinarith
+  have hg0 : 0 ≤ (1 + E) / (1 - E) := div_nonneg (by linarith) (by linarith)
+  calc ((1 + E) / (1 - E)) ^ 3 ≤ (1 + 3 * E) ^ 3 := pow_le_pow_left₀ hg0 hg 3
+    _ ≤ 1 + 32 * E := by nlinarith [mul_nonneg h0 h0, mul_nonneg (mul_nonneg h0 h0) h0]
+
+section Harmonic
+
+variable {a b x E : ℝ}
+
+/-- A single term from one quotient rounded down. -/
+theorem harmonic_single (ha : 0 < a) (hax : a ≤ x) (hxb : x ≤ b) (hE0 : 0 ≤ E) (hE1 : E ≤ 1 / 64)
+    {j y q : ℝ} (hj : 0 ≤ j) (hy1 : b + j ≤ y) (hy2 : y ≤ (b + j) * (1 + E))
+    (hq1 : q ≤ 1 / y) (hq2 : 1 / y * (1 - E) ≤ q) :
+    q ≤ 1 / (x + j) ∧ 1 / (x + j) ≤ b / a * ((1 + E) / (1 - E)) ^ 3 * q := by
+  have hb : 0 < b := by linarith
+  have hB : 0 < b + j := by linarith
+  have hy : 0 < y := by linarith
+  have hE : 0 < 1 - E := by linarith
+  set g := (1 + E) / (1 - E) with hg
+  have hg1 : 1 ≤ g := by rw [hg, le_div_iff₀ hE]; linarith
+  have hq0 : 0 ≤ q := le_trans (mul_nonneg (by positivity) hE.le) hq2
+  constructor
+  · exact hq1.trans (one_div_le_one_div_of_le (by linarith) (by linarith))
+  · have h1 := one_div_add_le_mul ha hax (hax.trans hxb) hj
+    have h2 : 1 / (b + j) ≤ g * q := by
+      have : 1 / (b + j) ≤ (1 + E) * (1 / y) := by
+        rw [mul_one_div, div_le_div_iff₀ hB hy]
+        linarith
+      have h3 : (1 + E) * (1 / y) ≤ g * q := by
+        rw [hg, div_mul_eq_mul_div, le_div_iff₀ hE]
+        nlinarith [mul_le_mul_of_nonneg_left hq2 (by linarith : (0 : ℝ) ≤ 1 + E)]
+      linarith
+    have hba : 0 < b / a := div_pos hb ha
+    have hgq : g * q ≤ g ^ 3 * q := by
+      apply mul_le_mul_of_nonneg_right _ hq0
+      nlinarith [mul_le_mul hg1 hg1 zero_le_one (by linarith)]
+    calc 1 / (x + j) ≤ b / a * (1 / (b + j)) := h1
+      _ ≤ b / a * (g ^ 3 * q) := mul_le_mul_of_nonneg_left (h2.trans hgq) hba.le
+      _ = b / a * g ^ 3 * q := by ring
+
+/-- Two consecutive terms from one quotient rounded down. -/
+theorem harmonic_pair (ha : 0 < a) (hax : a ≤ x) (hxb : x ≤ b) (hE0 : 0 ≤ E) (hE1 : E ≤ 1 / 64)
+    {j y yc yf N D q : ℝ} (hj : 0 ≤ j) (hy1 : b + j ≤ y) (hy2 : y ≤ (b + j) * (1 + E))
+    (hc1 : y + 1 ≤ yc) (hc2 : yc ≤ (y + 1) * (1 + E)) (hf1 : yf ≤ y + 1)
+    (hf2 : (y + 1) * (1 - E) ≤ yf) (hN1 : N ≤ y + yf) (hN2 : (y + yf) * (1 - E) ≤ N)
+    (hD1 : y * yc ≤ D) (hD2 : D ≤ y * yc * (1 + E)) (hq1 : q ≤ N / D)
+    (hq2 : N / D * (1 - E) ≤ q) :
+    q ≤ 1 / (x + j) + 1 / (x + (j + 1)) ∧
+      1 / (x + j) + 1 / (x + (j + 1)) ≤ b / a * ((1 + E) / (1 - E)) ^ 3 * q := by
+  have hb : 0 < b := by linarith
+  have hB : 0 < b + j := by linarith
+  have hy : 0 < y := by linarith
+  have hE : 0 < 1 - E := by linarith
+  have hyy : 0 < y * (y + 1) := by positivity
+  have hD : 0 < D := lt_of_lt_of_le (mul_pos hy (by linarith)) hD1
+  have hN0 : 0 ≤ N := le_trans (mul_nonneg (by nlinarith) hE.le) hN2
+  have hq0 : 0 ≤ q := le_trans (mul_nonneg (div_nonneg hN0 hD.le) hE.le) hq2
+  set g := (1 + E) / (1 - E) with hg
+  have hba : 0 < b / a := div_pos hb ha
+  -- the exact value at `y`
+  have hfy : 1 / y + 1 / (y + 1) = (2 * y + 1) / (y * (y + 1)) := by
+    field_simp
+    ring
+  constructor
+  · -- `q ≤ N/D ≤ (2y + 1)/(y (y + 1)) = 1/y + 1/(y + 1) ≤ 1/(x + j) + 1/(x + j + 1)`
+    have h1 : N / D ≤ (2 * y + 1) / (y * (y + 1)) := by
+      rw [div_le_div_iff₀ hD hyy]
+      have : y * (y + 1) ≤ D := le_trans (mul_le_mul_of_nonneg_left hc1 hy.le) hD1
+      nlinarith [mul_le_mul_of_nonneg_left this hN0, mul_nonneg hN0 hyy.le]
+    have h2 : 1 / y ≤ 1 / (x + j) := one_div_le_one_div_of_le (by linarith) (by linarith)
+    have h3 : 1 / (y + 1) ≤ 1 / (x + (j + 1)) :=
+      one_div_le_one_div_of_le (by linarith) (by linarith)
+    linarith
+  · have t1 := one_div_add_le_mul ha hax (hax.trans hxb) hj
+    have t2 := one_div_add_le_mul ha hax (hax.trans hxb) (by linarith : (0 : ℝ) ≤ j + 1)
+    have s1 : 1 / (b + j) ≤ (1 + E) * (1 / y) := by
+      rw [mul_one_div, div_le_div_iff₀ hB hy]
+      linarith
+    have s2 : 1 / (b + (j + 1)) ≤ (1 + E) * (1 / (y + 1)) := by
+      rw [mul_one_div, div_le_div_iff₀ (by linarith) (by linarith)]
+      nlinarith
+    -- `(2y + 1)/(y (y + 1)) ≤ q (1 + E)² / (1 − E)³`
+    have hNlow : (2 * y + 1) * (1 - E) ^ 2 ≤ N := by
+      have : (2 * y + 1) * (1 - E) ≤ y + yf := by nlinarith
+      nlinarith [mul_le_mul_of_nonneg_right this hE.le]
+    have hDup : D ≤ y * (y + 1) * (1 + E) ^ 2 := by
+      have : y * yc ≤ y * ((y + 1) * (1 + E)) := mul_le_mul_of_nonneg_left hc2 hy.le
+      nlinarith [mul_le_mul_of_nonneg_right this (by linarith : (0 : ℝ) ≤ 1 + E)]
+    have hND : (2 * y + 1) * (1 - E) ^ 2 / (y * (y + 1) * (1 + E) ^ 2) ≤ N / D :=
+      div_le_div₀ hN0 hNlow hD hDup
+    have hE2 : (0 : ℝ) ≤ (1 + E) ^ 2 := by positivity
+    have hval : (2 * y + 1) / (y * (y + 1)) * (1 - E) ^ 3 ≤ (1 + E) ^ 2 * q := by
+      have e : (2 * y + 1) * (1 - E) ^ 2 / (y * (y + 1) * (1 + E) ^ 2)
+          = (2 * y + 1) / (y * (y + 1)) * (1 - E) ^ 2 / (1 + E) ^ 2 := by
+        field_simp
+      rw [e, div_le_iff₀ (by positivity)] at hND
+      calc (2 * y + 1) / (y * (y + 1)) * (1 - E) ^ 3
+          = (2 * y + 1) / (y * (y + 1)) * (1 - E) ^ 2 * (1 - E) := by ring
+        _ ≤ N / D * (1 + E) ^ 2 * (1 - E) := mul_le_mul_of_nonneg_right hND hE.le
+        _ = (1 + E) ^ 2 * (N / D * (1 - E)) := by ring
+        _ ≤ (1 + E) ^ 2 * q := mul_le_mul_of_nonneg_left hq2 hE2
+    have hfin : (1 + E) * ((2 * y + 1) / (y * (y + 1))) ≤ g ^ 3 * q := by
+      rw [hg, div_pow, div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
+      calc (1 + E) * ((2 * y + 1) / (y * (y + 1))) * (1 - E) ^ 3
+          = (1 + E) * ((2 * y + 1) / (y * (y + 1)) * (1 - E) ^ 3) := by ring
+        _ ≤ (1 + E) * ((1 + E) ^ 2 * q) :=
+            mul_le_mul_of_nonneg_left hval (by linarith : (0 : ℝ) ≤ 1 + E)
+        _ = (1 + E) ^ 3 * q := by ring
+    calc 1 / (x + j) + 1 / (x + (j + 1))
+        ≤ b / a * (1 / (b + j)) + b / a * (1 / (b + (j + 1))) := add_le_add t1 t2
+      _ ≤ b / a * ((1 + E) * (1 / y + 1 / (y + 1))) := by
+          rw [← mul_add]
+          exact mul_le_mul_of_nonneg_left (by linarith) hba.le
+      _ ≤ b / a * (g ^ 3 * q) := by
+          rw [hfy]
+          exact mul_le_mul_of_nonneg_left hfin hba.le
+      _ = b / a * g ^ 3 * q := by ring
+
+end Harmonic
+
+/-- The loop keeps a lower sum and the sum of its quotients rounded up: every quotient is
+below its terms and within the factor `K₀ = (b/a) ((1 + E)/(1 − E))³` of them. -/
+theorem harmonicLoop_spec {V : ℕ} [NeZero V] (hV : 8 ≤ V) {bF : AzFloat} {a b xv : ℝ}
+    (hb : bF.toVal = some (b : EReal)) (ha : 0 < a) (hax : a ≤ xv) (hxb : xv ≤ b) :
+    ∀ (m i : ℕ) (lo up : AzFloat) (lov upv A : ℝ), lo.toVal = some (lov : EReal) →
+      up.toVal = some (upv : EReal) → lov ≤ A →
+      A ≤ b / a * ((1 + 2 * (1 / 2 : ℝ) ^ V) / (1 - 2 * (1 / 2 : ℝ) ^ V)) ^ 3 * upv → 0 ≤ upv →
+      ∃ lo' up' : ℝ, (harmonicLoop V bF m i lo up).1.toVal = some (lo' : EReal) ∧
+        (harmonicLoop V bF m i lo up).2.toVal = some (up' : EReal) ∧
+        lo' ≤ A + ∑ j ∈ range m, 1 / (xv + ((i + j : ℕ) : ℝ)) ∧
+        A + ∑ j ∈ range m, 1 / (xv + ((i + j : ℕ) : ℝ))
+          ≤ b / a * ((1 + 2 * (1 / 2 : ℝ) ^ V) / (1 - 2 * (1 / 2 : ℝ) ^ V)) ^ 3 * up' ∧
+        0 ≤ up'
+  | 0, i, lo, up, lov, upv, A, hlo, hup, h1, h2, h3 => by
+    rw [harmonicLoop, sum_range_zero, add_zero]
+    exact ⟨lov, upv, hlo, hup, h1, h2, h3⟩
+  | 1, i, lo, up, lov, upv, A, hlo, hup, h1, h2, h3 => by
+    set E := 2 * (1 / 2 : ℝ) ^ V with hEdef
+    have hE0 : 0 ≤ E := by positivity
+    have hE1 : E ≤ 1 / 64 := by
+      have : (1 / 2 : ℝ) ^ V ≤ (1 / 2) ^ 8 := pow_le_pow_of_le_one (by norm_num) (by norm_num) hV
+      rw [hEdef]; norm_num at this ⊢; linarith
+    have hi0 : (0 : ℝ) ≤ (i : ℝ) := Nat.cast_nonneg i
+    have hbpos : 0 < b := by linarith
+    obtain ⟨y, hy, hy1, hy2⟩ := addCeiling_abs hb (toVal_ofAzNat_ofNat i) V
+    rw [abs_of_pos (by linarith)] at hy2
+    have hy0 : 0 < y := by linarith
+    obtain ⟨q, hq, hq1, hq2⟩ := divFloor_abs toVal_one' hy hy0.ne' V
+    rw [abs_of_pos (by positivity)] at hq2
+    obtain ⟨hA, hB⟩ := harmonic_single ha hax hxb hE0 hE1 hi0 hy1 (by rw [hEdef]; linarith)
+      hq1 (by rw [hEdef]; linarith)
+    have hq0 : 0 ≤ q := by
+      have : 0 ≤ 1 / y * (1 - E) := mul_nonneg (by positivity) (by linarith)
+      rw [hEdef] at this; linarith
+    obtain ⟨lo', hlo', hlo'1, -⟩ := addFloor_abs hlo hq V
+    obtain ⟨up', hup', hup'1, -⟩ := addCeiling_abs hup hq V
+    have hK : 0 ≤ b / a * ((1 + E) / (1 - E)) ^ 3 := by
+      have : 0 < 1 - E := by linarith
+      positivity
+    rw [harmonicLoop, sum_range_one, Nat.add_zero]
+    refine ⟨lo', up', hlo', hup', by linarith, ?_, by linarith⟩
+    calc A + 1 / (xv + (i : ℝ)) ≤ b / a * ((1 + E) / (1 - E)) ^ 3 * upv
+          + b / a * ((1 + E) / (1 - E)) ^ 3 * q := add_le_add h2 hB
+      _ = b / a * ((1 + E) / (1 - E)) ^ 3 * (upv + q) := by ring
+      _ ≤ b / a * ((1 + E) / (1 - E)) ^ 3 * up' := mul_le_mul_of_nonneg_left hup'1 hK
+  | m + 2, i, lo, up, lov, upv, A, hlo, hup, h1, h2, h3 => by
+    set E := 2 * (1 / 2 : ℝ) ^ V with hEdef
+    have hE0 : 0 ≤ E := by positivity
+    have hE1 : E ≤ 1 / 64 := by
+      have : (1 / 2 : ℝ) ^ V ≤ (1 / 2) ^ 8 := pow_le_pow_of_le_one (by norm_num) (by norm_num) hV
+      rw [hEdef]; norm_num at this ⊢; linarith
+    have hi0 : (0 : ℝ) ≤ (i : ℝ) := Nat.cast_nonneg i
+    have hbpos : 0 < b := by linarith
+    obtain ⟨y, hy, hy1, hy2⟩ := addCeiling_abs hb (toVal_ofAzNat_ofNat i) V
+    rw [abs_of_pos (by linarith)] at hy2
+    have hy0 : 0 < y := by linarith
+    obtain ⟨yf, hyf, hyf1, hyf2⟩ := addFloor_abs hy toVal_one' V
+    rw [abs_of_pos (by linarith)] at hyf2
+    obtain ⟨yc, hyc, hyc1, hyc2⟩ := addCeiling_abs hy toVal_one' V
+    rw [abs_of_pos (by linarith)] at hyc2
+    have hyf0 : 0 ≤ yf := by nlinarith
+    obtain ⟨N, hN, hN1, hN2⟩ := addFloor_abs hy hyf V
+    rw [abs_of_pos (by linarith)] at hN2
+    obtain ⟨D, hD, hD1, hD2⟩ := mulCeiling_abs hy hyc V
+    rw [abs_of_pos (mul_pos hy0 (by linarith))] at hD2
+    have hD0 : 0 < D := lt_of_lt_of_le (mul_pos hy0 (by linarith)) hD1
+    have hN0 : 0 ≤ N := by nlinarith
+    obtain ⟨q, hq, hq1, hq2⟩ := divFloor_abs hN hD hD0.ne' V
+    rw [abs_of_nonneg (div_nonneg hN0 hD0.le)] at hq2
+    obtain ⟨hA, hB⟩ := harmonic_pair ha hax hxb hE0 hE1 hi0 hy1 (by rw [hEdef]; linarith)
+      hyc1 (by rw [hEdef]; linarith) hyf1 (by rw [hEdef]; linarith) hN1
+      (by rw [hEdef]; linarith) hD1 (by rw [hEdef]; linarith) hq1 (by rw [hEdef]; linarith)
+    have hq0 : 0 ≤ q := by
+      have : 0 ≤ N / D * (1 - E) := mul_nonneg (div_nonneg hN0 hD0.le) (by linarith)
+      rw [hEdef] at this; linarith
+    obtain ⟨lo', hlo', hlo'1, -⟩ := addFloor_abs hlo hq V
+    obtain ⟨up', hup', hup'1, -⟩ := addCeiling_abs hup hq V
+    have hK : 0 ≤ b / a * ((1 + E) / (1 - E)) ^ 3 := by
+      have : 0 < 1 - E := by linarith
+      positivity
+    have hstep : A + (1 / (xv + (i : ℝ)) + 1 / (xv + ((i : ℝ) + 1)))
+        ≤ b / a * ((1 + E) / (1 - E)) ^ 3 * up' := by
+      calc A + (1 / (xv + (i : ℝ)) + 1 / (xv + ((i : ℝ) + 1)))
+          ≤ b / a * ((1 + E) / (1 - E)) ^ 3 * upv + b / a * ((1 + E) / (1 - E)) ^ 3 * q :=
+            add_le_add h2 hB
+        _ = b / a * ((1 + E) / (1 - E)) ^ 3 * (upv + q) := by ring
+        _ ≤ b / a * ((1 + E) / (1 - E)) ^ 3 * up' := mul_le_mul_of_nonneg_left hup'1 hK
+    obtain ⟨lo'', up'', k1, k2, k3, k4, k5⟩ := harmonicLoop_spec hV hb ha hax hxb m (i + 2) _ _
+      lo' up' (A + (1 / (xv + (i : ℝ)) + 1 / (xv + ((i : ℝ) + 1)))) hlo' hup'
+      (by linarith) hstep (by linarith)
+    have hsum : ∑ j ∈ range (m + 2), 1 / (xv + ((i + j : ℕ) : ℝ))
+        = (1 / (xv + (i : ℝ)) + 1 / (xv + ((i : ℝ) + 1)))
+          + ∑ j ∈ range m, 1 / (xv + ((i + 2 + j : ℕ) : ℝ)) := by
+      rw [sum_range_succ', sum_range_succ']
+      simp only [Nat.add_zero, Nat.cast_add, Nat.cast_one, Nat.cast_ofNat, zero_add]
+      have : ∀ j : ℕ, (i : ℝ) + ((j : ℝ) + 1 + 1) = (i : ℝ) + 2 + j := fun j => by ring
+      simp only [this]
+      ring
+    rw [harmonicLoop, hsum, ← add_assoc]
+    exact ⟨lo'', up'', k1, k2, k3, k4, k5⟩
+
 /-- The sum `∑_{j<i} 1/(x + j)` on enclosures. -/
-theorem harmonicEncl_spec {V : ℕ} [NeZero V] (hV : 2 ≤ V) {X : Encl} {xv : ℝ}
-    (hX : IsEnclPos X xv) : ∀ i : ℕ, IsEncl (harmonicEncl V X i) (∑ j ∈ range i, 1 / (xv + j))
-  | 0 => by rw [sum_range_zero]; exact isEncl0_exact_zero
-  | i + 1 => by
-    rw [sum_range_succ, harmonicEncl]
-    exact (harmonicEncl_spec hV hX i).add
-      (enclosesPos_one.div hV (hX.add hV (isEncl0_nat i))).encloses0.encloses
+theorem harmonicEncl_spec {V : ℕ} [NeZero V] (hV : 8 ≤ V) {X : Encl} {xv : ℝ}
+    (hX : IsEnclPos X xv) (i : ℕ) :
+    IsEncl (harmonicEncl V X i) (∑ j ∈ range i, 1 / (xv + j)) := by
+  obtain ⟨a, b, ha, hb, ha0, hax, hxb⟩ := hX
+  set E := 2 * (1 / 2 : ℝ) ^ V with hEdef
+  have hE0 : 0 ≤ E := by positivity
+  have hE1 : E ≤ 1 / 64 := by
+    have : (1 / 2 : ℝ) ^ V ≤ (1 / 2) ^ 8 := pow_le_pow_of_le_one (by norm_num) (by norm_num) hV
+    rw [hEdef]; norm_num at this ⊢; linarith
+  have hb0 : 0 < b := by linarith
+  have hK0 : 0 ≤ b / a * ((1 + E) / (1 - E)) ^ 3 := by
+    have : 0 < 1 - E := by linarith
+    positivity
+  obtain ⟨lo, up, hlo, hup, h1, h2, h3⟩ := harmonicLoop_spec hV hb ha0 hax hxb i 0 zero zero
+    0 0 0 toVal_zero' toVal_zero' le_rfl (by rw [mul_zero]) le_rfl
+  simp only [zero_add] at h1 h2
+  -- the factor
+  obtain ⟨R, hR, hR1, -⟩ := divCeiling_abs hb ha ha0.ne' V
+  have hpow : (powerOf2 (AzInt.ofInt 6 - (AzNat.ofNat V).toAzInt)).toVal
+      = some (((64 : ℝ) * (1 / 2 : ℝ) ^ V : ℝ) : EReal) := by
+    rw [toVal_powerOf2, AzInt.toInt_sub, AzInt.toInt_ofInt, AzNat.toInt_toAzInt,
+      AzNat.toNat_ofNat, zpow_sub₀ (by norm_num), zpow_natCast, one_div_pow, one_div,
+      div_eq_mul_inv]
+    norm_num
+  obtain ⟨o, ho, ho1, -⟩ := addCeiling_abs toVal_one' hpow V
+  obtain ⟨K, hK, hK1, -⟩ := mulCeiling_abs hR ho V
+  have hR0 : 0 < b / a := div_pos hb0 ha0
+  have hKge : b / a * ((1 + E) / (1 - E)) ^ 3 ≤ K := by
+    have hg := gamma_cube_le hE0 hE1
+    have : (1 : ℝ) + 32 * E ≤ o := by rw [hEdef]; linarith
+    calc b / a * ((1 + E) / (1 - E)) ^ 3 ≤ b / a * o :=
+          mul_le_mul_of_nonneg_left (hg.trans this) hR0.le
+      _ ≤ R * o := mul_le_mul_of_nonneg_right hR1 (by linarith)
+      _ ≤ K := hK1
+  obtain ⟨hi, hhi, hhi1, -⟩ := mulCeiling_abs hup hK V
+  unfold harmonicEncl
+  refine ⟨lo, hi, hlo, hhi, h1, ?_⟩
+  calc ∑ j ∈ range i, 1 / (xv + (j : ℝ)) ≤ b / a * ((1 + E) / (1 - E)) ^ 3 * up := h2
+    _ ≤ K * up := mul_le_mul_of_nonneg_right hKge h3
+    _ = up * K := mul_comm _ _
+    _ ≤ hi := hhi1
 
 /-- **`digammaPosEncl X e w` encloses `ψ(x)`** for an enclosure `X` of `x` with a positive lower
 end (`w ≥ 64`). -/
@@ -245,7 +514,7 @@ theorem digammaPosEncl_spec {X : Encl} {xv : ℝ} (hX : IsEnclPos X xv) (e : AzI
         (xv + (lnGammaShift X.1 e L : ℕ)) := hX.add hV2 (isEncl0_nat _)
     have hS := digammaStirlingEncl_spec hV (hM (max (L + 1) (if e.sign then e.abs.toNat else 0)))
       hY (powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt))
-    have := hS.sub (w := V) (harmonicEncl_spec hV2 hX (lnGammaShift X.1 e L))
+    have := hS.sub (w := V) (harmonicEncl_spec (le_trans (by norm_num) hV) hX (lnGammaShift X.1 e L))
     convert this using 1
     have hnp : ∀ m : ℕ, xv ≠ -m := fun m hm => by
       have : (0 : ℝ) ≤ m := Nat.cast_nonneg m
