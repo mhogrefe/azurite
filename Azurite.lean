@@ -402,6 +402,8 @@ import Azurite.AzFloat.Equiv.Tanh
 import Azurite.AzFloat.Equiv.TanhBracket
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.TreeT
+import Azurite.AzFloat.Equiv.WrightOmega
+import Azurite.AzFloat.Equiv.WrightOmegaBracket
 import Azurite.AzFloat.Equiv.Ziv
 import Azurite.AzFloat.Equiv.ZivPair
 import Azurite.AzFloat.EulerGamma
@@ -558,6 +560,8 @@ import Azurite.AzFloat.TanhBracket
 import Azurite.AzFloat.TanhRat
 import Azurite.AzFloat.ToString
 import Azurite.AzFloat.TreeT
+import Azurite.AzFloat.WrightOmega
+import Azurite.AzFloat.WrightOmegaBracket
 import Azurite.AzFloat.Ziv
 import Azurite.AzFloat.ZivPair
 import Azurite.AzFormula.Atom
@@ -3136,6 +3140,7 @@ import Azurite.Transcendental.NivenSin
 import Azurite.Transcendental.NivenTan
 import Azurite.Transcendental.Ramanujan
 import Azurite.Transcendental.Sinh
+import Azurite.Transcendental.WrightOmega
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Digits

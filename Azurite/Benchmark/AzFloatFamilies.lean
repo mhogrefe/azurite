@@ -100,6 +100,7 @@ import Azurite.AzFloat.ExpM1
 import Azurite.AzFloat.Ln
 import Azurite.AzFloat.LambertW
 import Azurite.AzFloat.LogBaseExact
+import Azurite.AzFloat.WrightOmega
 import Azurite.AzFloat.Conversion
 import Azurite.AzRat.Parse
 import Azurite.AzRat.Shift
@@ -328,10 +329,13 @@ private def logExact3 : FloatFn := fun x _ _ =>
 
 private def misc : List Entry :=
   let tl := [a "1/3", a "1/10", a "-1/3", tiny]
+  let wl := [a "1/3", a "-10", a "-1000", a "1000", a "1000000000000000000000000000001/3"]
   let big : Nat := 3 ^ 1000
   let ex (n : Nat) (label : String) : Arg := { q := toString n, prec := 2000, label := label }
   [F "cos" cosPrecRound [a "1/3"], F "lambertW0" lambertW0PrecRound [a "-1/3"],
    F "dottie" (fun _ => dottiePrecRound) [a "1"],
+   F "ln" lnPrecRound [a "1/3"], F "exp" expPrecRound [a "-1000"],
+   F "wrightOmega" wrightOmegaPrecRound wl, R "wrightOmegaRat" wrightOmegaRatPrecRound wl,
    F "treeT0" treeT0PrecRound tl, R "treeT0Rat" treeT0RatPrecRound tl,
    F "treeTm1" treeTm1PrecRound [a "1/3", a "1/10", tiny],
    R "treeTm1Rat" treeTm1RatPrecRound [a "1/3", a "1/10", tiny],

@@ -8086,6 +8086,54 @@ Files: `AzFloat/TreeT.lean`, `Equiv/TreeT.lean`, `Tests/TreeT.lean`.
   arguments, rationals.
 * Cost: that of `W` (about 3.5 exponentials).  Not timed separately.
 
+## The Wright `ω` function (DONE 2026-11-17, fuel-free, UNTIMED)
+
+User request.  `ω(x) = W₀(eˣ)`, the positive root of `y + ln y = x` (DLMF 4.13.1_2;
+`Azurite.DLMF.wrightOmegaReal`; the complex `wrightOmega` is in `Section13Omega`).  Files:
+`Transcendental/WrightOmega.lean`, `AzFloat/WrightOmegaBracket.lean` + `Equiv/`,
+`AzFloat/WrightOmega.lean` + `Equiv/`, `Tests/WrightOmega.lean`, `Tests/WrightOmegaRat.lean`.
+
+* **Names**: `wrightOmegaPrecRound x p mode`, `wrightOmegaFloat x`, `wrightOmegaRatPrecRound
+  q p mode`, `wrightOmegaRat q p`.
+* **Not `W₀` of `eˣ`.**  For a large `x` the exponential is astronomically larger than
+  `ω(x) ≈ x − ln x`, so the bracket comes from `y + ln y = x` itself, whose derivative
+  `1 + 1/y` is never small: there is no branch point and no loss of bits anywhere.
+* **Candidate** (`omegaCandidate`, unverified): a seed — eight Newton steps in `Float` from
+  `eˣ` (`x < −1`), the tangent of `ω` at `0` (`−1 ≤ x ≤ 2`) or `x − ln x` (`x > 2`); outside
+  the `Float` range `eˣ` or `x − ln x` at 64 bits — refined by Newton's iteration
+  (`logSeedStep`, shared with `W`) to **half** the bits wanted.  The schedule is planned
+  backwards (`target ← target/2 + 8`): the first, forward version (`a ↦ 2a − 4`) doubled its
+  deficit at every step and missed by 14 bits at 20000.
+* **Enclosure** (`omegaEncl`): with the residual `d = n + ln n − x` enclosed at full precision
+  (one logarithm, `lnOfEncl`), `n − ω = d c` with `c` between `t/(1 + t)` at `min(n, ω)` and
+  at `max(n, ω)` (`WrightOmega.exists_factor`: the mean value theorem, here from
+  `1 − 1/t ≤ ln t ≤ t − 1` alone).  The crude bounds `n − d⁺ min(1, n) ≤ ω ≤ n + d⁻ k`
+  (`k = min(1, 2n)` when `d⁻ ≤ 1/2`, else `1`) enclose `c`, and `ω ∈ n − [d]·[c]` has a width
+  of order `d²` — the verification is also the last Newton step.  Both forms of the crude
+  bounds are needed: the absolute one for a large `n`, the relative one for a tiny `n`.
+  Working precision `w + 24 + 2 lg w` bits beyond the bit length of the exponent of `n` (the
+  bracket of `ln` at level `P` is about `2 lg P` bits wider than `2^(−P)`: measured 14 bits
+  at 300, 30 at 20000).
+* **Fallback** for the termination proof only: when the enclosure is not narrower than
+  `2^(−w)` relative, `lambertBracket` at `eˣ`, the exponential entering through its
+  `Floor`/`Ceiling` roundings (`expAt`, `expRatAt` — `XEncl` asks for nothing more).  Its
+  width is proven to tend to zero; the candidate's is not.  Never taken in the tests.
+* **Certificates**: `ω(r)` is irrational for a rational `r ≠ 1` (`ln ω` would be rational:
+  `irrational_log_rat`), and no rational `m` has `m eᵐ = eʳ` (the side certificate of the
+  fallback).  `ω(1) = 1` is returned exactly.
+* **Large arguments** (`wrightOmegaHuge?`): `x − ln x < ω(x) < x` and `x` can be a float, so
+  `−ω ∈ (−x, −x + e]` (`x < 2^e`) is rounded by one test with the exact end at the open side.
+  Without it `ω(3·2^(2^40))` would need `2^40` bits.  The loop takes over when the test fails
+  (`e ≲ p + 72`, or a boundary inside the interval).
+* **Special values**: `ω(+∞) = +∞`, `ω(−∞) = 0`, `NaN ↦ NaN`; defined on the whole line.
+  `Spec.wrightOmega : EReal → Option EReal`.
+* Tests: special values, `ω(0) = 0.56714…` (the omega constant) to 200 bits, five modes,
+  next to `1`, very negative arguments against `eˣ`, `10³⁰`, `10³⁰⁰`, `3·2^(2^40)`,
+  agreement with `W₀(eˣ)`, 1000 bits; rationals.
+* Cost: about two logarithms (one at full precision, the Newton steps up to half), the
+  exponential for a very negative `x`.  Rows `wrightOmega`, `wrightOmegaRat` (and `ln`, `exp`
+  for reference) in `az_float_families family:misc`; not yet timed.
+
 ## Gudermannian `gd` (DONE 2026-11-16, fuel-free, interpreter-timed)
 
 `gd x = ∫₀ˣ sech t dt` (DLMF 4.23.39), `gdPrecRound`, `gd` (`AzFloat/Gd.lean`); special values
