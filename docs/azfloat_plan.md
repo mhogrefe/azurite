@@ -8956,7 +8956,38 @@ Both exact paths were bounded by what termination needs, not by what is cheap.
 * No proof depended on either bound.  Tests of the loop moved to larger `n`
   (`(−1001/2)₁₀₀₀` against double factorials, rational `n = 1000` against exact products).
 * Left: `risingInt` multiplies one factor at a time (quadratic); a balanced product would
-  push the crossover further for long products.
+  push the crossover further for long products.  Done in Perf 19.
+
+### Perf 19. Balanced rising product (2026-11-18)
+
+User request.  `risingInt N D n` is now `AzInt.product` (the balanced tree of pairwise
+products) of the list of factors; only `toInt_risingInt` had to be reproven, and `B(a, n)`
+(`betaIntQuot`) and `(x)ₙ` (`pochIntQuot`) both use it.
+
+* `pochIntQuot`, ms, before → after: `1/3`, `n = 800` 0.46 → 0.19, `n = 3200` 6.2 → 1.26;
+  a 118-bit fraction, `n = 800` 2.9 → 1.75, `n = 3200` 45 → 17.5; the float `1/3` at 1000
+  bits, `n = 200` 20.4 → 13.8.  What remains is mostly the division of the two long exact
+  floats, which grows like `(n ℓ)^{3/2}`.
+* Cost model refitted: ≈ `3·10⁻⁵ (n ℓ)^{3/2}` ms; `pochExactCheap` now tests
+  `n ℓ ≤ 3p + 512` (was `2p + 512`).
+* `pochhammerRat` after: `(1/3)₂₀₀` ≈ 0.05, `(1/3)₆₀₀` 0.17 / 0.14 / 0.15,
+  `(−901/3)₆₀₀` 0.14 (the loop would take 0.6–1.1 / 1.4–2.5 / 15–28).  Float
+  `(−301/3)₂₀₀` at 1000 bits 28.6 → 16.4 (now exact).
+* Possible next step: divide truncated operands with an error bound instead of the full
+  exact floats — no longer a one-line proof.
+
+### 5e. The factorial as a float (DONE 2026-11-18, fuel-based above the bound, TIMED)
+
+User request.  `factorialPrecRound (n : AzNat) p mode`, `factorial n p`
+(`AzFloat/Factorial.lean`, `Equiv/Factorial.lean`, `Tests/Factorial.lean`).
+
+* `n ≤ gammaIntBound p = 8p + 2048`: the exact `AzNat.factorial`, rounded once.
+* Beyond: `gammaPrecRound` at the exact float `n + 1`.
+* Contract `factorialPrecRound_eq_or`: the correct rounding of `n.toNat !`, or `(nan, .eq)`.
+* Timings (ms at 53 / 200 / 1000 bits): `20!` 0.003; `150!` 0.011; `2000!` 0.18 (exact);
+  `100000!` 0.42 / 0.73 / 3.4; `(10¹⁸)!` 0.49 / 0.74 / 2.8.
+* Tests: the loop against the exact factorial at `n = 2473 … 20000`; both sides of the bound.
+
 
 
 ### File layout of the logarithms of `Γ` and `B` (2026-11-18)

@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzInt.Equiv.SumProduct
 import Azurite.AzFloat.Beta
 import Azurite.AzFloat.Equiv.BetaBracket
 import Azurite.AzFloat.Equiv.RoundToInteger
@@ -259,11 +260,13 @@ theorem beta_nat_eq {x : ℝ} (hx : ∀ m : ℕ, x ≠ -m) {n : ℕ} (hn : 1 ≤
 
 theorem toInt_risingInt (N D : AzInt) (n : ℕ) :
     (risingInt N D n).toInt = ∏ j ∈ Finset.range n, (N.toInt + j * D.toInt) := by
+  rw [risingInt, AzInt.toInt_product, List.map_map]
   induction n with
   | zero => rfl
   | succ n ih =>
-    rw [risingInt, AzInt.toInt_mul, AzInt.toInt_add, AzInt.toInt_mul, AzInt.toInt_natCast, ih,
-      Finset.prod_range_succ]
+    rw [List.range_succ, List.map_append, List.prod_append, ih, Finset.prod_range_succ,
+      List.map_singleton, List.prod_singleton, Function.comp_apply, AzInt.toInt_add,
+      AzInt.toInt_mul, AzInt.toInt_natCast]
 
 /-- `(n − 1)! Dⁿ / ∏ (N + j D) = (n − 1)! / ∏ (N/D + j)`. -/
 theorem factorial_mul_pow_div_prod {N D : ℝ} (hD : D ≠ 0) (c : ℝ) (n : ℕ) :

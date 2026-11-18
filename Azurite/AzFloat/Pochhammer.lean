@@ -53,10 +53,10 @@ def pochIntQuot (N D : AzInt) (n p : Nat) (mode : RoundingMode) : AzFloat × Ord
   divPrecRound (ofAzInt (risingInt N D n)) (ofAzInt (D.pow n)) p mode
 
 /-- Is the exact product of `n` factors of `B` bits (numerator and denominator together)
-cheaper than the loop at precision `p`?  The product costs about `(n ℓ)²` with `ℓ` the
-number of limbs of a factor, the loop about as much as `ln Γ` at `p` bits (measured
-2026-11-18: `10⁻⁶ (n ℓ)²` ms against 0.6 / 1.4 / 15 ms at 53 / 200 / 1000 bits). -/
-def pochExactCheap (B n p : Nat) : Bool := decide (n * ((B + n.log2) / 64 + 1) ≤ 2 * p + 512)
+cheaper than the loop at precision `p`?  With `ℓ` the number of limbs of a factor, the
+balanced product and the division cost about `3·10⁻⁵ (n ℓ)^{3/2}` ms, the loop about as much
+as `ln Γ` at `p` bits: 0.6 / 1.4 / 15 ms at 53 / 200 / 1000 bits (measured 2026-11-18). -/
+def pochExactCheap (B n p : Nat) : Bool := decide (n * ((B + n.log2) / 64 + 1) ≤ 3 * p + 512)
 
 /-- The bits of a float as a fraction: its precision and the size of its exponent. -/
 def pochFloatBits (x : AzFloat) : Nat :=

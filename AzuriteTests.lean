@@ -91,6 +91,7 @@ import Azurite.AzFloat.Tests.ExpConstants
 import Azurite.AzFloat.Tests.ExpM1
 import Azurite.AzFloat.Tests.ExpM1Rat
 import Azurite.AzFloat.Tests.ExpRat
+import Azurite.AzFloat.Tests.Factorial
 import Azurite.AzFloat.Tests.Float64
 import Azurite.AzFloat.Tests.Float64Emulate
 import Azurite.AzFloat.Tests.Gamma

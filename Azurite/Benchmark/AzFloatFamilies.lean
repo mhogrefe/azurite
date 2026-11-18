@@ -103,6 +103,7 @@ import Azurite.AzFloat.LogBaseExact
 import Azurite.AzFloat.Beta
 import Azurite.AzFloat.BetaRat
 import Azurite.AzFloat.Pochhammer
+import Azurite.AzFloat.Factorial
 import Azurite.AzFloat.PochhammerRat
 import Azurite.AzFloat.LnBetaRat
 import Azurite.AzFloat.LnGamma
@@ -387,6 +388,9 @@ private def misc : List Entry :=
    R "pochhammerRat q 200" (fun q => pochhammerRatPrecRound q 200)
      [a "1/3", a "-301/3", a "-901/3"],
    R "pochhammerRat q 10^6" (fun q => pochhammerRatPrecRound q 1000000) [a "1/3", a "-7/3"],
+   R "factorial" (fun q => factorialPrecRound q.num)
+     [a "20", a "150", a "2000", a "100000", a "1000000000000000000"],
+   R "pochhammerRat q 600" (fun q => pochhammerRatPrecRound q 600) [a "1/3", a "-901/3"],
    F "psiZero 0" (fun _ => psiZeroPrecRound 0) [a "1"],
    F "psiZero 1" (fun _ => psiZeroPrecRound 1) [a "1"],
    F "psiZero 1000" (fun _ => psiZeroPrecRound 1000) [a "1"],

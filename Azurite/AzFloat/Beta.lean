@@ -14,6 +14,7 @@ import Azurite.AzNat.Factorial
 import Azurite.AzRat.Instances
 import Azurite.AzRat.Div
 import Azurite.AzInt.Pow
+import Azurite.AzInt.SumProduct
 import Azurite.AzInt.Instances
 
 /-!
@@ -62,10 +63,10 @@ def sumIsNonposInt (a b : AzFloat) : Bool :=
     let r := addPrecRound a b (a.precision?.getD 1 + b.precision?.getD 1 + 2) .Nearest
     if r.2 = .eq then isInteger r.1 && le r.1 zero else false
 
-/-- The integer `∏_{j<n} (N + j D)`: the rising product of `N/D` times `D^n`. -/
-def risingInt (N D : AzInt) : Nat → AzInt
-  | 0 => 1
-  | i + 1 => risingInt N D i * (N + (i : AzInt) * D)
+/-- The integer `∏_{j<n} (N + j D)`: the rising product of `N/D` times `D^n`, by a balanced
+tree of pairwise products (`AzInt.product`). -/
+def risingInt (N D : AzInt) (n : Nat) : AzInt :=
+  AzInt.product ((List.range n).map fun (j : Nat) => N + (j : AzInt) * D)
 
 /-- `B(N/D, n) = (n − 1)! Dⁿ / ∏_{j<n} (N + j D)` for a positive integer `n`, as one correctly
 rounded division of two exact floats (a rational would cost a gcd of two long numbers). -/
