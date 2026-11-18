@@ -517,6 +517,58 @@ def checkBigExponentFloatSinCosPi : String → Verdict := withBigExponentFloatNa
 def checkBigExponentFloatSinCosPiRational : String → Verdict :=
   withBigExponentFloatNames checkFloatSinCosPiRational
 
+def checkBigExponentFloatTan : String → Verdict := withBigExponentFloatNames checkFloatTan
+
+def checkBigExponentFloatTanRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatTanRational
+
+/-- Azurite's value of a trigonometric function at a pole is an infinity, as in IEEE 754 (the tangent
+takes the sign of the sine, the secant is `+∞`); a `BigExponentFloat`, with no negative zero to tell
+the two one-sided limits apart, is `NaN` there, as `1/0` is. `AzFloat`'s exponent is unbounded, so
+these functions of a finite argument are infinite only at a pole, and an infinite result is read as
+`NaN`. -/
+def poleAsNaN (r : AzFloat × Ordering) : AzFloat × Ordering :=
+  match r.1 with
+  | .infinity _ => (.nan, .eq)
+  | _ => r
+
+def checkBigExponentFloatTanWithPeriod : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryArgsWith "tan_with_period" 1 parseLogBase
+    (fun x u p m => poleAsNaN (AzFloat.tanWithPeriodPrecRound x u p m))
+
+def checkBigExponentFloatTanWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRationalArgsWith "tan_with_period_rational" 1
+    parseLogBase (fun q u p m => poleAsNaN (AzFloat.tanRatWithPeriodPrecRound q u p m))
+
+def checkBigExponentFloatTanPi : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryWith "tan_pi"
+    (fun x p m => poleAsNaN (AzFloat.tanPiPrecRound x p m))
+
+def checkBigExponentFloatTanPiRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRational "tan_pi_rational"
+    (fun q p m => poleAsNaN (AzFloat.tanPiRatPrecRound q p m))
+
+def checkBigExponentFloatSec : String → Verdict := withBigExponentFloatNames checkFloatSec
+
+def checkBigExponentFloatSecRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSecRational
+
+def checkBigExponentFloatSecWithPeriod : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryArgsWith "sec_with_period" 1 parseLogBase
+    (fun x u p m => poleAsNaN (AzFloat.secWithPeriodPrecRound x u p m))
+
+def checkBigExponentFloatSecWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRationalArgsWith "sec_with_period_rational" 1
+    parseLogBase (fun q u p m => poleAsNaN (AzFloat.secRatWithPeriodPrecRound q u p m))
+
+def checkBigExponentFloatSecPi : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryWith "sec_pi"
+    (fun x p m => poleAsNaN (AzFloat.secPiPrecRound x p m))
+
+def checkBigExponentFloatSecPiRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRational "sec_pi_rational"
+    (fun q p m => poleAsNaN (AzFloat.secPiRatPrecRound q p m))
+
 /-- `y·z`, formed exactly. -/
 def exactProduct (y z : AzFloat) : AzFloat :=
   (AzFloat.mulPrecRound y z (exactProductPrecision [y, z]) .Nearest).1

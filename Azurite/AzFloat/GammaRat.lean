@@ -8,7 +8,10 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Gamma
-import Azurite.AzFloat.LnGammaRat
+import Azurite.AzFloat.LnGamma
+import Azurite.AzFloat.Conversion
+import Azurite.AzRat.Sub
+import Azurite.AzRat.Instances
 import Azurite.AzRat.Round
 import Azurite.AzRat.Unary
 import Azurite.AzRat.Mul

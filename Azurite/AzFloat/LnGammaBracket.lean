@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.LnEncl
+import Azurite.AzFloat.Conversion
 import Azurite.AzNat.TangentNumbers
 
 /-!
@@ -23,9 +24,9 @@ Stirling's series (DLMF 5.11.1) with the argument shifted to where it converges 
 (`stirlingMu_eq_sum_add`, `Transcendental/LogGammaStirling.lean`).
 
 * **The shift** (`lnGammaShift`): `y ≥ 2^L` with `2^L` between a quarter and half of the
-  working precision (`lnGammaShiftExp`).  For `2^(E−1) ≤ x < 2^E`: nothing when `E > L`, `2^L − 2^(E−1)` when
-  `1 ≤ E ≤ L`, `2^L` when `x < 1`.  The rising product is `δ` multiplications of enclosures
-  (`risingEncl`), followed by one logarithm.
+  working precision (`lnGammaShiftExp`).  For `2^(E−1) ≤ x < 2^E`: nothing when `E > L`,
+  `2^L − 2^(E−1)` when `1 ≤ E ≤ L`, `2^L` when `x < 1`.  The rising product is `δ`
+  multiplications of enclosures (`risingEncl`), followed by one logarithm.
 * **The series** (`stirlingSumLoop`): the terms are added, on enclosures, until one is below
   the tolerance or the table of tangent numbers ends; that term is not added but bounds the
   remainder, on its own side.  So the enclosure is valid whatever the number of terms is, and
@@ -145,5 +146,9 @@ def lnGammaBracketEncl (X : Encl) (e : AzInt) (w : Nat) : Encl :=
 /-- The bracket of `ln Γ(x)` at Ziv level `w` for a positive finite float `x < 2^e`. -/
 def lnGammaBracket (x : AzFloat) (e : AzInt) (w : Nat) : Encl :=
   lnGammaBracketEncl (Encl.exact x) e w
+
+/-- The enclosure of a rational `q` by its roundings down and up at `w + 32` bits. -/
+def lnGammaRatEncl (q : AzRat) (w : Nat) : Encl :=
+  ((ofAzRatRound q (w + 32) .Floor).1, (ofAzRatRound q (w + 32) .Ceiling).1)
 
 end Azurite.AzFloat

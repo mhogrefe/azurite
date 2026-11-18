@@ -8,7 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.DigammaBracket
-import Azurite.AzFloat.LnAbsGamma
+import Azurite.AzFloat.LnGamma
 
 /-!
 ## The digamma function `ψ(x) = Γ′(x)/Γ(x)`

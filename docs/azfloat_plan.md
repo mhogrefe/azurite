@@ -8464,7 +8464,7 @@ Files: `AzFloat/GammaRat.lean`, `Equiv/GammaRat.lean`, `Tests/GammaRat.lean`.
 
 ### 3b. `ln |Γ(x)|` with the sign of `Γ(x)` (DONE 2026-11-17, fuel-based, TIMED)
 
-`lnAbsGammaPrecRound x p mode : (AzFloat × Ordering) × Bool` (`AzFloat/LnAbsGamma.lean`), the
+`lnAbsGammaPrecRound x p mode : (AzFloat × Ordering) × Bool` (`AzFloat/LnGamma.lean`), the
 specification of MPFR's `mpfr_lgamma` (the specification only — the algorithm is the reflection
 formula on the existing enclosures); `lnAbsGamma x` rounds to nearest at the precision of `x`.
 
@@ -8477,7 +8477,7 @@ formula on the existing enclosures); `lnAbsGamma x` rounds to nearest at the pre
   `1 − x`; a Ziv loop with `lnGammaFuel` from `max 64 (p + 32)` bits.  The zeros of
   `ln |Γ|` between the poles below `−2` are left to the loop.
 * **Sign**: `gammaSign` — for a negative non-integer, the parity of the truncation.
-* **Proofs** (`Equiv/LnAbsGamma.lean`): `Spec.lnAbsGamma`, `lnAbsGammaNegEncl_spec`,
+* **Proofs** (`Equiv/LnGamma.lean`): `Spec.lnAbsGamma`, `lnAbsGammaNegEncl_spec`,
   `Gamma_pos_iff_trunc_odd`, **`lnAbsGammaPrecRound_eq_or`** (correctly rounded, or `NaN`),
   **`lnAbsGammaPrecRound_sign`** (`= true ↔ 0 < Γ(x)` at every finite non-pole).
 * **Timings** (`az_float_gamma`, column `lnGamma` at negative arguments, ms): 0.5–0.7 at 53
@@ -8489,11 +8489,11 @@ formula on the existing enclosures); `lnAbsGamma x` rounds to nearest at the pre
 ### 3c. `ln |Γ(q)|` with the sign of `Γ(q)` for an `AzRat` (DONE 2026-11-17, fuel-based, TIMED)
 
 `lnAbsGammaRatPrecRound q p mode : (AzFloat × Ordering) × Bool`, `lnAbsGammaRat q p`,
-`gammaRatSign q` (`AzFloat/LnAbsGammaRat.lean`).  `q > 0`: `lnGammaRatPrecRound`; the poles
+`gammaRatSign q` (`AzFloat/LnGammaRat.lean`).  `q > 0`: `lnGammaRatPrecRound`; the poles
 (`num = 0`, or `den = 1` with a negative sign): `+∞`; otherwise the shared reflection step
 `lnAbsGammaReflect` (now also used by the float function) with `gammaRatSinEncl` and the
 bracket of `ln Γ` at the enclosure of the exact rational `1 − q`.  Sign of a negative
-non-integer: `(num / den).isOdd`.  Proofs (`Equiv/LnAbsGammaRat.lean`):
+non-integer: `(num / den).isOdd`.  Proofs (`Equiv/LnGammaRat.lean`):
 `lnAbsGammaRatNegEncl_spec`, `Gamma_pos_iff_floor_odd` (from the shared `Gamma_pos_iff_odd`),
 **`lnAbsGammaRatPrecRound_eq_or`**, **`lnAbsGammaRatPrecRound_sign`**.  Timings (column
 `lnGammaRat` of `az_float_gamma` at negative arguments): the same as the float function
@@ -8802,6 +8802,66 @@ order of the *exponent* of `eˣ`, while `omegaWork` adds its bit length.
   here on `−2^(2³⁰−4)` and `−(10⁴⁰+1)/3`: zero under `Nearest`, `Floor`, `Down`, the smallest
   positive value under `Ceiling`, `Up`, in well under a second.  The Malachite demo itself
   (`demo_float_wright_omega_extreme_debug`) was not run from here.
+
+### 5b. `ln |B(a, b)|` with the sign of `B` (DONE 2026-11-18, fuel-based, TIMED)
+
+User request.  `lnAbsBetaPrecRound a b p mode : (AzFloat × Ordering) × Bool`, `lnAbsBeta a b`
+(`AzFloat/LnBeta.lean`); `lnAbsBetaRatPrecRound`, `lnAbsBetaRat` for two `AzRat`s
+(`AzFloat/LnBetaRat.lean`); `Equiv` and `Tests` for each.  The shape is that of
+`lnAbsGammaPrecRound`.
+
+* **A driver on the existing core.**  `lnAbsBetaCore` / `lnAbsBetaEncl` (Perf 16, 5a) already
+  give an enclosure of `ln |B|` and the sign of `B`; `betaCore` is its exponential.  The new
+  loop `lnAbsLoop core p mode fuel w` rounds the enclosure of a level when it can and returns
+  the sign *of that level* with it (`lnAbsStep`), so value and sign come from one evaluation.
+* **Special values through the logarithm of `Spec.beta`**:
+  `Spec.lnAbsBeta a b = (Spec.beta a b).map Spec.lnAbsE`, `lnAbsE` being `ln |·|` with `+∞` at
+  `±∞` and `−∞` at `0`.  So `NaN` where `B` is, `+∞` at a zero argument, and **`−∞` where
+  `B = 0`**: `B(+∞, b)` for `b > 0`, and `a + b` a non-positive integer (`sumIsNonposInt`, or
+  the reduced sum for rationals).
+* **Exact case**: `ln |B(a, 1)| = −ln |a|` by `lnPrecRound` / `lnRatPrecRound` in the negated
+  mode (`negLnAbs`, `negLnAbsRat`) — fuel-free there, and exactly `0` at `a = 1`, where the
+  loop could not decide.
+* **Contract**: `lnAbsBetaPrecRound_eq_or` (`= liftVal₂ Spec.lnAbsBeta`, or `(nan, .eq)`), and
+  `lnAbsBetaPrecRound_sign`: whenever the value is not `NaN`, at finite arguments where `B` is
+  finite and nonzero, the sign component is the sign of `Γ(a)Γ(b)/Γ(a + b)`.  Both from one
+  statement, `lnAbsBetaReal_main` ("`NaN`, or value and sign").  The sign is *not* claimed when
+  the fuel runs out — an unconditional sign would need the parity of `⌊a + b⌋` without the
+  exact sum.  Same two theorems for rationals.
+* Timings (`az_float_families family:misc`, ms at 53 / 200 / 1000 bits): `ln |B(1/3, 5/2)|`
+  0.93 / 2.30 / 22.6; `(150, 5/2)` 0.81 / 1.79 / 20.7; `(−7/3, 5/2)` 1.19 / 2.68 / 23.8 —
+  `B` minus its exponential; `ln |B(1/3, 1)|` 0.094 / 0.154 / 0.61 (one logarithm); rationals
+  the same.
+* **Known cost, inherent to the formula**: for a large `a` and a small `b`,
+  `ln B ≈ ln Γ(b) − b ln a` is small while `ln Γ(a)` and `ln Γ(a + b)` are of the order
+  `a ln a`: the three pieces are taken with `betaBits ≈ lg a` more bits.
+  `ln B(3·2^100, 5/2)`: 1.5 / 2.1 / 13 ms; `3·2^1000`: 11.7 / 15.2 / 67 ms; `3·2^10000`:
+  3.3 s at 53 bits.  The same holds for `B` itself.  The remedy is the asymptotic expansion
+  of the ratio `Γ(a)/Γ(a + b)` (DLMF 5.11.13), not started.
+* **Without the absolute value** (user request, same day): `lnBetaPrecRound a b p mode`,
+  `lnBeta a b`, `lnBetaRatPrecRound`, `lnBetaRat` — the first component of the function above
+  when its sign is `true`, `(nan, .eq)` otherwise.  `Spec.lnBeta a b = (Spec.beta a b).bind
+  Spec.log`: `NaN` where `B < 0`, `−∞` where `B = 0`, `+∞` where `B = +∞`.  So `ln B` is
+  defined at negative arguments where `B > 0` (`ln B(−3/2, 5/2) = ln π`), unlike
+  `lnGammaPrecRound`, which is `NaN` for every `x < 0`.  `lnBetaPrecRound_eq_or`,
+  `lnBetaRatPrecRound_eq_or`, from `Spec.lnAbsBeta_eq_lnBeta` (the two specifications agree
+  where `B` is not a negative real) and `Spec.beta_neg_cases` with the sign theorem.
+* Tests: `ln B(1/2, 1/2) = ln π`, `ln B(2, 3) = −ln 12`, `ln B(10¹⁰, 10¹⁰) ≈ −1.386·10¹⁰`
+  (where `B` has a ten-digit exponent), the exact case, signs at negative arguments, the
+  special values, and agreement with `ln` of `betaPrecRound` at 300 bits.
+
+### File layout of the logarithms of `Γ` and `B` (2026-11-18)
+
+User request, for consistency: one file per function family.  `AzFloat/LnBeta.lean` and
+`LnBetaRat.lean` (with `Equiv/`, `Tests/`) hold both `lnBeta…` and `lnAbsBeta…` (they were
+first named `LnAbsBeta…`), and `AzFloat/LnGamma.lean`, `LnGammaRat.lean` now hold `lnGamma…`
+and `lnAbsGamma…` — the former `LnAbsGamma…` files are appended as a second section (in the
+test files as namespaces `LnAbsGammaTests`, `LnAbsGammaRatTests`, since both halves have their
+own private helpers).  No function or theorem was renamed.  One declaration moved to break a
+cycle: `lnGammaRatEncl` and `lnGammaRatEncl_spec` are now in `LnGammaBracket` (and its
+`Equiv`), so that `GammaRat` no longer imports `LnGammaRat`, which imports `GammaRat` for the
+sine of the reflection formula.  Mentions of `LnAbsGamma`/`LnAbsBeta` files in older sections
+of this document were rewritten to the new names.
 
 ### Perf 14. Lambert `W₀`: the top of the `Float` range (DONE 2026-11-17)
 

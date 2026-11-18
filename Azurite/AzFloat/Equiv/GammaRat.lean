@@ -9,7 +9,8 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.GammaRat
 import Azurite.AzFloat.Equiv.Gamma
-import Azurite.AzFloat.Equiv.LnGammaRat
+import Azurite.AzFloat.Equiv.LnGamma
+import Azurite.AzFloat.Equiv.AcoshBracket
 import Azurite.AzFloat.Equiv.PowRat
 import Azurite.AzFloat.Equiv.LogBaseExact
 import Azurite.AzRat.Equiv.Conversion

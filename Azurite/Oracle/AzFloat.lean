@@ -109,6 +109,13 @@ import Azurite.AzFloat.SinCosRat
 import Azurite.AzFloat.SinCosWithPeriod
 import Azurite.AzFloat.SinCosRatWithPeriod
 import Azurite.AzFloat.SinCosPi
+import Azurite.AzFloat.Tan
+import Azurite.AzFloat.TanRat
+import Azurite.AzFloat.TanWithPeriod
+import Azurite.AzFloat.TanRatWithPeriod
+import Azurite.AzFloat.TanPi
+import Azurite.AzFloat.Sec
+import Azurite.AzFloat.SecWithPeriod
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -2118,6 +2125,58 @@ def checkFloatSinCosPi : String → Verdict :=
 -/
 def checkFloatSinCosPiRational : String → Verdict :=
   checkFloatOfRational₂ "sin_cos_pi_rational" AzFloat.sinCosPiRatPrecRound
+
+/-- `Float`'s `tan` family, against `AzFloat.tanPrecRound`. -/
+def checkFloatTan : String → Verdict := checkFloatUnaryWith "tan" AzFloat.tanPrecRound
+
+/-- `Float::tan_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.tanRatPrecRound`. -/
+def checkFloatTanRational : String → Verdict :=
+  checkFloatOfRational "tan_rational" AzFloat.tanRatPrecRound
+
+/-- `Float`'s `tan_with_period` family (`(x).tan_with_period[…](u, …)`), against
+`AzFloat.tanWithPeriodPrecRound`. -/
+def checkFloatTanWithPeriod : String → Verdict :=
+  checkFloatUnaryArgsWith "tan_with_period" 1 parseLogBase
+    (fun x u => AzFloat.tanWithPeriodPrecRound x u)
+
+/-- `Float::tan_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.tanRatWithPeriodPrecRound`. -/
+def checkFloatTanWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "tan_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.tanRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `tan_pi` family, against `AzFloat.tanPiPrecRound`. -/
+def checkFloatTanPi : String → Verdict := checkFloatUnaryWith "tan_pi" AzFloat.tanPiPrecRound
+
+/-- `Float::tan_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.tanPiRatPrecRound`. -/
+def checkFloatTanPiRational : String → Verdict :=
+  checkFloatOfRational "tan_pi_rational" AzFloat.tanPiRatPrecRound
+
+/-- `Float`'s `sec` family, against `AzFloat.secPrecRound`. -/
+def checkFloatSec : String → Verdict := checkFloatUnaryWith "sec" AzFloat.secPrecRound
+
+/-- `Float::sec_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.secRatPrecRound`. -/
+def checkFloatSecRational : String → Verdict :=
+  checkFloatOfRational "sec_rational" AzFloat.secRatPrecRound
+
+/-- `Float`'s `sec_with_period` family (`(x).sec_with_period[…](u, …)`), against
+`AzFloat.secWithPeriodPrecRound`. -/
+def checkFloatSecWithPeriod : String → Verdict :=
+  checkFloatUnaryArgsWith "sec_with_period" 1 parseLogBase
+    (fun x u => AzFloat.secWithPeriodPrecRound x u)
+
+/-- `Float::sec_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.secRatWithPeriodPrecRound`. -/
+def checkFloatSecWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "sec_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.secRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `sec_pi` family, against `AzFloat.secPiPrecRound`. -/
+def checkFloatSecPi : String → Verdict := checkFloatUnaryWith "sec_pi" AzFloat.secPiPrecRound
+
+/-- `Float::sec_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.secPiRatPrecRound`. -/
+def checkFloatSecPiRational : String → Verdict :=
+  checkFloatOfRational "sec_pi_rational" AzFloat.secPiRatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound

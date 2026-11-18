@@ -109,8 +109,8 @@ import Azurite.AzFloat.Tests.Lemniscate
 import Azurite.AzFloat.Tests.Literals
 import Azurite.AzFloat.Tests.Ln
 import Azurite.AzFloat.Tests.Ln2
-import Azurite.AzFloat.Tests.LnAbsGamma
-import Azurite.AzFloat.Tests.LnAbsGammaRat
+import Azurite.AzFloat.Tests.LnBeta
+import Azurite.AzFloat.Tests.LnBetaRat
 import Azurite.AzFloat.Tests.LnGamma
 import Azurite.AzFloat.Tests.LnGammaRat
 import Azurite.AzFloat.Tests.LnP1

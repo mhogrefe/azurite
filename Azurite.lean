@@ -294,8 +294,8 @@ import Azurite.AzFloat.Equiv.Ln
 import Azurite.AzFloat.Equiv.Ln10Bracket
 import Azurite.AzFloat.Equiv.Ln2
 import Azurite.AzFloat.Equiv.Ln2Bracket
-import Azurite.AzFloat.Equiv.LnAbsGamma
-import Azurite.AzFloat.Equiv.LnAbsGammaRat
+import Azurite.AzFloat.Equiv.LnBeta
+import Azurite.AzFloat.Equiv.LnBetaRat
 import Azurite.AzFloat.Equiv.LnBracket
 import Azurite.AzFloat.Equiv.LnEncl
 import Azurite.AzFloat.Equiv.LnGamma
@@ -452,8 +452,8 @@ import Azurite.AzFloat.Ln
 import Azurite.AzFloat.Ln10Bracket
 import Azurite.AzFloat.Ln2
 import Azurite.AzFloat.Ln2Bracket
-import Azurite.AzFloat.LnAbsGamma
-import Azurite.AzFloat.LnAbsGammaRat
+import Azurite.AzFloat.LnBeta
+import Azurite.AzFloat.LnBetaRat
 import Azurite.AzFloat.LnBracket
 import Azurite.AzFloat.LnEncl
 import Azurite.AzFloat.LnGamma

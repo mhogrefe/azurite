@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.LnGammaBracket
+import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.LnEncl
 import Azurite.AzFloat.Equiv.PiBracket
 import Azurite.AzFloat.Equiv.Compare
@@ -273,5 +274,19 @@ theorem lnGammaBracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : 
     (hpos : 0 < xv) (e : AzInt) {w : ℕ} (hw : 64 ≤ w) :
     IsEncl (lnGammaBracket x e w) (Real.log (Real.Gamma xv)) :=
   lnGammaBracketEncl_spec (isEnclPos_exact hx hpos) e hw
+
+/-- The directed roundings of a positive rational enclose it, with a positive lower end. -/
+theorem lnGammaRatEncl_spec (q : AzRat) (hq : 0 < ((AzRat.toRat q : ℚ) : ℝ)) (w : ℕ) :
+    IsEnclPos (lnGammaRatEncl q w) ((AzRat.toRat q : ℚ) : ℝ) := by
+  have : NeZero (w + 32) := ⟨by omega⟩
+  obtain ⟨l, hl, hl1, hl2⟩ := ofAzRatRound_floor_abs q (w + 32)
+  obtain ⟨h, hh, hh1, -⟩ := ofAzRatRound_ceiling_abs q (w + 32)
+  refine ⟨l, h, hl, hh, ?_, hl1, hh1⟩
+  have hpow : (1 / 2 : ℝ) ^ (w + 32) ≤ 1 / 4 := by
+    calc (1 / 2 : ℝ) ^ (w + 32) ≤ (1 / 2 : ℝ) ^ 2 :=
+          pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
+      _ = 1 / 4 := by norm_num
+  rw [abs_of_pos hq] at hl2
+  nlinarith
 
 end Azurite.AzFloat

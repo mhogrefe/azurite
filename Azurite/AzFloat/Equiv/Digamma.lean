@@ -9,7 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Digamma
 import Azurite.AzFloat.Equiv.DigammaBracket
-import Azurite.AzFloat.Equiv.LnAbsGamma
+import Azurite.AzFloat.Equiv.LnGamma
 
 /-!
 # Equivalence: the digamma function
