@@ -53,6 +53,7 @@ import Azurite.AzFloat.Gd
 import Azurite.AzFloat.GdRat
 import Azurite.AzFloat.GdInv
 import Azurite.AzFloat.GdInvRat
+import Azurite.AzFloat.WrightOmega
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.LnP1
 import Azurite.AzFloat.Log2
@@ -1535,6 +1536,15 @@ def checkFloatInverseGudermannian : String → Verdict :=
 `AzFloat.gdInvRatPrecRound`. -/
 def checkFloatInverseGudermannianRational : String → Verdict :=
   checkFloatOfRational "inverse_gudermannian_rational" AzFloat.gdInvRatPrecRound
+
+/-- `Float`'s `wright_omega` family, against `AzFloat.wrightOmegaPrecRound`. -/
+def checkFloatWrightOmega : String → Verdict :=
+  checkFloatUnaryWith "wright_omega" AzFloat.wrightOmegaPrecRound
+
+/-- `Float::wright_omega_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.wrightOmegaRatPrecRound`. -/
+def checkFloatWrightOmegaRational : String → Verdict :=
+  checkFloatOfRational "wright_omega_rational" AzFloat.wrightOmegaRatPrecRound
 
 /-- An associated-function line `T::f(x, a…) = r`, `T` the dialect's type, rewritten as the method
 line `(x).f(a…) = r`, so the method checkers read it; any other line is unchanged. -/

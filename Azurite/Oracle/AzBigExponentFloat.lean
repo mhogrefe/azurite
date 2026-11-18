@@ -329,6 +329,12 @@ def checkBigExponentFloatInverseGudermannian : String → Verdict :=
 def checkBigExponentFloatInverseGudermannianRational : String → Verdict :=
   withBigExponentFloatNames checkFloatInverseGudermannianRational
 
+def checkBigExponentFloatWrightOmega : String → Verdict :=
+  withBigExponentFloatNames checkFloatWrightOmega
+
+def checkBigExponentFloatWrightOmegaRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatWrightOmegaRational
+
 def checkBigExponentFloatPowerOf2OfFloat : String → Verdict :=
   withBigExponentFloatNames fun line =>
     checkFloatUnaryArgsWith "power_of_2_of_float" 0 (fun _ => some ())

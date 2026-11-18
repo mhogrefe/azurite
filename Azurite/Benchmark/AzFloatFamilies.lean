@@ -100,6 +100,8 @@ import Azurite.AzFloat.ExpM1
 import Azurite.AzFloat.Ln
 import Azurite.AzFloat.LambertW
 import Azurite.AzFloat.LogBaseExact
+import Azurite.AzFloat.Beta
+import Azurite.AzFloat.LnGamma
 import Azurite.AzFloat.DigammaRat
 import Azurite.AzFloat.PsiZero
 import Azurite.AzFloat.WrightOmega
@@ -329,6 +331,10 @@ private def logExact3 : FloatFn := fun x _ _ =>
   | some _ => (one, .eq)
   | none => (one, .lt)
 
+private def fifty : AzFloat := ofAzNat (AzNat.ofNat 50)
+private def fiveHalves : AzFloat := ofAzRat (AzRat.parse "5/2").get! 64
+private def sevenThirds : AzFloat := ofAzRat (AzRat.parse "7/3").get! 1100
+
 private def misc : List Entry :=
   let tl := [a "1/3", a "1/10", a "-1/3", tiny]
   let dl := [a "1/3", a "3/2", a "150", a "-201/2", a "-1099511627777/1099511627776", tiny]
@@ -340,6 +346,11 @@ private def misc : List Entry :=
    F "ln" lnPrecRound [a "1/3"], F "exp" expPrecRound [a "-1000"],
    F "wrightOmega" wrightOmegaPrecRound wl, R "wrightOmegaRat" wrightOmegaRatPrecRound wl,
    F "digamma" digammaPrecRound dl, R "digammaRat" digammaRatPrecRound dl,
+   F "lnGamma" lnGammaPrecRound [a "1/3", a "150"],
+   F "beta x 5/2" (fun x => betaPrecRound x fiveHalves) [a "1/3", a "150", a "-7/3"],
+   F "beta x -7/3" (fun x => betaPrecRound x (-sevenThirds)) [a "1/3", a "-1/3"],
+   F "beta x 3" (fun x => betaPrecRound x three) [a "1/3", a "-7/3"],
+   F "beta x 50" (fun x => betaPrecRound x fifty) [a "1/3", a "40"],
    F "psiZero 0" (fun _ => psiZeroPrecRound 0) [a "1"],
    F "psiZero 1" (fun _ => psiZeroPrecRound 1) [a "1"],
    F "psiZero 1000" (fun _ => psiZeroPrecRound 1000) [a "1"],

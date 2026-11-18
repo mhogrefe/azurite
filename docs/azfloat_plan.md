@@ -8630,6 +8630,112 @@ User request after the timings of steps 4 and 4a.  `az_float_families family:mis
   an enclosure of `ψ′` (the trigamma function, when it exists) would make the verification
   the last Newton step, as for the Wright `ω` function, and bring that to about 2.
 
+### 5. The Beta function `B(a, b)` (DONE 2026-11-18, fuel-based, float arguments, TIMED)
+
+User request ("Beta next, unless it makes sense to do `ln` Beta first").  Beta first: for
+positive arguments its bracket *is* the exponential of the enclosure of
+`ln B = ln Γ(a) + ln Γ(b) − ln Γ(a + b)`, so `ln` Beta for positive arguments is already a
+by-product (`betaCore`, the first branch); what `ln |B|` adds — the sign and the reflection
+for negative arguments, the zeros of `ln |B|` — is a separate, smaller step on top.
+
+`betaPrecRound a b p mode`, `beta a b` (`AzFloat/Beta.lean`), pieces in
+`AzFloat/BetaBracket.lean`, proofs in `Equiv/BetaBracket.lean` and `Equiv/Beta.lean`, tests in
+`Tests/Beta.lean`.
+
+* **First version** (replaced the same day, see Perf 16): for `a, b > 0` one exponential of
+  `ln Γ(a) + ln Γ(b) − ln Γ(a + b)` from three separate brackets; otherwise
+  `Γ(a) · Γ(b) · (1/Γ)(a + b)` as three signed enclosures (`gammaOfEncl`).  The distance of the
+  sum to the nearest integer is `(a − k) + b` on enclosures (`betaSumFrac`, `fracOfEncl`); the
+  sum itself enters by an enclosure, since it need not be a float at the working precision.
+* **Special values** (own choice, following `Γ`'s; to confirm with the user): `NaN` when an
+  argument is `NaN`, `−∞` or a negative integer (even where the quotient has a finite
+  one-sided limit, like `B(−2, 1)`: the limit depends on the direction in the plane);
+  `B(+∞, b) = 0` for `b > 0` or `b = +∞`, `NaN` otherwise; `B(0, b) = +∞` unless `b` is a
+  negative integer (`Γ(0) = +∞`, the limit from the right); and **`B(a, b) = 0` exactly when
+  `a + b` is a non-positive integer** (`1/Γ` vanishes).  `Spec.beta` is `Γ(a)Γ(b)/Γ(a + b)` with
+  Mathlib's `Real.Gamma`, which is `0` at the poles, so the exact zero needs no clause.
+* **The exact zero is decided without forming the sum** (`sumIsNonposInt`): the exact sum of
+  `2^(−10⁹)` and `3/2` has `10⁹` bits.  Both integers: one comparison.  One integer: no.
+  Neither: both are below `2` to their precision in absolute value (`abs_lt_of_not_isInteger`),
+  so an integer sum is representable at `qa + qb + 2` bits — the sum is an integer exactly when
+  the addition at that precision is exact (`roundVal_of_mem`, `mem_floatSet_mul_zpow`) and
+  gives one.
+* **Exact values**: `B(a, 1) = 1/a`, `B(1, b) = 1/b` are divisions.  Not treated exactly:
+  `B(a, n)` for an integer `n ≥ 2` (a rational number; the loop rounds it unless it is a
+  float or a boundary, which needs `a (a+1) ⋯ (a+n−1)` to divide `(n−1)!` times a power of
+  two).
+* **Contract**: `betaPrecRound_eq_or` — `liftVal₂ Spec.beta`, or `(nan, .eq)` when the fuel
+  runs out.  Known way to run out: a tiny `a` whose reciprocal is a float,
+  `B(a, b) = 1/a − (ψ(b) + γ) + O(a)`, needs about `|e|` bits beyond the precision; ten
+  doublings cover `|e|` up to about `1000 p`.  A tiny-argument path would need a rigorous
+  bound on that correction (it changes sign at `b = 1`).
+* Tests: `B(1/2, 1/2) = π`, `B(3/2, 5/2) = π/16`, `B(1/4, 3/4) = π√2`, `B(−3/2, 5/2) = π`,
+  `B(2, 3) = 1/12`, `B(10, 10) = 9!²/19!`, the exact divisions and zeros (including
+  `B(3·2^(−2^30), −3·2^(−2^30)) = 0`), the special values, `10¹⁰`, `10⁻³⁰`, next to a pole,
+  200 and 1000 bits, symmetry.
+* **Timings (2026-11-18, `az_float_families family:misc`, compiled, ms at 53 / 200 / 1000
+  bits; `ln Γ(1/3)` 0.39 / 1.04 / 9.6, `ln Γ(150)` 0.28 / 0.67 / 8.8, `exp` 0.15 / 0.31 /
+  0.84).**
+
+  | | 53 | 200 | 1000 |
+  |---|---|---|---|
+  | `B(1/3, 5/2)` | 1.43 | 3.41 | 30.7 |
+  | `B(150, 5/2)` | 1.22 | 2.66 | 27.4 |
+  | `B(−7/3, 5/2)` | 1.90 | 4.24 | 32.7 |
+  | `B(1/3, −7/3)` | 2.05 | 4.58 | 34.4 |
+  | `B(−1/3, −7/3)` | 4.49 | 5.06 | 36.5 |
+
+  Positive arguments: three brackets of `ln Γ` and one exponential, as designed (3.2 `ln Γ`
+  at every precision).  A negative argument adds its reflection (sine, `π`, a division) and
+  two more exponentials: 1.3 to 1.4 times the positive case at 53 bits, 1.1 at 1000.
+  `B(−1/3, −7/3)` at 53 bits costs twice the others: the first Ziv level is rejected (not
+  investigated; at 200 and 1000 bits it is in line).
+* Where the time could be cut (not done): the three brackets build the same table of tangent
+  numbers three times (2.4 ms each at 1000 bits, and it dominates beyond 2000); each takes its
+  own logarithm for the rising product and `½ ln 2π`, where the combination
+  `ln (P_s / (P_a P_b))` would need one; and for a small integer `b` the rational
+  `(b−1)!/(a ⋯ (a+b−1))` needs no `Γ` at all.
+* Open: `AzRat` arguments; `ln |B|` with the sign; exact small-integer `n`; the tiny path.
+
+### Perf 16. Beta: one logarithm, one table, exact small integers (DONE 2026-11-18, measured)
+
+User request ("try all three").  `az_float_families family:misc`, ms at 53 / 200 / 1000 bits,
+before → after:
+
+| | 53 | 200 | 1000 |
+|---|---|---|---|
+| `B(1/3, 5/2)` | 1.43 → 1.04 | 3.41 → 2.46 | 30.7 → 22.7 |
+| `B(150, 5/2)` | 1.22 → 0.90 | 2.66 → 1.96 | 27.4 → 20.2 |
+| `B(−7/3, 5/2)` | 1.90 → 1.27 | 4.24 → 2.85 | 32.7 → 24.2 |
+| `B(1/3, −7/3)` | 2.05 → 1.39 | 4.58 → 3.02 | 34.4 → 25.6 |
+| `B(−1/3, −7/3)` | 4.49 → 1.67 | 5.06 → 3.51 | 36.5 → 27.0 |
+| `B(1/3, 3)` | (1.4) → 0.005 | (3.4) → 0.007 | (31) → 0.035 |
+| `B(1/3, 50)` | (1.4) → 0.037 | (3.4) → 0.12 | (31) → 1.65 |
+| `B(40, 50)` | (1.2) → 0.019 | (2.7) → 0.018 | (27) → 0.021 |
+
+* **The bracket was rebuilt in the logarithm** (`lnAbsBetaCore`, `lnGammaPiece`).  Each of
+  the three arguments contributes a piece `ln |Γ(v)| = t + ½ ln q`: `t` the Stirling value at
+  the shifted argument (minus it, at the shifted `1 − v`, for `v < 0`), `q = 2π/P²` or
+  `π P²/(2 sin² πv)` with the rising product `P`.  Then
+  `ln |B| = t_a + t_b − t_s + ½ ln (q_a q_b / q_s)`: **one logarithm** for all constants,
+  products and sines (was two per argument), **one table of tangent numbers**
+  (`stirlingEnclWith` takes it as an argument; `stirlingEnclWith_eq` is `rfl`), `π` once, and
+  **one exponential** also when an argument is negative (was three, of three separate
+  `Γ` enclosures).  `gammaOfEncl` is gone.  The enclosure of `ln |B|` with the sign of `B` is
+  now a function of its own: the `ln` Beta function is a driver away.
+* **`B(a, n)` for a positive integer `n ≤ 64`** and a short `a` (`betaSmallInt?`,
+  `betaIntModerate`: precision plus exponent size at most `2p + 1024`): with `a = N/D`,
+  `(n−1)! Dⁿ / ∏_{j<n} (N + jD)` — the product on integers (`risingInt`), then one correctly
+  rounded division of two exact floats.  Two earlier versions, for the record: the product
+  on `AzRat` (a gcd per factor) took 16 ms at 1000 bits for `n = 50`, slower than the
+  enclosure path it replaces; integers with one final `AzRat` quotient still 17 ms (one gcd of
+  two 50000-bit numbers, one of them a factorial times a power of two); the float division
+  1.65 ms.  The value is exact, so the rounding is certain where the loop could not decide (a
+  quotient that is a float).
+* The 4.5 ms of `B(−1/3, −7/3)` at 53 bits in the first timing did not reappear (1.7 ms in line
+  with the others); it was not reproduced before the rewrite, so its cause stays unknown.
+* Still open: the tiny-argument path; `AzRat` arguments; the `ln |B|` driver.
+
 ### Perf 14. Lambert `W₀`: the top of the `Float` range (DONE 2026-11-17)
 
 Reported from the Malachite port.  `seedFloat` rejected only arguments whose `Float`
