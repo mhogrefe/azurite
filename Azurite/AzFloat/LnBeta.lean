@@ -79,7 +79,7 @@ def lnAbsBetaReal (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
     let ea := expOf a
     let eb := expOf b
     let bits := betaBits ea eb ((if ea ≤ eb then eb else ea) + 1)
-    lnAbsLoop (fun w => lnAbsBetaCore a b (w + bits) w) p mode gammaFuel (max 64 (p + 32))
+    lnAbsLoop (fun w => lnAbsBetaCore a b (w + bits) w) p mode (gammaFuel p) (max 64 (p + 32))
 
 /-- `ln |B(+∞, y)|`: `−∞` for `y > 0` (where `B = 0`), `NaN` otherwise. -/
 def lnAbsBetaInfinite (y : AzFloat) : AzFloat × Ordering :=

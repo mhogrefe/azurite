@@ -206,3 +206,25 @@ private def lnOk (s : String) : Bool :=
 #guard (gammaSinEncl (X "-0.5" 53) 96 80).map (·.1) == some true
 #guard (gammaSinEncl (X "-1.5" 53) 96 80).map (·.1) == some false
 #guard (gammaSinEncl (X "-2" 53) 96 80).isNone
+
+-- quarter-integers: the certified loops (no fuel; `Γ(n/4)` is irrational)
+#guard [X "0.5" 53, X "-0.5" 53, X "0.75" 53, X "2.5" 53, X "-7.25" 53, X "0.25" 53].all
+  gammaSpecial
+#guard [X "3" 53, X "0.125" 53, X "1e30" 100, X "-2" 53].all fun x => !gammaSpecial x
+#guard D (G (X "0.5" 53) 53) == ("1.772453850905516", .gt)
+#guard D (G (X "0.5" 53) 1) == ("2.0", .gt)
+#guard D (G (X "-0.5" 53) 53) == ("-3.544907701811032", .lt)
+#guard D (G (X "0.75" 53) 53 .Floor) == ("1.2254167024651776", .lt)
+#guard D (G (X "0.25" 53) 53) == ("3.625609908221908", .lt)
+#guard D (G (X "2.5" 53) 64 .Ceiling) == ("1.3293403881791370205", .gt)
+#guard D (G (X "-7.25" 53) 53) == ("0.0005303977063521478", .lt)
+#guard D (R (X "0.5" 53) 53) == ("0.5641895835477563", .lt)
+#guard D (R (X "-2.75" 53) 53 .Up) == ("-0.9955221580277868", .lt)
+#guard D (G (X "-150.75" 53) 53) == ("-1.8063763409201774e-264", .lt)
+
+-- positive integers beyond the factorial bound: a certified loop, whatever the fuel
+#guard D (gammaPrecRoundFuel 0 (X "3000" 53) 53 .Nearest) == ("1.383119867812618e9127", .lt)
+#guard D (reciprocalGammaPrecRoundFuel 0 (X "3000" 53) 53 .Nearest)
+  == ("7.230031346317684e-9128", .lt)
+#guard G (X "0.3" 53) 53 == gammaPrecRoundFuel (gammaFuel 53) (X "0.3" 53) 53 .Nearest
+#guard gammaFuel 53 == 11 && lnGammaFuel 53 == 11 && agmFuel 53 == 11

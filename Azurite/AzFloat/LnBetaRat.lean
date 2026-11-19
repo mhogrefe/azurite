@@ -53,7 +53,7 @@ def lnAbsBetaRatPrecRound (a b : AzRat) (p : Nat) (mode : RoundingMode) :
     let bits := betaBits ea eb es
     lnAbsLoop (fun w => lnAbsBetaEncl (lnGammaRatEncl a) (lnGammaRatEncl b)
       (lnGammaRatEncl (a + b)) ea eb es (gammaRatFrac a) (gammaRatFrac b) (gammaRatFrac (a + b))
-      (w + bits) w) p mode gammaFuel (max 64 (p + 32))
+      (w + bits) w) p mode (gammaFuel p) (max 64 (p + 32))
 
 /-- `ln |B(a, b)|` rounded to nearest at precision `p`, and the sign of `B(a, b)`. -/
 def lnAbsBetaRat (a b : AzRat) (p : Nat) : AzFloat × Bool :=

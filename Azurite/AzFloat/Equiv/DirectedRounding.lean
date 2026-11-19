@@ -8,7 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Equiv.Agm
-import Azurite.AzFloat.Equiv.GaussConstant
+import Azurite.AzFloat.Equiv.FloorGe
 import Azurite.AzFloat.Equiv.Ziv
 
 /-!

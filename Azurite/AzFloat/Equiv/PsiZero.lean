@@ -115,7 +115,7 @@ theorem psiZeroPrecRound_eq_or (n p : ℕ) [NeZero p] (mode : RoundingMode) :
       psiZeroPrecRound n p mode = (nan, .eq) := by
   unfold psiZeroPrecRound
   rw [ite_eq_right (NeZero.ne p)]
-  rcases eq_or_ne (zivLoop (psiZeroApprox n) p mode lnGammaFuel (max 64 (p + 32)))
+  rcases eq_or_ne (zivLoop (psiZeroApprox n) p mode (lnGammaFuel p) (max 64 (p + 32)))
     (nan, .eq) with hz | hz
   · right; exact hz
   · left

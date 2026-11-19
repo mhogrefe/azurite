@@ -4869,6 +4869,17 @@ reciprocals and square roots of `π` as well.
 
 ## Pending irrationality proofs (ledger, 2026-10-25)
 
+> **Resolved since (2026-11-19).**  `e^π`, `e^(π √163)`, `2^√2` — the Gelfond–Schneider theorem
+> for a quadratic exponent and rational values is proven (`Transcendental/GelfondSchneider.lean`,
+> about 1000 lines, not the 5–8k estimated below: the three constants only need a quadratic
+> integer exponent and rational values, so the algebraic number theory reduces to the norm of
+> `ℤ[β]`).  Gauss's constant, the lemniscate constant, `Γ(1/4)`, `Γ(1/3)` — irrational by
+> Chudnovsky's theorem (`Azurite/Chudnovsky`).  All seven Ziv loops have termination
+> certificates and unconditional specifications; see "The specification of the fuel-bound
+> functions, second round" at the end of the Γ arc.  **Still open**: the general AGM (the
+> transcendence of `AGM(a, b)` for distinct positive algebraic arguments) and Euler's `γ`
+> (irrationality is an open problem).
+
 A `…PrecRound` is fuel-free (`zivLoopCertified`, specification `= liftVal …`) only when its
 value is proven irrational, since a rounding boundary at precision `p` is a dyadic rational.
 The remaining fuel-based loops, with specification "correctly rounded or `NaN`":
@@ -9208,6 +9219,231 @@ contract `polygammaRatPrecRound_eq_or` (correctly rounded, or `NaN` when the fue
   | `polygammaRat 10` | `1/3` | 0.625 | 1.57 | 21.7 |
   | `polygammaRat 10` | `−201/2` | 3.05 | 7.02 | 45.7 |
   | `polygammaRat 100` | `1/3` | 2.90 | 5.83 | 40.3 |
+
+### 7. The constants `Γ(1/4)` and `Γ(1/3)` (DONE 2026-11-18, fuel-based)
+
+`gammaOneQuarterPrecRound p mode`, `gammaOneQuarter p`, `gammaOneThirdPrecRound p mode`,
+`gammaOneThird p` (`AzFloat/GammaConstants.lean`, proofs `Equiv/GammaConstants.lean`, tests
+`Tests/GammaConstants.lean`, theory `Transcendental/GammaAGM.lean`).
+
+* **Formulas**, both proven from first principles:
+
+    `Γ(1/4)² = 2π √(2π) / AGM(1, √2)`                        (`gamma_one_quarter_sq`),
+    `Γ(1/3)³ = 2 ∛2 π² / AGM(√((√3 + 3/2)/2), √√3)`          (`gamma_one_third_cube`).
+
+* **Theory.**  One substitution serves both: in `B(1/2, b) = ∫₀^∞ t^(−1/2)(1 + t)^(−1/2−b) dt`
+  (DLMF 5.12.3, already in `DLMF/Chapter5/Section12.lean`) put `t = (1 + s²)ⁿ − 1`
+  (`integral_comp_powSubst`); `n = 2`, `b = 1/4` gives `4 ∫₀^∞ ds/√((s² + 1)(s² + 2))`, which is
+  Gauss's `J(1, √2)`; `n = 3`, `b = 1/6` gives `6 ∫₀^∞ ds/√(s⁴ + 3s² + 3)`.  That quartic is
+  `(s² + a²)(s² + b²)` only with complex-conjugate `a`, `b`, but the Landen substitution
+  `u = (s − d/s)/2` involves only `ab = d` and `((a + b)/2)² = (d + c)/2`:
+  `∫₀^∞ ds/√(s⁴ + 2cs² + d²) = J(√((d + c)/2), √d)` for `d > 0`, `d + c > 0`
+  (`integral_quarticKernel`, reusing `landen`, `landen_injOn`, `landen_image` of
+  `BrentZimmermann/Chapter4/EllipticIntegrals.lean`).  The Gamma quotients are reduced by
+  reflection (`Γ(3/4)`, `Γ(2/3)`) and duplication (`Γ(1/6) Γ(2/3) = 2^(2/3) √π Γ(1/3)`).
+  The cube root of `2` is intrinsic to `Γ(1/3)³` (there is no form with square roots only).
+* **Algorithm.**  Enclosure arithmetic at `w + 32` bits: `Encl.sqrt`, `Encl.cbrt`, and
+  `Encl.agm` (the interval iteration of `Agm.lean` from two enclosures; its lower end falls back
+  to the smaller lower end of the arguments if it is not positive, so it is always a positive
+  enclosure — `IsEnclPos.agm`, no `Option`).  `Γ(1/4)`: `√2`, one AGM, `π`, two square roots.
+  `Γ(1/3)`: three square roots, one AGM (the arguments `1.2712…`, `1.3160…` agree to 3 %), `π`,
+  two cube roots.  Bracket made strict by `lnGammaApproxOf`; Ziv loop with `agmFuel p`.
+* **Contract**: `gammaOneQuarterPrecRound_eq_or`, `gammaOneThirdPrecRound_eq_or` — correctly
+  rounded, or `NaN` when the fuel runs out.
+* **Irrationality** (asked 2026-11-18): **proven 2026-11-19.**  Chudnovsky's theorem (1976) is
+  formalized in `Azurite/Chudnovsky` (with Fel'dman's measure of `π` in `Azurite/Feldman`;
+  ledger `docs/chudnovsky_plan.md`): `irrational_gamma_of_den` — `Γ(q)` is irrational for every
+  rational `q` with denominator `2`, `3`, `4` or `6` — and `Γ(1/4)`, `Γ(1/3)` are not algebraic
+  over `ℚ(π)` (`not_algOver_gamma_one_quarter`, `not_algOver_gamma_one_third`).
+* **No fuel at the denominators `2, 3, 4, 6`** (done 2026-11-19, "option 2": widths for the
+  Stirling bracket, code paths unchanged).  The bracket of `ln Γ` converges
+  (`lnGammaBracketEncl_eventually`, `Equiv/LnGammaEventually.lean`, from the per-level width
+  `lnGammaBracketEncl_width` in `Equiv/LnGammaWidth.lean`, the width calculus of
+  `Equiv/EnclWidth.lean` and the term bound `stirlingTerm_le`), hence the cores of `Γ` and
+  `1/Γ` (`gammaCore_conv`, `gammaRatCore_conv`: exponential, reflection formula, sine), hence
+  the certificates `gammaApprox_cert` (floats `n/4`, not integers: `gammaSpecial`) and
+  `gammaRatApprox_cert` (`AzRat`s with denominator `2, 3, 4, 6`: `gammaRatSpecial`).  There
+  `gammaPrecRound`, `reciprocalGammaPrecRound`, `gammaRatPrecRound`,
+  `reciprocalGammaRatPrecRound` run `zivLoopCertified`, and the specifications are
+  unconditional: `gammaPrecRound_eq_of_special`, `reciprocalGammaPrecRound_eq_of_special`,
+  `gammaRatPrecRound_eq_of_special`, `reciprocalGammaRatPrecRound_eq_of_special`.  The AGM
+  constants keep their fuel and stay the fast path at `1/4` and `1/3`; a `NaN` from them hands
+  over to the certified loop (`nanOrElse`).
+* **Fuel still in place** in `gammaOneQuarterPrecRound`, `gammaOneThirdPrecRound` themselves
+  (`Encl.agm`, `Encl.sqrt`, `Encl.cbrt` have containment proofs only), in `ln Γ` and
+  `ln |Γ|` (the widths are there — `lnGammaBracketEncl_eventually` — but the irrationality of
+  `ln Γ(q)` is not), and at all other arguments (no irrationality).
+* **Timings (2026-11-19, `az_float_families family:misc`, quiet machine, ms at 53 / 200 / 1000
+  / 5000 bits).**  The certified loops cost what the fuel loops do (same brackets, same
+  starting level): `gamma` at `1/2` 0.52 / 1.21 / 10.1 / 444 and at `3/4` 0.51 / 1.18 / 10.0,
+  against `1/3` (fuel) 0.52 / 1.20 / 10.0 / 442; `−5/2` 0.75 / 1.58 / 11.5 against `−7/3`
+  0.76 / 1.60 / 11.6; `gammaRat` at `1/2`, `2/3`, `3/4`, `1/6`, `5/6` 0.52–0.55 / 1.17–1.23 /
+  9.9–10.2 (5000 bits: 448–450) against `1/5` (fuel) 0.53 / 1.22 / 10.0 / 449; `1/Γ` the
+  same.  Old binary (before the change, run alternately): `gamma 1/3` 0.54 / 1.23 / 10.3,
+  `−7/3` 0.80 / 1.67 / 11.8 — no change.  **The AGM constants**: `gammaOneQuarter`
+  0.13 / 0.19 / 0.55 / 4.2, `gammaOneThird` 0.18 / 0.31 / 1.15 / 13.8; the fast paths cost the
+  same (`gamma 1/4` and `gammaRat 1/4` 0.13 / 0.19 / 0.55 / 4.0, `gammaRat 1/3`
+  0.18 / 0.30 / 1.13 / 13.3), i.e. 4× / 6× / 18× / 110× faster than Stirling at `1/4` and
+  3× / 4× / 9× / 33× at `1/3`.
+* **All of the denominators `2, 3, 4, 6` through the constants** (done 2026-11-19, user request
+  after these timings; `AzFloat/GammaSpecial.lean`, proofs `Equiv/GammaSpecial.lean`).
+  `gammaBaseEncl r d w` encloses `Γ(r/d)`: `Γ(1/2) = √π`, `Γ(3/4) = π√2/Γ(1/4)`,
+  `Γ(2/3) = 2π/(√3 Γ(1/3))`, `Γ(1/6) = √3 Γ(1/3)²/(∛2 √π)`, `Γ(5/6) = 2π/Γ(1/6)`
+  (`gamma_three_quarters`, `gamma_two_thirds`, `gamma_one_sixth`, `gamma_five_sixths`).  The
+  integer shifts are exact: `Γ(n + r/d) = Γ(r/d) ∏_{j<n}(r + jd)/d^n` and
+  `Γ(−(n + r/d)) = (−1)^(n+1) Γ(1 − r/d) d^(n+1)/∏_{j≤n}(r + jd)` (`gamma_shift_pos`,
+  `gamma_shift_neg`), the products by `AzNat.product` (`gammaAP`), once per call.
+  `gammaSpecialFast?` runs the fuel loop on these brackets when the integer part is at most
+  `gammaIntBound p`, and `gammaPrecRound`, `reciprocalGammaPrecRound`, `gammaRatPrecRound`,
+  `reciprocalGammaRatPrecRound` call it at `gammaSpecial` / `gammaRatSpecial` arguments, with
+  the certified Stirling loop behind it (`nanOrElse`, or directly beyond the bound), so the
+  `…_eq_of_special` theorems are unchanged.  `gammaSpecialFast?_eq_or`: correctly rounded or
+  `NaN`.  The separate `isQuarter` / `isUnitFraction` fast paths are gone (subsumed).
+* **Timings of the constants path (2026-11-19, `az_float_families family:misc`, quiet machine,
+  run alternately with the Stirling binary; ms at 53 / 200 / 1000 bits; Stirling before:
+  0.50–0.53 / 1.2 / 10 for positive and 0.72–0.75 / 1.55 / 11.4 for negative arguments).**
+  Halves (`√π` only): `1/2` 0.035 / 0.051 / 0.166, `−5/2` 0.037 / 0.054 / 0.170, `301/2`
+  0.052 / 0.068 / 0.19 — 14× / 23× / 60× faster.  Quarters: `1/4` 0.13 / 0.20 / 0.55
+  (unchanged), `3/4` 0.16 / 0.24 / 0.72 — 3× / 5× / 14×.  Thirds: `1/3` 0.18 / 0.31 / 1.13
+  (unchanged), `2/3`, `−1/3`, `−7/3`, `±301/3` 0.21–0.22 / 0.35–0.37 / 1.3 — 2.4× / 3.4× / 8×
+  (3.4× / 4.4× / 9× at the negative ones).  Sixths: `1/6` 0.26 / 0.42 / 1.6, `5/6`
+  0.28 / 0.46 / 1.77, `−301/6` 0.29 / 0.48 / 1.8 — 2× / 2.8× / 6×.  `1/Γ` the same.  A long
+  shift: `4001/2` 0.41 / 0.44 / 0.60 (the product of 2000 factors is 0.4 ms), so at 53 bits
+  the bound `gammaIntBound p` (2472 there) is about where Stirling (0.5 ms) catches up.
+  A first version computed `π` and `√3` in every branch of `gammaBaseEncl` (strict `let`s)
+  and cost 15–25 % more at `1/4` and `1/3`; the branches now compute only what they use.
+* **`ZivSpec`: the specification of a fuel-bound function** (2026-11-19, user request;
+  `Equiv/ZivSpec.lean`).  "Correctly rounded, or `NaN`" is satisfied by a function that always
+  gives up.  `ZivSpec val f D N`, for `f fuel x p mode` with the fuel as an argument:
+  `sound` (at every fuel: correctly rounded or `(nan, .eq)`), `complete` (when the value is no
+  rounding boundary at precision `p`, every large enough fuel gives the correctly rounded
+  value — the convergence of the bracket, `BracketConv`, seen from outside), `dyadic` /
+  `nondyadic` (the values on `D` are dyadic or not real; those on `N` are not dyadic), and
+  `correct` (correctly rounded at every fuel on `D ∪ N`).  The sets are parameters, so each
+  theorem shows what is known; `D ∪ N = univ` is the unconditional specification
+  (`ZivSpec.eq_of_univ`).  Generic lemmas: `BracketConv.exists_isSome`,
+  `zivLoop_some_of_isSome`, `zivLoop_eventually_eq`, `not_mem_floatSet_of_not_isDyadic`.
+  Decisions (user, 2026-11-19): fuel explicit; "dyadic / non-dyadic" rather than "rational /
+  irrational" (a non-dyadic rational is never a boundary either); certified loops wherever
+  the value is provably no boundary.  **Prototype: `gammaPrecRoundFuel_zivSpec`**
+  (`Equiv/Gamma.lean`) with `D` = the arguments that are not finite or are integers and
+  `N` = `gammaSpecial`; `gammaPrecRound = gammaPrecRoundFuel (gammaFuel p)`.  For it the
+  positive integers beyond `gammaIntBound p` got a certified loop (`gammaApprox_cert_int`:
+  the odd part of `(n − 1)!` has more than `p + 1` bits, `factorial_not_boundary`), so
+  `gammaPrecRound_eq_of_isInteger` is unconditional.  TO DO: the same for `1/Γ`, the rational
+  functions, `ln Γ` and the other fuel-bound functions (each needs its `BracketConv`; the
+  `Γ`/`ln Γ` families have it, the AGM family and `e^π`, `2^√2`, `e^(π√163)`, `γ` do not);
+  width lemmas per operation (`Equiv/EnclWidth.lean`) with an eye to ball arithmetic: state
+  them as "output radius ≤ L · input radius + ε(precision)" on real bounds.
+* **One fuel convention** (2026-11-19): `zivDefaultFuel p = zivFuel (16 (p + 64))`
+  (`AzFloat/Ziv.lean`) for every fuel-bound loop; `gammaFuel` and `lnGammaFuel` were the
+  constant 10 and are now `gammaFuel p = lnGammaFuel p = zivDefaultFuel p` (11 doublings at
+  53 bits), like `agmFuel`, `gelfondFuel`, `gelfondSchneiderFuel`, `ramanujanFuel`,
+  `eulerGammaFuel`.
+* **Fast paths** (2026-11-18): originally `gammaPrecRound` at the float `1/4` (`isQuarter`) and
+  `gammaRatPrecRound` at `1/4`, `1/3` (`isUnitFraction`); since 2026-11-19 every argument with
+  denominator `2, 3, 4, 6` (see "All of the denominators" below).  Not done: `ln Γ`.
+* `lnGammaApproxOf_spec` moved from `Equiv/LnGamma.lean` to `Equiv/GammaConstants.lean`
+  (`Equiv/LnGamma` imports `Equiv/Gamma`, which now uses the constants).
+* Benchmark rows `gammaOneQuarter`, `gammaOneThird`, `gammaRat` at `1/4`, `2/3`, `3/4`
+  (`family:misc`); UNTIMED.
+
+### The specification of the fuel-bound functions, second round (2026-11-19)
+
+User: go down the list (the remaining `ZivSpec` instances), and for the constants whose
+irrationality is known, prove it.
+
+**1. `1/Γ` and the rational `Γ`.**  `reciprocalGammaPrecRoundFuel`, `gammaRatPrecRoundFuel`,
+`reciprocalGammaRatPrecRoundFuel` (explicit fuel; the public functions are these at
+`gammaFuel p`), with `…_eq_or_loop`, `…_eq_or`, `…_zivSpec`.  `1/Γ(n) = 1/(n − 1)!` is not
+dyadic for `n ≥ 4` (`not_isDyadic_inv_factorial`), so the integers beyond the factorial bound
+run a certified loop there too (`gammaApprox_cert_int_recip`, `gammaRatApprox_cert_int`) and
+are in the non-dyadic set; `1/Γ(n)` for `n ≤ 3` is `0`, `1` or `1/2`.  New unconditional
+specifications: `reciprocalGammaPrecRound_eq_of_isInteger`, `gammaRatPrecRound_eq_of_den_one`,
+`reciprocalGammaRatPrecRound_eq_of_den_one`.
+
+**2. The `ln Γ` family.**  `lnGammaPrecRoundFuel`, `lnAbsGammaPrecRoundFuel`,
+`lnGammaRatPrecRoundFuel`, `lnAbsGammaRatPrecRoundFuel` and their `…_zivSpec`.
+* Convergence (`Equiv/LnGammaCertificate.lean`): `lnGammaApproxOf_bracketConv` (any enclosure
+  of width `→ 0` through `lnGammaApproxOf`), `lnGammaApprox_bracketConv`,
+  `lnGammaRatApprox_bracketConv` (the exponent handed to the bracket is that of the rounded
+  argument: one of two values, so the two width functions are joined by a maximum).  For a
+  negative argument (`Equiv/LnGamma.lean`): `lnAbsGammaReflect_width`,
+  `lnAbsGammaReflect_conv`, `lnAbsGammaApprox_bracketConv`, `lnAbsGammaRatApprox_bracketConv`,
+  from the convergence of the sine of the reflection formula (`SinConv`) and `tendsto_lnW_add`.
+* Known values: `0` at `1` and `2`; **`ln Γ(n) = ln (n − 1)!` is irrational for an integer
+  `n ≥ 3`** (`irrational_log_gamma_nat`, from `irrational_log_rat`), so the integers run a
+  certified loop (`lnGammaApprox_cert_int`, `lnGammaRatApprox_cert_int`):
+  `lnGammaPrecRound_eq_of_isInteger`, `lnGammaRatPrecRound_eq_of_den_one`.  (`ln Γ(1/2) =
+  ln √π`: the irrationality of `ln π` is an open problem, so the half-integers stay on fuel.)
+* A value `0` is a rounding boundary of every precision (`zero_mem_floatSet`), so `complete`
+  needs no separate statement about the zeros of `ln Γ`.
+
+**3. The AGM.**  `Equiv/AgmWidth.lean`: the interval iteration keeps a relative enclosure of
+the exact iterates (`RelEnc`; one step adds `9 · 2^(−w)`: `relEnc_agmStep`, from `LEncl.add'`,
+`LEncl.mul`, `lencl_sqrt`, `lencl_half`); the iteration either stops by its test, which bounds
+the width directly (`agmConverged_spec`), or makes all its steps, and then the exact gap is at
+most `M/2^fuel` (`agm_gap_le_half_pow`): `agm_bracket_width`, with the bound `agmEps`,
+`tendsto_agmEps`, and `agmApprox_bracketConv`, `agmRatApprox_bracketConv`,
+`agmFloatRatApprox_bracketConv`.  `agmPrecRoundFuel`, `agmRatPrecRoundFuel`,
+`agmFloatRatPrecRoundFuel` and their `…_zivSpec` (`Equiv/AgmSpec.lean`): exact when an
+argument is not positive or the two are equal; no pair of distinct positive arguments is known
+to have a non-dyadic value (that is the transcendence of the AGM), so the non-dyadic sets are
+empty — except `AGM(q, q) = q` for a rational `q` that is not dyadic.  (`ZivSpec.dyadic` is
+about dyadic values, so an exactly produced non-dyadic rational belongs to the set `N`.)
+
+**4. Convergent enclosures** (`Equiv/EnclConv.lean`): `LConv b x` — the relative widths of the
+enclosures `b w` of `x > 0` tend to `0` — is closed under the operations at precision `w + c`
+(`LConv.const`, `.nat`, `.pi`, `.mul`, `.div`, `.add`, `.half`, `.sqrt`, `.cbrt`, `.agm`,
+`.agmRaw`), and gives `BracketConv` in both shapes in use (`LConv.lnGammaApproxOf_bracketConv`,
+`LConv.bracketConv`).  A convergence proof is then the formula of the constant written once
+more: `gammaOneQuarterEncl_conv` is five lines.
+
+**5. The constants computed with the AGM** are irrational and now free of fuel:
+* `Γ(1/4)`, `Γ(1/3)`: `gammaOneQuarterPrecRound_eq`, `gammaOneThirdPrecRound_eq`.
+* Gauss's constant `G = Γ(1/4)²/(2π √(2π))` and the lemniscate constant `ϖ = π G`:
+  `not_algOver_gauss`, **`irrational_gauss`**, **`irrational_lemniscate`** (from
+  `not_algOver_gamma_one_quarter`), `gaussConstantPrecRound_eq_liftVal₀`,
+  `lemniscateConstantPrecRound_eq_liftVal₀`.
+* Layout: the enclosures moved to `AzFloat/AgmConstants.lean` (so that the certificates,
+  `Equiv/AgmConstants.lean`, can come before the rounded functions); the correctness of the
+  `Γ` enclosures is `Equiv/GammaConstantsEncl.lean`; `Equiv/DirectedRounding.lean` imported
+  `Equiv/GaussConstant.lean` for five lemmas about rounding above a float, which made Gauss's
+  constant an ancestor of every enclosure lemma — they are now `Equiv/FloorGe.lean`.
+
+**6. The Gelfond–Schneider theorem** (`Transcendental/GelfondSchneider.lean`): for a quadratic
+irrational integer `β` (`β² = uβ + v`) and `ℓ ≠ 0`, `e^ℓ` and `e^{βℓ}` are not both rational
+(`GelfondSchneider.not_rational_exp_pair`), hence **`irrational_exp_pi`**,
+**`irrational_two_rpow_sqrt_two`**, **`irrational_exp_pi_sqrt`** (`e^{π√n}`, every `n ≥ 1`).
+Gelfond's proof: the auxiliary function `F(z) = ∑_{i,j<q} c_{ij} e^{(i+jβ)z}` with integer
+coefficients from Siegel's lemma (Mathlib) vanishing to order `T` at the seven points `kℓ`
+(`q² = 28 T` unknowns, `14 T` equations: each value lies in `d^{−2qk} ℤ[β]`, two integer
+equations); a nonzero element of `ℤ[β]` times its conjugate is a nonzero integer (the only
+algebraic number theory needed); Schwarz's lemma with zeros (`Feldman/Hermite.lean`) and
+Cauchy's estimate bound the first derivative that does not vanish; the two bounds contradict
+each other for every order `s ≥ T` once `κ` is large (`final_ineq`, with `R = ⌊√s⌋` so that no
+real square root appears), so all derivatives vanish at `0` and a Vandermonde determinant
+gives `c = 0`.  The three constants: `gelfondPrecRound_eq_liftVal₀`,
+`gelfondSchneiderPrecRound_eq_liftVal₀`, `ramanujanPrecRound_eq_liftVal₀`; convergence of the
+brackets by `expOfBracket_bracketConv` (`Equiv/GelfondBracket.lean`; the brackets themselves in
+`AzFloat/GelfondBracket.lean`).
+
+**7. `zivLoopBacked`** (`AzFloat/Ziv.lean`): the loop with fuel in front of the certified loop.
+The kernel evaluates the first (structural recursion) and never looks at the second, so
+`Transcendental/Ramanujan.lean` still evaluates `ramanujanPrecRound 110` by `decide +kernel`;
+`zivLoopBacked_eq` is the unconditional specification.  The seven constants above use it.
+`nanOrElse` moved to `AzFloat/Ziv.lean`.
+
+**Not done.**
+* Euler's `γ`: no width is proven for the truncated recurrence of the partial sum
+  (`AzInt.sweeneyHornerEncl`: the radius is carried exactly and its size was never needed) nor
+  for the four-series logarithm (`lnSmoothBracket`); both are needed for `BracketConv`, and the
+  result could only be `complete` — the irrationality of `γ` is open.
+* The other functions on the brackets of `ln Γ` and `ψ` (`ψ`, the zeros of `ψ`, polygamma, `B`,
+  `ln |B|`, Pochhammer and its generalizations, the falling factorial) still have the
+  specification "correctly rounded or `NaN`" only.
+* Nothing was timed after this round.  The seven constants run the same fuel loop first, so
+  their timings should be unchanged; that is untested.
 
 ### File layout of the logarithms of `Γ` and `B` (2026-11-18)
 

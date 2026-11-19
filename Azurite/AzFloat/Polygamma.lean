@@ -97,7 +97,7 @@ def polygammaPrecRound (n : Nat) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
         match polygammaTiny? n (finite s e q m hv) s e p mode with
         | some r => r
         | none =>
-          zivLoop (polygammaApprox n (finite s e q m hv) s p) p mode lnGammaFuel
+          zivLoop (polygammaApprox n (finite s e q m hv) s p) p mode (lnGammaFuel p)
             (polygammaStart n e p)
 
 /-- `ψ⁽ⁿ⁾(x)` rounded to nearest at the precision of `x`. -/

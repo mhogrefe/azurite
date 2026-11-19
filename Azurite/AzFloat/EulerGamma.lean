@@ -126,7 +126,7 @@ def eulerGammaApprox (w : Nat) : Roundable × Roundable :=
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- The fuel of the Ziv loop for `γ`: enough doublings to reach `16 (p + 64)` bits. -/
-def eulerGammaFuel (p : Nat) : Nat := zivFuel (16 * (p + zivGuardBits))
+def eulerGammaFuel (p : Nat) : Nat := zivDefaultFuel p
 
 /-- `γ` rounded to precision `p` with `mode`, and the comparison with the exact value (`NaN` at
 precision `0` or if the fuel runs out).  The loop starts at `max (p + 16) 64` bits: the

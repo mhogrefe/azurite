@@ -7,46 +7,39 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Gelfond
-import Azurite.AzFloat.SqrtPiBracket
+import Azurite.AzFloat.GelfondBracket
+import Azurite.AzFloat.Equiv.GelfondBracket
 
 /-!
 ## Ramanujan's constant `e^(π √163)`
 
 `piSqrt163Bracket w` multiplies the bracket of `π` by the bracket of `√163` (`sqrtBracket` at the
-exact float `163`) with directed rounding; `ramanujanBracket w = expOfBracket` of it.  The Ziv
-loop (`zivLoop`) has fuel `ramanujanFuel p` and the specification is "correctly rounded or
-`NaN`" (`Equiv/Ramanujan.lean`): the termination certificate would need the irrationality of
-`e^(π √163)` — Gelfond–Schneider, not available in Mathlib (see the pending-irrationality ledger
-in `docs/azfloat_plan.md`).  `e^(π √163) = 262537412640768743.99999999999925…` is within
-`7.5 · 10^(−13)` of the integer `640320³ + 744`, so the first Ziv level succeeds only from
-precision about `100` on; the loop doubles the working precision until it does.
+exact float `163`) with directed rounding; `ramanujanBracket w = expOfBracket` of it
+(`AzFloat/GelfondBracket.lean`).  `e^(π √163) = (−1)^(−i √163)` is irrational — the
+Gelfond–Schneider theorem, here `Azurite.irrational_exp_pi_sqrt`
+(`Transcendental/GelfondSchneider.lean`) — and the brackets converge, so the Ziv loop has a
+termination certificate (`ramanujanApprox_cert`, `Equiv/GelfondBracket.lean`): no fuel is
+involved in the result, and the specification `ramanujanPrecRound_eq_liftVal₀`
+(`Equiv/Ramanujan.lean`) is "correctly rounded".  `e^(π √163) =
+262537412640768743.99999999999925…` is within `7.5 · 10^(−13)` of the integer `640320³ + 744`,
+so the first Ziv level succeeds only from precision about `100` on; the loop doubles the
+working precision until it does.
 -/
 
 namespace Azurite.AzFloat
 
-/-- The bracket of `π √163` at working precision `w`. -/
-def piSqrt163Bracket (w : Nat) : AzFloat × AzFloat :=
-  let P := piBracket w
-  let S := sqrtBracket (ofAzNat (AzNat.ofNat 163), ofAzNat (AzNat.ofNat 163)) w
-  ((mulPrecRound P.1 S.1 w .Floor).1, (mulPrecRound P.2 S.2 w .Ceiling).1)
-
-/-- The bracket of `e^(π √163)` at working precision `w`. -/
-def ramanujanBracket (w : Nat) : AzFloat × AzFloat := expOfBracket (piSqrt163Bracket w) w
-
-/-- The two ends of the `e^(π √163)` bracket, rounded at any requested precision. -/
-def ramanujanApprox (w : Nat) : Roundable × Roundable :=
-  let b := ramanujanBracket w
-  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
-
-/-- The fuel of the Ziv loop for `e^(π √163)`: enough doublings to reach `16 (p + 64)` bits. -/
-def ramanujanFuel (p : Nat) : Nat := zivFuel (16 * (p + zivGuardBits))
-
-/-- `e^(π √163)` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`NaN` at precision `0` or if the fuel runs out). -/
+/-- `e^(π √163)` rounded to precision `p` with `mode`, and the comparison with the exact
+value (`NaN` at precision `0`).  The value is irrational (the Gelfond–Schneider theorem,
+`Azurite.irrational_exp_pi_sqrt`), so the Ziv loop has a termination certificate
+(`ramanujanApprox_cert`) and the result is always the correctly rounded value
+(`ramanujanPrecRound_eq_liftVal₀`); the loop with fuel in front of the certified one keeps the
+function evaluable by the kernel (`zivLoopBacked`, used in `Transcendental/Ramanujan.lean`). -/
 def ramanujanPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  if p = 0 then (nan, .eq)
-  else zivLoop ramanujanApprox p mode (ramanujanFuel p) (p + zivGuardBits)
+  if hp : p = 0 then (nan, .eq)
+  else
+    haveI : NeZero p := ⟨hp⟩
+    zivLoopBacked ramanujanApprox p mode (zivDefaultFuel p) (p + zivGuardBits)
+      (ramanujanApprox_cert p mode _ (by unfold zivGuardBits; omega))
 
 /-- `e^(π √163)` rounded to nearest at precision `p`. -/
 def ramanujan (p : Nat) : AzFloat := (ramanujanPrecRound p .Nearest).1

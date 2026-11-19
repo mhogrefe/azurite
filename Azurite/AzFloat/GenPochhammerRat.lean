@@ -51,7 +51,7 @@ def genPochRatNegInt (x : AzRat) (n p : Nat) (mode : RoundingMode) : AzFloat × 
   else if (n ≤ 128 ∧ x.num.size + x.den.size ≤ 2 * p + 1024)
       ∨ pochExactCheap (x.num.size + x.den.size) n p = true then
     recipPochIntQuot (AzInt.mkNorm x.sign x.num) x.den.toAzInt n p mode
-  else zivLoop (recipPochRatApprox (x - (n : AzRat)) n) p mode gammaFuel (max 64 (p + 32))
+  else zivLoop (recipPochRatApprox (x - (n : AzRat)) n) p mode (gammaFuel p) (max 64 (p + 32))
 
 /-- The bracket of `Γ(s)/Γ(x)` as a pair of `Roundable`s (`s = x + y`). -/
 def genPochRatApprox (x s : AzRat) (w : Nat) : Roundable × Roundable :=
@@ -70,7 +70,7 @@ def genPochhammerRatPrecRound (x y : AzRat) (p : Nat) (mode : RoundingMode) :
   else if x.den = 1 ∧ (x.num = 0 ∨ x.sign = false) then (zero, .eq)
   else if (x + y).den = 1 ∧ ((x + y).num = 0 ∨ (x + y).sign = false) then (nan, .eq)
   else if p = 0 then (nan, .eq)
-  else zivLoop (genPochRatApprox x (x + y)) p mode gammaFuel (max 64 (p + 32))
+  else zivLoop (genPochRatApprox x (x + y)) p mode (gammaFuel p) (max 64 (p + 32))
 
 /-- `Γ(x + y)/Γ(x)` rounded to nearest at precision `p`. -/
 def genPochhammerRat (x y : AzRat) (p : Nat) : AzFloat :=

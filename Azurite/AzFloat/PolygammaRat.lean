@@ -103,7 +103,7 @@ def polygammaRatPrecRound (n : Nat) (q : AzRat) (p : Nat) (mode : RoundingMode) 
     match polygammaRatTiny? n q e p mode with
     | some r => r
     | none =>
-      zivLoop (polygammaRatApprox n q q.sign p) p mode lnGammaFuel (polygammaStart n e p)
+      zivLoop (polygammaRatApprox n q q.sign p) p mode (lnGammaFuel p) (polygammaStart n e p)
 
 /-- `ψ⁽ⁿ⁾(q)` rounded to nearest at precision `p`. -/
 def polygammaRat (n : Nat) (q : AzRat) (p : Nat) : AzFloat :=

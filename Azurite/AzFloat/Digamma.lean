@@ -21,8 +21,9 @@ the comparison against the exact value; `digamma x` rounds to nearest at the pre
 * **Rounding.**  A tiny argument goes through `digammaTiny?`; otherwise Ziv's loop on
   `digammaEncl` (`AzFloat/DigammaBracket.lean`): the shifted asymptotic series for `x > 0`,
   the reflection formula for `x < 0`.
-* **Fuel.**  The loop has fuel (`lnGammaFuel`, ten doublings): a termination certificate would
-  need `ψ(x)` to be irrational at the float `x`, which is not known even for `ψ(1) = −γ`.
+* **Fuel.**  The loop has fuel (`lnGammaFuel p`, the common `zivDefaultFuel`): a termination
+  certificate would need `ψ(x)` to be irrational at the float `x`, which is not known even
+  for `ψ(1) = −γ`.
   The specification `digammaPrecRound_eq_or` (`Equiv/Digamma.lean`) is "correctly rounded, or
   `NaN`".  The zeros of `ψ` (`1.4616…` and one between any two consecutive poles) are not
   floats as far as anyone knows; next to one the loop doubles its precision until the value
@@ -57,7 +58,7 @@ def digammaPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × 
       match digammaTiny? (finite s e q m hv) e p mode with
       | some r => r
       | none =>
-        zivLoop (digammaApprox (finite s e q m hv) e s) p mode lnGammaFuel (digammaStart e p)
+        zivLoop (digammaApprox (finite s e q m hv) e s) p mode (lnGammaFuel p) (digammaStart e p)
 
 /-- `ψ(x)` rounded to nearest at the precision of `x`. -/
 def digamma (x : AzFloat) : AzFloat := (digammaPrecRound x (x.precision?.getD 1) .Nearest).1

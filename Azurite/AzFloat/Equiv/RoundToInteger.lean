@@ -289,4 +289,19 @@ theorem roundToIntegerThenPrecRound_eq_liftE (x : AzFloat) (irm : RoundingMode) 
       Option.bind_some, Spec.rint_coe]
     rfl
 
+/-- `isInteger` decides whether a real value is an integer. -/
+theorem isInteger_iff_of_toVal {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
+    isInteger x = true ↔ ∃ n : ℤ, xv = n := by
+  cases x with
+  | nan => simp at hx
+  | infinity s => cases s <;> simp at hx
+  | zero =>
+    rw [toVal_zero, Option.some.injEq] at hx
+    have : xv = 0 := by exact_mod_cast hx.symm
+    exact ⟨fun _ => ⟨0, by simp [this]⟩, fun _ => rfl⟩
+  | finite s e q m hv =>
+    rw [toVal_finite, Option.some.injEq, EReal.coe_eq_coe_iff] at hx
+    rw [← hx]
+    exact isInteger_finite s e hv
+
 end Azurite.AzFloat

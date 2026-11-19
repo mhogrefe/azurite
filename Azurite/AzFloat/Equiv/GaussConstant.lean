@@ -11,13 +11,15 @@ import Azurite.AzFloat.GaussConstant
 import Azurite.AzFloat.Equiv.Agm
 import Azurite.AzFloat.Equiv.Constants
 import Azurite.AzFloat.Equiv.Div
+import Azurite.AzFloat.Equiv.FloorGe
 import Azurite.BrentZimmermann.Chapter4.BrentSalamin
 
 /-!
 # Equivalence: Gauss's constant
 
-`gaussConstantPrecRound p mode` is `liftVal₀ (1/AGM(1, √2)) p mode` or the `NaN` fallback
-(`gaussConstantPrecRound_eq_or`).  Besides the AGM enclosure, the proof keeps the lower bounds
+`gaussConstantPrecRound p mode` is `liftVal₀ (1/AGM(1, √2)) p mode`, unconditionally
+(**`gaussConstantPrecRound_eq_liftVal₀`**: the constant is irrational by Chudnovsky's theorem and
+the Ziv loop has a termination certificate, `Equiv/AgmConstants.lean`).  Besides the AGM enclosure, the proof keeps the lower bounds
 `≥ 1` (`LowerGeOne`), so that the reciprocal `1/bLo` is a finite upper bound.  Also
 `gaussConstant_eq_ellipticK`: `1/AGM(1, √2) = √2 K(1/√2)/π`.
 -/
@@ -26,67 +28,7 @@ namespace Azurite.AzFloat
 
 open Azurite.BZ RoundingTarget
 
-theorem one_mem_floatSet (w : ℕ) [NeZero w] : ((1 : ℝ) : EReal) ∈ floatSet w := by
-  have := mem_floatSet_mul_zpow w 1 0 (by rw [abs_one]; exact_mod_cast Nat.one_le_two_pow)
-  simpa using this
-
-theorem two_mem_floatSet (w : ℕ) [NeZero w] : ((2 : ℝ) : EReal) ∈ floatSet w := by
-  have h : |(2 : ℤ)| ≤ 2 ^ w := by
-    rw [abs_two]; exact_mod_cast Nat.pow_le_pow_right two_pos (NeZero.one_le)
-  have := mem_floatSet_mul_zpow w 2 0 h
-  simpa using this
-
-/-- Rounding down a real `≥ c`, with `c` a float, gives a real in `[c, r]`. -/
-theorem roundVal_floor_ge (w : ℕ) [NeZero w] {c r : ℝ} (hc : ((c : ℝ) : EReal) ∈ floatSet w)
-    (hcr : c ≤ r) :
-    ∃ v : ℝ, (roundVal w .Floor (some (r : EReal))).1.toVal = some (v : EReal) ∧ v ≤ r ∧ c ≤ v := by
-  obtain ⟨v, hv⟩ : ∃ v : ℝ, ((v : ℝ) : EReal) = (roundFloor (floatSet w) r).val := by
-    rw [val_roundFloor_floatSet]; exact precisionSet_exists_real _
-  refine ⟨v, ?_, ?_, ?_⟩
-  · rw [(roundVal_coe w .Floor r).1]; exact congrArg some hv.symm
-  · have := (isGreatest_roundFloor (floatSet w) r).1.2
-    rw [← hv] at this
-    exact EReal.coe_le_coe_iff.mp this
-  · have := (isGreatest_roundFloor (floatSet w) r).2 ⟨hc, EReal.coe_le_coe_iff.mpr hcr⟩
-    rw [← hv] at this
-    exact EReal.coe_le_coe_iff.mp this
-
 variable {u v : AzFloat} {uv vv : ℝ}
-
-theorem addFloor_ge (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
-    (w : ℕ) [NeZero w] {c : ℝ} (hc : ((c : ℝ) : EReal) ∈ floatSet w) (h : c ≤ uv + vv) :
-    ∃ r : ℝ, (addPrecRound u v w .Floor).1.toVal = some (r : EReal) ∧ r ≤ uv + vv ∧ c ≤ r := by
-  rw [addPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
-    Spec.add_coe_coe]
-  exact roundVal_floor_ge w hc h
-
-theorem mulFloor_ge (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
-    (w : ℕ) [NeZero w] {c : ℝ} (hc : ((c : ℝ) : EReal) ∈ floatSet w) (h : c ≤ uv * vv) :
-    ∃ r : ℝ, (mulPrecRound u v w .Floor).1.toVal = some (r : EReal) ∧ r ≤ uv * vv ∧ c ≤ r := by
-  rw [mulPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
-    Spec.mul_coe_coe]
-  exact roundVal_floor_ge w hc h
-
-theorem sqrtFloor_ge (hu : u.toVal = some (uv : EReal)) (h0 : 0 ≤ uv) (w : ℕ) [NeZero w]
-    {c : ℝ} (hc : ((c : ℝ) : EReal) ∈ floatSet w) (h : c ≤ Real.sqrt uv) :
-    ∃ r : ℝ, (sqrtPrecRound u w .Floor).1.toVal = some (r : EReal) ∧ r ≤ Real.sqrt uv ∧ c ≤ r := by
-  rw [sqrtPrecRound_eq_liftVal, liftVal, hu, Option.bind_some, Spec.sqrt_coe uv h0]
-  exact roundVal_floor_ge w hc h
-
-theorem divFloor_spec (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
-    (hv0 : vv ≠ 0) (w : ℕ) [NeZero w] :
-    ∃ r : ℝ, (divPrecRound u v w .Floor).1.toVal = some (r : EReal) ∧ r ≤ uv / vv ∧
-      (0 ≤ uv / vv → 0 ≤ r) := by
-  rw [divPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
-    Spec.div_coe_coe uv vv hv0]
-  exact roundVal_floor_spec w _
-
-theorem divCeiling_spec (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
-    (hv0 : vv ≠ 0) (w : ℕ) [NeZero w] :
-    ∃ r : ℝ, (divPrecRound u v w .Ceiling).1.toVal = some (r : EReal) ∧ uv / vv ≤ r := by
-  rw [divPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
-    Spec.div_coe_coe uv vv hv0]
-  exact roundVal_ceiling_spec w _
 
 /-! ### Lower bounds at least one -/
 
@@ -181,19 +123,26 @@ theorem gaussApprox_spec (w : ℕ) [NeZero w] :
   · have := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
     rwa [fval_of_toVal_coe hhi] at this
 
-/-- **Gauss's constant is correctly rounded, unless the fuel runs out.** -/
+/-- **Gauss's constant is correctly rounded**: it is irrational (`irrational_gauss`,
+Chudnovsky's theorem) and the Ziv loop has a termination certificate. -/
+theorem gaussConstantPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    gaussConstantPrecRound p mode
+      = liftVal₀ (some (((AGM 1 (Real.sqrt 2))⁻¹ : ℝ) : EReal)) p mode := by
+  unfold gaussConstantPrecRound liftVal₀
+  rw [dite_eq_right (NeZero.ne p)]
+  exact zivLoopBacked_eq p mode gaussApprox (not_mem_floatSet_of_irrational p irrational_gauss)
+    1 (fun w hw => Or.inl (by
+      have : NeZero w := ⟨by omega⟩
+      obtain ⟨lv, hv, h1, h2, h3, h4, -⟩ := gaussApprox_spec w
+      exact ⟨lv, hv, h1, h2, h3, h4⟩))
+    _ _ (by unfold zivGuardBits; omega) (by unfold zivGuardBits; omega) _
+
+/-- Gauss's constant is correctly rounded (the weaker form, kept for its users). -/
 theorem gaussConstantPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :
     gaussConstantPrecRound p mode
         = liftVal₀ (some (((AGM 1 (Real.sqrt 2))⁻¹ : ℝ) : EReal)) p mode ∨
-      gaussConstantPrecRound p mode = (nan, .eq) := by
-  unfold gaussConstantPrecRound liftVal₀
-  rcases eq_or_ne (zivLoop gaussApprox p mode (agmFuel p) (p + zivGuardBits)) (nan, .eq)
-    with hz | hz
-  · right; exact hz
-  · left
-    exact zivLoop_eq_of_ne_nan p mode _ _ (fun w hw => by
-      have : NeZero w := ⟨hw.ne'⟩
-      exact gaussApprox_spec w) _ _ (by unfold zivGuardBits; omega) hz
+      gaussConstantPrecRound p mode = (nan, .eq) :=
+  Or.inl (gaussConstantPrecRound_eq_liftVal₀ p mode)
 
 /-- `G = 1/AGM(1, √2) = √2 K(1/√2)/π` (Gauss's theorem). -/
 theorem gaussConstant_eq_ellipticK :

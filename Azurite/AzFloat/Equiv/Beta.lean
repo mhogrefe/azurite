@@ -112,21 +112,6 @@ theorem isOneVal_iff {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
   rw [Bool.and_eq_true, le_eq_true_iff hx toVal_one', le_eq_true_iff toVal_one' hx]
   exact ⟨fun h => le_antisymm h.1 h.2, fun h => ⟨h.le, h.ge⟩⟩
 
-/-- `isInteger` decides whether a real value is an integer. -/
-theorem isInteger_iff_of_toVal {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
-    isInteger x = true ↔ ∃ n : ℤ, xv = n := by
-  cases x with
-  | nan => simp at hx
-  | infinity s => cases s <;> simp at hx
-  | zero =>
-    rw [toVal_zero, Option.some.injEq] at hx
-    have : xv = 0 := by exact_mod_cast hx.symm
-    exact ⟨fun _ => ⟨0, by simp [this]⟩, fun _ => rfl⟩
-  | finite s e q m hv =>
-    rw [toVal_finite, Option.some.injEq, EReal.coe_eq_coe_iff] at hx
-    rw [← hx]
-    exact isInteger_finite s e hv
-
 theorem isNegInt_iff {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
     isNegInt x = true ↔ xv < 0 ∧ ∃ k : ℤ, xv = k := by
   unfold isNegInt
@@ -411,7 +396,7 @@ theorem betaReal_eq_or {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av : 
     have hG := gamma_eq_zero_of_nonpos_int hle hk
     rw [hG, div_zero, EReal.coe_zero, roundVal_zero]
   rw [ite_eq_right hs]
-  rcases eq_or_ne (zivLoop (betaApprox a b) p mode gammaFuel (max 64 (p + 32)))
+  rcases eq_or_ne (zivLoop (betaApprox a b) p mode (gammaFuel p) (max 64 (p + 32)))
     (nan, .eq) with hz | hz
   · right; exact hz
   · left

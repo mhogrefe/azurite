@@ -215,7 +215,7 @@ def psiZeroApprox (n w : Nat) : Roundable × Roundable :=
 the exact value (`(nan, .eq)` for `p = 0`, or if the fuel runs out). -/
 def psiZeroPrecRound (n p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   if p = 0 then (nan, .eq)
-  else zivLoop (psiZeroApprox n) p mode lnGammaFuel (max 64 (p + 32))
+  else zivLoop (psiZeroApprox n) p mode (lnGammaFuel p) (max 64 (p + 32))
 
 /-- The `n`-th real zero of `ψ` rounded to nearest at precision `p`. -/
 def psiZero (n p : Nat) : AzFloat := (psiZeroPrecRound n p .Nearest).1

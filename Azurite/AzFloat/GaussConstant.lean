@@ -7,9 +7,8 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Agm
-import Azurite.AzFloat.Constants
-import Azurite.AzFloat.Div
+import Azurite.AzFloat.AgmConstants
+import Azurite.AzFloat.Equiv.AgmConstants
 
 /-!
 ## Gauss's constant
@@ -19,33 +18,28 @@ import Azurite.AzFloat.Div
 
 Computed by the interval AGM of `Agm.lean`: `√2` is enclosed by its floor and ceiling at the
 working precision `w` (`sqrt2PrecRound`), the enclosure is iterated, and `G` lies between
-`⌊1/aHi⌋_w` and `⌈1/bLo⌉_w` (`gaussApprox`); Ziv's loop (`zivLoop`, fuel `agmFuel p`) rounds.
+`⌊1/aHi⌋_w` and `⌈1/bLo⌉_w` (`gaussApprox`); Ziv's loop rounds.
 
-Termination: `G` is transcendental — `G = Γ(1/4)²/(2π)^(3/2)` and Chudnovsky (1976) proved `π`
-and `Γ(1/4)` algebraically independent — but this is the CM case of the deep theorem behind the
-general AGM, with no simpler irrationality proof known and nothing in Mathlib, so the loop has
-fuel and the specification is "correctly rounded or `NaN`" (`Equiv/GaussConstant.lean`); the fuel
-runs out only if `G` is within about `2^(−16(p+64))` of a rounding boundary.
+`G` is irrational — `G = Γ(1/4)²/(2π)^(3/2)`, and `π` and `Γ(1/4)` are algebraically
+independent (Chudnovsky 1976, formalized in `Azurite/Chudnovsky`; `irrational_gauss`) — and the
+brackets converge, so the Ziv loop has a termination certificate (`gaussApprox_cert`,
+`Equiv/AgmConstants.lean`): no fuel is involved in the result, and the specification
+`gaussConstantPrecRound_eq_liftVal₀` (`Equiv/GaussConstant.lean`) is "correctly rounded".  The
+bracket is in `AzFloat/AgmConstants.lean`.
 -/
 
 namespace Azurite.AzFloat
 
-/-- The two ends of the bracket of `G = 1/AGM(1, √2)` at working precision `w`. -/
-def gaussBracket (w : Nat) : AzFloat × AzFloat :=
-  let s2lo := (sqrt2PrecRound w .Floor).1
-  let s2hi := (sqrt2PrecRound w .Ceiling).1
-  let s := agmIter w (w + 4) (agmStep w ⟨one, one, s2lo, s2hi⟩)
-  ((divPrecRound one s.aHi w .Floor).1, (divPrecRound one s.bLo w .Ceiling).1)
-
-/-- The bracket of `G` at working precision `w`, as a pair of `Roundable`s. -/
-def gaussApprox (w : Nat) : Roundable × Roundable :=
-  let b := gaussBracket w
-  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
-
 /-- **Gauss's constant** `G = 1/AGM(1, √2)` rounded to precision `p` with `mode`, and the
-comparison with the exact value (`NaN` if the fuel runs out). -/
+comparison with the exact value (`NaN` at precision `0`).  Always the correctly rounded value
+(`gaussConstantPrecRound_eq_liftVal₀`): the loop with fuel is backed by a certified one
+(`zivLoopBacked`). -/
 def gaussConstantPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  zivLoop gaussApprox p mode (agmFuel p) (p + zivGuardBits)
+  if hp : p = 0 then (nan, .eq)
+  else
+    haveI : NeZero p := ⟨hp⟩
+    zivLoopBacked gaussApprox p mode (agmFuel p) (p + zivGuardBits)
+      (gaussApprox_cert p mode _ (by unfold zivGuardBits; omega))
 
 /-- Gauss's constant rounded to nearest at precision `p`. -/
 def gaussConstant (p : Nat) : AzFloat := (gaussConstantPrecRound p .Nearest).1

@@ -150,6 +150,32 @@ import Azurite.AzFloat.Acot
 import Azurite.AzFloat.AcotRat
 import Azurite.AzFloat.AcotWithPeriod
 import Azurite.AzFloat.AcotPi
+import Azurite.AzFloat.Sinh
+import Azurite.AzFloat.SinhRat
+import Azurite.AzFloat.Cosh
+import Azurite.AzFloat.CoshRat
+import Azurite.AzFloat.SinhCosh
+import Azurite.AzFloat.SinhCoshRat
+import Azurite.AzFloat.Tanh
+import Azurite.AzFloat.TanhRat
+import Azurite.AzFloat.Sech
+import Azurite.AzFloat.SechRat
+import Azurite.AzFloat.Csch
+import Azurite.AzFloat.CschRat
+import Azurite.AzFloat.Coth
+import Azurite.AzFloat.CothRat
+import Azurite.AzFloat.Asinh
+import Azurite.AzFloat.AsinhRat
+import Azurite.AzFloat.Acosh
+import Azurite.AzFloat.AcoshRat
+import Azurite.AzFloat.Atanh
+import Azurite.AzFloat.AtanhRat
+import Azurite.AzFloat.Asech
+import Azurite.AzFloat.AsechRat
+import Azurite.AzFloat.Acsch
+import Azurite.AzFloat.AcschRat
+import Azurite.AzFloat.Acoth
+import Azurite.AzFloat.AcothRat
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -2522,6 +2548,105 @@ def checkFloatAcotPi (line : String) : Verdict :=
 /-- `Float::acot_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.acotPiRatPrecRound`. -/
 def checkFloatAcotPiRational : String → Verdict :=
   checkFloatOfRational "acot_pi_rational" AzFloat.acotPiRatPrecRound
+
+/-- `Float`'s `sinh` family, against `AzFloat.sinhPrecRound`. -/
+def checkFloatSinh : String → Verdict := checkFloatUnaryWith "sinh" AzFloat.sinhPrecRound
+
+/-- `Float::sinh_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.sinhRatPrecRound`. -/
+def checkFloatSinhRational : String → Verdict :=
+  checkFloatOfRational "sinh_rational" AzFloat.sinhRatPrecRound
+
+/-- `Float`'s `cosh` family, against `AzFloat.coshPrecRound`. -/
+def checkFloatCosh : String → Verdict := checkFloatUnaryWith "cosh" AzFloat.coshPrecRound
+
+/-- `Float::cosh_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.coshRatPrecRound`. -/
+def checkFloatCoshRational : String → Verdict :=
+  checkFloatOfRational "cosh_rational" AzFloat.coshRatPrecRound
+
+/-- `Float`'s `sinh_cosh` family, against `AzFloat.sinhCoshPrecRound`. -/
+def checkFloatSinhCosh : String → Verdict :=
+  checkFloatUnaryWith₂ "sinh_cosh" AzFloat.sinhCoshPrecRound
+
+/-- `Float::sinh_cosh_rational_prec[_round][_ref](q, p[, rm])`, against
+`AzFloat.sinhCoshRatPrecRound`. -/
+def checkFloatSinhCoshRational : String → Verdict :=
+  checkFloatOfRational₂ "sinh_cosh_rational" AzFloat.sinhCoshRatPrecRound
+
+/-- `Float`'s `tanh` family, against `AzFloat.tanhPrecRound`. -/
+def checkFloatTanh : String → Verdict := checkFloatUnaryWith "tanh" AzFloat.tanhPrecRound
+
+/-- `Float::tanh_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.tanhRatPrecRound`. -/
+def checkFloatTanhRational : String → Verdict :=
+  checkFloatOfRational "tanh_rational" AzFloat.tanhRatPrecRound
+
+/-- `Float`'s `sech` family, against `AzFloat.sechPrecRound`. -/
+def checkFloatSech : String → Verdict := checkFloatUnaryWith "sech" AzFloat.sechPrecRound
+
+/-- `Float::sech_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.sechRatPrecRound`. -/
+def checkFloatSechRational : String → Verdict :=
+  checkFloatOfRational "sech_rational" AzFloat.sechRatPrecRound
+
+/-- `Float`'s `csch` family, against `AzFloat.cschPrecRound` (through `negativeZeroPole`). -/
+def checkFloatCsch (line : String) : Verdict :=
+  checkFloatUnaryWith "csch"
+    (fun x p m => negativeZeroPole (negativeZeroArgument line) (AzFloat.cschPrecRound x p m)) line
+
+/-- `Float::csch_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.cschRatPrecRound`. -/
+def checkFloatCschRational : String → Verdict :=
+  checkFloatOfRational "csch_rational" AzFloat.cschRatPrecRound
+
+/-- `Float`'s `coth` family, against `AzFloat.cothPrecRound` (through `negativeZeroPole`). -/
+def checkFloatCoth (line : String) : Verdict :=
+  checkFloatUnaryWith "coth"
+    (fun x p m => negativeZeroPole (negativeZeroArgument line) (AzFloat.cothPrecRound x p m)) line
+
+/-- `Float::coth_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.cothRatPrecRound`. -/
+def checkFloatCothRational : String → Verdict :=
+  checkFloatOfRational "coth_rational" AzFloat.cothRatPrecRound
+
+/-- `Float`'s `asinh` family, against `AzFloat.asinhPrecRound`. -/
+def checkFloatAsinh : String → Verdict := checkFloatUnaryWith "asinh" AzFloat.asinhPrecRound
+
+/-- `Float::asinh_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.asinhRatPrecRound`. -/
+def checkFloatAsinhRational : String → Verdict :=
+  checkFloatOfRational "asinh_rational" AzFloat.asinhRatPrecRound
+
+/-- `Float`'s `acosh` family, against `AzFloat.acoshPrecRound`. -/
+def checkFloatAcosh : String → Verdict := checkFloatUnaryWith "acosh" AzFloat.acoshPrecRound
+
+/-- `Float::acosh_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.acoshRatPrecRound`. -/
+def checkFloatAcoshRational : String → Verdict :=
+  checkFloatOfRational "acosh_rational" AzFloat.acoshRatPrecRound
+
+/-- `Float`'s `atanh` family, against `AzFloat.atanhPrecRound`. -/
+def checkFloatAtanh : String → Verdict := checkFloatUnaryWith "atanh" AzFloat.atanhPrecRound
+
+/-- `Float::atanh_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.atanhRatPrecRound`. -/
+def checkFloatAtanhRational : String → Verdict :=
+  checkFloatOfRational "atanh_rational" AzFloat.atanhRatPrecRound
+
+/-- `Float`'s `asech` family, against `AzFloat.asechPrecRound`. -/
+def checkFloatAsech : String → Verdict := checkFloatUnaryWith "asech" AzFloat.asechPrecRound
+
+/-- `Float::asech_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.asechRatPrecRound`. -/
+def checkFloatAsechRational : String → Verdict :=
+  checkFloatOfRational "asech_rational" AzFloat.asechRatPrecRound
+
+/-- `Float`'s `acsch` family, against `AzFloat.acschPrecRound` (through `negativeZeroPole`). -/
+def checkFloatAcsch (line : String) : Verdict :=
+  checkFloatUnaryWith "acsch"
+    (fun x p m => negativeZeroPole (negativeZeroArgument line) (AzFloat.acschPrecRound x p m)) line
+
+/-- `Float::acsch_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.acschRatPrecRound`. -/
+def checkFloatAcschRational : String → Verdict :=
+  checkFloatOfRational "acsch_rational" AzFloat.acschRatPrecRound
+
+/-- `Float`'s `acoth` family, against `AzFloat.acothPrecRound`. -/
+def checkFloatAcoth : String → Verdict := checkFloatUnaryWith "acoth" AzFloat.acothPrecRound
+
+/-- `Float::acoth_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.acothRatPrecRound`. -/
+def checkFloatAcothRational : String → Verdict :=
+  checkFloatOfRational "acoth_rational" AzFloat.acothRatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound

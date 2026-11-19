@@ -132,45 +132,68 @@ def agmFloatRatApprox (x : AzFloat) (q : AzRat) (w : Nat) : Roundable × Roundab
   agmApproxFrom ⟨x, x, b.1, b.2⟩ (w + expBits x + ratExpBits q + 2) w
 
 /-- Four doublings of the working precision from `p + 64`. -/
-def agmFuel (p : Nat) : Nat := zivFuel (16 * (p + zivGuardBits))
+def agmFuel (p : Nat) : Nat := zivDefaultFuel p
 
-/-- `AGM(x, y)` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`NaN` if the fuel runs out, which the transcendence of the AGM rules out in principle). -/
-def agmPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- **`AGM(x, y)` with the fuel of its Ziv loop as an argument**: rounded to precision `p` with
+`mode`, and the comparison with the exact value (`NaN` if the fuel runs out).  The
+specification is `agmPrecRoundFuel_zivSpec` (`Equiv/AgmSpec.lean`). -/
+def agmPrecRoundFuel (fuel : Nat) (x y : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   if x.isNaN || y.isNaN then (nan, .eq)
   else if x.isNegative || y.isNegative then (nan, .eq)
   else if x.isZero || y.isZero then
     (if x.isInfinite || y.isInfinite then (nan, .eq) else (zero, .eq))
   else if x.isInfinite || y.isInfinite then (infinity true, .eq)
   else if eqIEEE x y then setPrecRound x p mode
-  else zivLoop (agmApprox x y) p mode (agmFuel p) (p + zivGuardBits)
+  else zivLoop (agmApprox x y) p mode fuel (p + zivGuardBits)
+
+/-- `AGM(x, y)` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`NaN` if the fuel runs out, which the transcendence of the AGM rules out in principle):
+`agmPrecRoundFuel` at the fuel `agmFuel p`. -/
+def agmPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  agmPrecRoundFuel (agmFuel p) x y p mode
 
 /-- `AGM(x, y)` rounded to nearest at precision `p`. -/
 def agm (x y : AzFloat) (p : Nat) : AzFloat := (agmPrecRound x y p .Nearest).1
 
-/-- `AGM(q₁, q₂)` of two rationals, rounded to precision `p` with `mode` (`NaN` for a negative
-argument; `0` for a zero one; `q` itself for `q₁ = q₂`). -/
-def agmRatPrecRound (q₁ q₂ : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- **`AGM(q₁, q₂)` of two rationals with the fuel of its Ziv loop as an argument** (`NaN` for
+a negative argument; `0` for a zero one; `q` itself for `q₁ = q₂`).  The specification is
+`agmRatPrecRoundFuel_zivSpec` (`Equiv/AgmSpec.lean`). -/
+def agmRatPrecRoundFuel (fuel : Nat) (q₁ q₂ : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   if q₁ < 0 ∨ q₂ < 0 then (nan, .eq)
   else if q₁ = 0 ∨ q₂ = 0 then (zero, .eq)
   else if q₁ = q₂ then ofAzRatRound q₁ p mode
-  else zivLoop (agmRatApprox q₁ q₂) p mode (agmFuel p) (p + zivGuardBits)
+  else zivLoop (agmRatApprox q₁ q₂) p mode fuel (p + zivGuardBits)
+
+/-- `AGM(q₁, q₂)` of two rationals, rounded to precision `p` with `mode` (`NaN` for a negative
+argument; `0` for a zero one; `q` itself for `q₁ = q₂`): `agmRatPrecRoundFuel` at the fuel
+`agmFuel p`. -/
+def agmRatPrecRound (q₁ q₂ : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  agmRatPrecRoundFuel (agmFuel p) q₁ q₂ p mode
 
 /-- `AGM(q₁, q₂)` rounded to nearest. -/
 def agmRat (q₁ q₂ : AzRat) (p : Nat) : AzFloat := (agmRatPrecRound q₁ q₂ p .Nearest).1
 
-/-- `AGM(x, q)` of a float and a rational, rounded to precision `p` with `mode`.  The exact-equality
-case `x = q` (where the loop could not terminate) is detected by the correctly rounded `x − q` at
-one bit, which is zero iff `x = q`, without materializing `x` as a rational. -/
-def agmFloatRatPrecRound (x : AzFloat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
-    AzFloat × Ordering :=
+/-- **`AGM(x, q)` of a float and a rational with the fuel of its Ziv loop as an argument.**
+The exact-equality case `x = q` (where the loop could not terminate) is detected by the
+correctly rounded `x − q` at one bit, which is zero iff `x = q`, without materializing `x` as a
+rational.  The specification is `agmFloatRatPrecRoundFuel_zivSpec` (`Equiv/AgmSpec.lean`). -/
+def agmFloatRatPrecRoundFuel (fuel : Nat) (x : AzFloat) (q : AzRat) (p : Nat)
+    (mode : RoundingMode) : AzFloat × Ordering :=
   if x.isNaN then (nan, .eq)
   else if x.isNegative ∨ q < 0 then (nan, .eq)
   else if q = 0 then (if x.isInfinite then (nan, .eq) else (zero, .eq))
   else if x.isZero then (zero, .eq)
   else if x.isInfinite then (infinity true, .eq)
   else if (subRatPrecRound x q 1 .Floor).1.isZero then setPrecRound x p mode
-  else zivLoop (agmFloatRatApprox x q) p mode (agmFuel p) (p + zivGuardBits)
+  else zivLoop (agmFloatRatApprox x q) p mode fuel (p + zivGuardBits)
+
+/-- `AGM(x, q)` of a float and a rational, rounded to precision `p` with `mode`:
+`agmFloatRatPrecRoundFuel` at the fuel `agmFuel p`. -/
+def agmFloatRatPrecRound (x : AzFloat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  agmFloatRatPrecRoundFuel (agmFuel p) x q p mode
 
 /-- `AGM(x, q)` rounded to nearest. -/
 def agmFloatRat (x : AzFloat) (q : AzRat) (p : Nat) : AzFloat :=

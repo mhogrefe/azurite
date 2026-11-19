@@ -238,3 +238,11 @@ private def viaGamma (x : AzFloat) (m : RoundingMode) : Bool :=
 #guard lnAbsGamma (X "-0.5" 53) == ((L (X "-0.5" 53) 53).1.1, false)
 
 end LnAbsGammaTests
+
+-- explicit fuel; no fuel at the integers (ln (n − 1)! is irrational from 3 on)
+#guard D (lnGammaPrecRoundFuel 0 (F "3" 53) 53 .Nearest) == ("0.6931471805599453", .lt)
+#guard D (lnGammaPrecRoundFuel 0 (F "100" 53) 53 .Nearest) == ("359.1342053695754", .lt)
+#guard D (lnGammaPrecRoundFuel 0 (F "5/2" 53) 53 .Nearest) == ("0.2846828704729192", .gt)
+#guard D (lnAbsGammaPrecRoundFuel 0 (F "100" 53) 53 .Nearest).1 == ("359.1342053695754", .lt)
+#guard D (lnAbsGammaPrecRoundFuel 0 (F "-5/2" 53) 53 .Nearest).1
+  == ("-0.056243716497674054", .lt)

@@ -86,7 +86,7 @@ def digammaRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat ×
     let e := gammaRatExp q
     match digammaRatTiny? q e p mode with
     | some r => r
-    | none => zivLoop (digammaRatApprox q e q.sign) p mode lnGammaFuel (digammaRatStart q e p)
+    | none => zivLoop (digammaRatApprox q e q.sign) p mode (lnGammaFuel p) (digammaRatStart q e p)
 
 /-- `ψ(q)` rounded to nearest at precision `p`. -/
 def digammaRat (q : AzRat) (p : Nat) : AzFloat := (digammaRatPrecRound q p .Nearest).1

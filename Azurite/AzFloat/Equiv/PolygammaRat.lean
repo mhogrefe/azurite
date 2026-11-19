@@ -215,7 +215,7 @@ theorem polygammaRatPrecRound_eq_or (n : ℕ) (q : AzRat) (p : ℕ) [NeZero p]
   · rename_i r hr
     left
     exact polygammaRatTiny?_eq hn1 q h0 _ p mode hr
-  · rcases eq_or_ne (zivLoop (polygammaRatApprox n q q.sign p) p mode lnGammaFuel
+  · rcases eq_or_ne (zivLoop (polygammaRatApprox n q q.sign p) p mode (lnGammaFuel p)
       (polygammaStart n (gammaRatExp q) p)) (nan, .eq) with hz | hz
     · right; exact hz
     · left

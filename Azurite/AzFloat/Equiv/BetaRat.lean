@@ -182,7 +182,7 @@ theorem betaRatPrecRound_eq_or (a b : AzRat) (p : ℕ) [NeZero p] (mode : Roundi
     rw [hsum] at hle hk
     rw [gamma_eq_zero_of_nonpos_int hle hk, div_zero, EReal.coe_zero, roundVal_zero]
   rw [ite_eq_right hs]
-  rcases eq_or_ne (zivLoop (betaRatApprox a b (a + b)) p mode gammaFuel (max 64 (p + 32)))
+  rcases eq_or_ne (zivLoop (betaRatApprox a b (a + b)) p mode (gammaFuel p) (max 64 (p + 32)))
     (nan, .eq) with hzv | hzv
   · right; exact hzv
   · left

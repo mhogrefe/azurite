@@ -10,15 +10,17 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.Gelfond
 import Azurite.AzFloat.Equiv.ExpApprox
 import Azurite.AzFloat.Equiv.PiBracket
+import Azurite.AzFloat.Equiv.GelfondBracket
 
 /-!
 # Equivalence: Gelfond's constant
 
 `gelfondBracket_spec` (a strict enclosure of `e^π`, from `expOfBracket_spec`),
 `gelfondApprox_spec`, and
-`gelfondPrecRound_eq_or`: `gelfondPrecRound p mode` is the correctly rounded `e^π`
-(`liftVal₀ (some (exp π))`) unless the fuel runs out (`(nan, .eq)`).  A termination certificate
-would need `Irrational (exp π)` (Gelfond's theorem), which is not available.
+**`gelfondPrecRound_eq_liftVal₀`**: `gelfondPrecRound p mode` is the correctly rounded `e^π`
+(`liftVal₀ (some (exp π))`), unconditionally: `e^π` is irrational by Gelfond's theorem
+(`Transcendental/GelfondSchneider.lean`) and the Ziv loop has a termination certificate
+(`Equiv/GelfondBracket.lean`).
 -/
 
 namespace Azurite.AzFloat
@@ -44,20 +46,23 @@ theorem gelfondApprox_spec {w : ℕ} (hw : 64 ≤ w) :
     rw [fval_of_toVal_coe hhi] at hR
     exact hR
 
-/-- **`e^π` is correctly rounded unless the fuel runs out.** -/
+/-- **`e^π` is correctly rounded**: the value is irrational (Gelfond's theorem,
+`Azurite.irrational_exp_pi`), and the Ziv loop has a termination certificate. -/
+theorem gelfondPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    gelfondPrecRound p mode = liftVal₀ (some ((Real.exp Real.pi : ℝ) : EReal)) p mode := by
+  unfold gelfondPrecRound liftVal₀
+  rw [dite_eq_right (NeZero.ne p)]
+  exact zivLoopBacked_eq p mode gelfondApprox
+    (not_mem_floatSet_of_irrational p irrational_exp_pi) 64
+    (fun w hw => Or.inl (by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi⟩ := gelfondApprox_spec hw
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi⟩))
+    _ _ (by unfold zivGuardBits; omega) (by unfold zivGuardBits; omega) _
+
+/-- `e^π` is correctly rounded (the weaker form, kept for its users). -/
 theorem gelfondPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :
     gelfondPrecRound p mode = liftVal₀ (some ((Real.exp Real.pi : ℝ) : EReal)) p mode ∨
-      gelfondPrecRound p mode = (nan, .eq) := by
-  unfold gelfondPrecRound liftVal₀
-  rw [ite_eq_right (NeZero.ne p)]
-  rcases eq_or_ne (zivLoop gelfondApprox p mode (gelfondFuel p) (p + zivGuardBits)) (nan, .eq)
-    with hz | hz
-  · right; exact hz
-  · left
-    exact zivLoop_eq_of_ne_nan_threshold p mode gelfondApprox (Real.exp Real.pi) 64
-      (fun w hw => by
-        obtain ⟨lv, hv, hl, hh, hlo, hhi⟩ := gelfondApprox_spec hw
-        exact ⟨lv, hv, hl, hh, hlo.le, hhi, fun h => absurd h hlo.ne⟩)
-      _ _ (by unfold zivGuardBits; omega) hz
+      gelfondPrecRound p mode = (nan, .eq) :=
+  Or.inl (gelfondPrecRound_eq_liftVal₀ p mode)
 
 end Azurite.AzFloat

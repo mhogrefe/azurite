@@ -352,13 +352,17 @@ theorem subRat_isZero_iff {x : AzFloat} (hx : x.toVal = some (a : EReal)) (q : A
     rw [h, add_neg_cancel, EReal.coe_zero, roundVal_zero]
     rfl
 
-/-- **`agmRatPrecRound` is the correctly rounded AGM of two rationals, unless the fuel runs
-out.** -/
-theorem agmRatPrecRound_eq_or (q₁ q₂ : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    agmRatPrecRound q₁ q₂ p mode
+/-- **The branches of `agmRatPrecRoundFuel`**: the correctly rounded value, whatever the fuel,
+or — for distinct positive rationals — the fuel loop. -/
+theorem agmRatPrecRoundFuel_eq_or_loop (fuel : ℕ) (q₁ q₂ : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    agmRatPrecRoundFuel fuel q₁ q₂ p mode
         = liftVal₀ (Spec.agm (AzRat.toRat q₁ : ℝ) (AzRat.toRat q₂ : ℝ)) p mode ∨
-      agmRatPrecRound q₁ q₂ p mode = (nan, .eq) := by
-  unfold agmRatPrecRound liftVal₀
+      (0 < (AzRat.toRat q₁ : ℝ) ∧ 0 < (AzRat.toRat q₂ : ℝ) ∧
+        (AzRat.toRat q₁ : ℝ) ≠ AzRat.toRat q₂ ∧
+        agmRatPrecRoundFuel fuel q₁ q₂ p mode
+          = zivLoop (agmRatApprox q₁ q₂) p mode fuel (p + zivGuardBits)) := by
+  unfold agmRatPrecRoundFuel liftVal₀
   split_ifs with h1 h2 h3
   · left
     rcases h1 with h | h
@@ -393,61 +397,86 @@ theorem agmRatPrecRound_eq_or (q₁ q₂ : AzRat) (p : ℕ) [NeZero p] (mode : R
     have hb : 0 < (AzRat.toRat q₂ : ℝ) := lt_of_le_of_ne hq₂ (Ne.symm hz₂')
     have hab : (AzRat.toRat q₁ : ℝ) ≠ AzRat.toRat q₂ := fun h =>
       h3 ((azRat_toRat_eq_iff q₁ q₂).mpr h)
-    rcases eq_or_ne (zivLoop (agmRatApprox q₁ q₂) p mode (agmFuel p) (p + zivGuardBits))
+    exact Or.inr ⟨ha, hb, hab, rfl⟩
+
+/-- **`agmRatPrecRoundFuel` is the correctly rounded AGM of two rationals, unless the fuel
+runs out.** -/
+theorem agmRatPrecRoundFuel_eq_or (fuel : ℕ) (q₁ q₂ : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    agmRatPrecRoundFuel fuel q₁ q₂ p mode
+        = liftVal₀ (Spec.agm (AzRat.toRat q₁ : ℝ) (AzRat.toRat q₂ : ℝ)) p mode ∨
+      agmRatPrecRoundFuel fuel q₁ q₂ p mode = (nan, .eq) := by
+  rcases agmRatPrecRoundFuel_eq_or_loop fuel q₁ q₂ p mode with h | ⟨ha, hb, hab, h⟩
+  · exact Or.inl h
+  · rw [h]
+    rcases eq_or_ne (zivLoop (agmRatApprox q₁ q₂) p mode fuel (p + zivGuardBits))
       (nan, .eq) with hz | hz
     · right; exact hz
     · left
+      unfold liftVal₀
       rw [Spec.agm_coe_coe ha hb]
       exact zivLoop_eq_of_ne_nan p mode _ (AGM _ _) (fun w hw => by
         have : NeZero w := ⟨hw.ne'⟩
         exact agmRatApprox_spec ha hb hab w) _ _ (by unfold zivGuardBits; omega) hz
 
-/-- **`agmFloatRatPrecRound` is the correctly rounded `AGM(x, q)`, unless the fuel runs out.** -/
-theorem agmFloatRatPrecRound_eq_or (x : AzFloat) (q : AzRat) (p : ℕ) [NeZero p]
-    (mode : RoundingMode) :
-    agmFloatRatPrecRound x q p mode
+/-- **`agmRatPrecRound` is the correctly rounded AGM of two rationals, unless the fuel runs
+out.** -/
+theorem agmRatPrecRound_eq_or (q₁ q₂ : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    agmRatPrecRound q₁ q₂ p mode
+        = liftVal₀ (Spec.agm (AzRat.toRat q₁ : ℝ) (AzRat.toRat q₂ : ℝ)) p mode ∨
+      agmRatPrecRound q₁ q₂ p mode = (nan, .eq) :=
+  agmRatPrecRoundFuel_eq_or (agmFuel p) q₁ q₂ p mode
+
+
+/-- **The branches of `agmFloatRatPrecRoundFuel`**: the correctly rounded value, whatever the
+fuel, or — for a positive float and a positive rational that differ — the fuel loop. -/
+theorem agmFloatRatPrecRoundFuel_eq_or_loop (fuel : ℕ) (x : AzFloat) (q : AzRat) (p : ℕ)
+    [NeZero p] (mode : RoundingMode) :
+    agmFloatRatPrecRoundFuel fuel x q p mode
         = roundVal p mode (x.toVal.bind fun a => Spec.agm a (AzRat.toRat q : ℝ)) ∨
-      agmFloatRatPrecRound x q p mode = (nan, .eq) := by
+      ∃ a : ℝ, x.toVal = some (a : EReal) ∧ 0 < a ∧ 0 < (AzRat.toRat q : ℝ) ∧
+        a ≠ AzRat.toRat q ∧ agmFloatRatPrecRoundFuel fuel x q p mode
+          = zivLoop (agmFloatRatApprox x q) p mode fuel (p + zivGuardBits) := by
   have hq0 : ((AzRat.toRat q : ℝ) : EReal) ≠ ⊤ := EReal.coe_ne_top _
   cases x with
-  | nan => left; simp [agmFloatRatPrecRound, isNaN]
+  | nan => left; simp [agmFloatRatPrecRoundFuel, isNaN]
   | infinity s =>
     left
     cases s with
     | false =>
-      simp [agmFloatRatPrecRound, isNaN, isNegative, Spec.agm_of_neg_left EReal.bot_lt_zero]
+      simp [agmFloatRatPrecRoundFuel, isNaN, isNegative, Spec.agm_of_neg_left EReal.bot_lt_zero]
     | true =>
       by_cases hneg : q < 0
       · have h := EReal.coe_neg'.mpr ((azRat_lt_zero_iff q).mp hneg)
-        simp [agmFloatRatPrecRound, isNaN, isNegative, hneg, Spec.agm_of_neg_right _ h]
+        simp [agmFloatRatPrecRoundFuel, isNaN, isNegative, hneg, Spec.agm_of_neg_right _ h]
       · by_cases hz : q = 0
         · subst hz
-          simp [agmFloatRatPrecRound, isNaN, isNegative, isInfinite, hneg, Spec.agm_top_zero]
+          simp [agmFloatRatPrecRoundFuel, isNaN, isNegative, isInfinite, hneg, Spec.agm_top_zero]
         · have hpos : (0 : EReal) < ((AzRat.toRat q : ℝ) : EReal) := by
             rw [azRat_lt_zero_iff, not_lt] at hneg
             rw [azRat_eq_zero_iff] at hz
             exact EReal.coe_pos.mpr (lt_of_le_of_ne hneg (Ne.symm hz))
-          simp [agmFloatRatPrecRound, isNaN, isNegative, isZero, isInfinite, hneg, hz,
+          simp [agmFloatRatPrecRoundFuel, isNaN, isNegative, isZero, isInfinite, hneg, hz,
             Spec.agm_top_of_pos hpos]
   | zero =>
     left
     by_cases hneg : q < 0
     · have h := EReal.coe_neg'.mpr ((azRat_lt_zero_iff q).mp hneg)
-      simp [agmFloatRatPrecRound, isNaN, isNegative, hneg, Spec.agm_of_neg_right _ h]
+      simp [agmFloatRatPrecRoundFuel, isNaN, isNegative, hneg, Spec.agm_of_neg_right _ h]
     · have hq : (0 : EReal) ≤ ((AzRat.toRat q : ℝ) : EReal) := by
         rw [azRat_lt_zero_iff, not_lt] at hneg
         exact EReal.coe_nonneg.mpr hneg
       by_cases hz : q = 0
       · subst hz
-        simp [agmFloatRatPrecRound, isNaN, isNegative, isInfinite, hneg,
+        simp [agmFloatRatPrecRoundFuel, isNaN, isNegative, isInfinite, hneg,
           Spec.agm_zero_of_nonneg_ne_top le_rfl EReal.zero_ne_top]
-      · simp [agmFloatRatPrecRound, isNaN, isNegative, isZero, hneg, hz,
+      · simp [agmFloatRatPrecRoundFuel, isNaN, isNegative, isZero, hneg, hz,
           Spec.agm_zero_of_nonneg_ne_top hq hq0]
   | finite s e q' m hv =>
     cases s with
     | false =>
       left
-      simp [agmFloatRatPrecRound, isNaN, isNegative,
+      simp [agmFloatRatPrecRoundFuel, isNaN, isNegative,
         Spec.agm_of_neg_left (finiteVal_false_neg_ereal e hv)]
     | true =>
       set X := finite true e q' m hv with hX
@@ -456,20 +485,20 @@ theorem agmFloatRatPrecRound_eq_or (x : AzFloat) (q : AzRat) (p : ℕ) [NeZero p
       by_cases hneg : q < 0
       · left
         have h := EReal.coe_neg'.mpr ((azRat_lt_zero_iff q).mp hneg)
-        simp [agmFloatRatPrecRound, hX, isNaN, isNegative, hneg, Spec.agm_of_neg_right _ h]
+        simp [agmFloatRatPrecRoundFuel, hX, isNaN, isNegative, hneg, Spec.agm_of_neg_right _ h]
       · have hq : 0 ≤ (AzRat.toRat q : ℝ) := by rwa [azRat_lt_zero_iff, not_lt] at hneg
         by_cases hz : q = 0
         · left
           subst hz
-          simp [agmFloatRatPrecRound, hX, isNaN, isNegative, isInfinite, hneg,
+          simp [agmFloatRatPrecRoundFuel, hX, isNaN, isNegative, isInfinite, hneg,
             Spec.agm_of_nonneg_ne_top_zero (finiteVal_true_pos_ereal e hv).le (EReal.coe_ne_top _)]
         · have hb : 0 < (AzRat.toRat q : ℝ) := by
             rw [azRat_eq_zero_iff] at hz
             exact lt_of_le_of_ne hq (Ne.symm hz)
-          have hred : agmFloatRatPrecRound X q p mode
+          have hred : agmFloatRatPrecRoundFuel fuel X q p mode
               = if (subRatPrecRound X q 1 .Floor).1.isZero then setPrecRound X p mode
-                else zivLoop (agmFloatRatApprox X q) p mode (agmFuel p) (p + zivGuardBits) := by
-            simp [agmFloatRatPrecRound, hX, isNaN, isNegative, isZero, isInfinite, hneg, hz]
+                else zivLoop (agmFloatRatApprox X q) p mode fuel (p + zivGuardBits) := by
+            simp [agmFloatRatPrecRoundFuel, hX, isNaN, isNegative, isZero, isInfinite, hneg, hz]
           rw [hred, hx, Option.bind_some, Spec.agm_coe_coe ha hb]
           by_cases heq : (subRatPrecRound X q 1 .Floor).1.isZero = true
           · left
@@ -480,82 +509,107 @@ theorem agmFloatRatPrecRound_eq_or (x : AzFloat) (q : AzRat) (p : ℕ) [NeZero p
           · simp only [heq]
             have hab : finiteVal true e m ≠ AzRat.toRat q := fun h =>
               heq ((subRat_isZero_iff hx q).mpr h)
-            rcases eq_or_ne (zivLoop (agmFloatRatApprox X q) p mode (agmFuel p) (p + zivGuardBits))
-              (nan, .eq) with hzv | hzv
-            · right; exact hzv
-            · left
-              exact zivLoop_eq_of_ne_nan p mode _ (AGM _ _) (fun w hw => by
-                have : NeZero w := ⟨hw.ne'⟩
-                exact agmFloatRatApprox_spec hx ha hb hab w) _ _ (by unfold zivGuardBits; omega) hzv
+            exact Or.inr ⟨_, hx, ha, hb, hab, rfl⟩
+
+/-- **`agmFloatRatPrecRoundFuel` is the correctly rounded `AGM(x, q)`, unless the fuel runs
+out.** -/
+theorem agmFloatRatPrecRoundFuel_eq_or (fuel : ℕ) (x : AzFloat) (q : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    agmFloatRatPrecRoundFuel fuel x q p mode
+        = roundVal p mode (x.toVal.bind fun a => Spec.agm a (AzRat.toRat q : ℝ)) ∨
+      agmFloatRatPrecRoundFuel fuel x q p mode = (nan, .eq) := by
+  rcases agmFloatRatPrecRoundFuel_eq_or_loop fuel x q p mode with h | ⟨a, hx, ha, hb, hab, h⟩
+  · exact Or.inl h
+  · rw [h]
+    rcases eq_or_ne (zivLoop (agmFloatRatApprox x q) p mode fuel (p + zivGuardBits))
+      (nan, .eq) with hzv | hzv
+    · right; exact hzv
+    · left
+      rw [hx, Option.bind_some, Spec.agm_coe_coe ha hb]
+      exact zivLoop_eq_of_ne_nan p mode _ (AGM _ _) (fun w hw => by
+        have : NeZero w := ⟨hw.ne'⟩
+        exact agmFloatRatApprox_spec hx ha hb hab w) _ _ (by unfold zivGuardBits; omega) hzv
+
+/-- **`agmFloatRatPrecRound` is the correctly rounded `AGM(x, q)`, unless the fuel runs out.** -/
+theorem agmFloatRatPrecRound_eq_or (x : AzFloat) (q : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    agmFloatRatPrecRound x q p mode
+        = roundVal p mode (x.toVal.bind fun a => Spec.agm a (AzRat.toRat q : ℝ)) ∨
+      agmFloatRatPrecRound x q p mode = (nan, .eq) :=
+  agmFloatRatPrecRoundFuel_eq_or (agmFuel p) x q p mode
+
 
 /-! ### The main theorem -/
 
-/-- **`agmPrecRound` is the correctly rounded AGM, unless the fuel runs out** (which the
-transcendence of the AGM of distinct positive algebraic numbers rules out in principle). -/
-theorem agmPrecRound_eq_or (x y : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    agmPrecRound x y p mode = liftVal₂ Spec.agm x y p mode ∨
-      agmPrecRound x y p mode = (nan, .eq) := by
+/-- **The branches of `agmPrecRoundFuel`**: the correctly rounded value, whatever the fuel,
+or — for distinct positive floats — the fuel loop. -/
+theorem agmPrecRoundFuel_eq_or_loop (fuel : ℕ) (x y : AzFloat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    agmPrecRoundFuel fuel x y p mode = liftVal₂ Spec.agm x y p mode ∨
+      ∃ a b : ℝ, x.toVal = some (a : EReal) ∧ y.toVal = some (b : EReal) ∧ 0 < a ∧ 0 < b ∧
+        a ≠ b ∧ agmPrecRoundFuel fuel x y p mode
+          = zivLoop (agmApprox x y) p mode fuel (p + zivGuardBits) := by
   cases x with
-  | nan => left; simp [agmPrecRound, isNaN, liftVal₂]
+  | nan => left; simp [agmPrecRoundFuel, isNaN, liftVal₂]
   | infinity s =>
     cases y with
-    | nan => left; simp [agmPrecRound, isNaN, liftVal₂]
+    | nan => left; simp [agmPrecRoundFuel, isNaN, liftVal₂]
     | infinity t =>
       left
       cases s <;> cases t <;>
-        simp [agmPrecRound, isNaN, isNegative, isZero, isInfinite, liftVal₂, Spec.agm_top_of_pos,
+        simp [agmPrecRoundFuel, isNaN, isNegative, isZero, isInfinite, liftVal₂, Spec.agm_top_of_pos,
           Spec.agm_of_neg_left, Spec.agm_of_neg_right, EReal.bot_lt_zero, EReal.zero_lt_top]
     | zero =>
       left
-      cases s <;> simp [agmPrecRound, isNaN, isNegative, isZero, isInfinite, liftVal₂,
+      cases s <;> simp [agmPrecRoundFuel, isNaN, isNegative, isZero, isInfinite, liftVal₂,
         Spec.agm_top_zero, Spec.agm_of_neg_left, EReal.bot_lt_zero]
     | finite t e q m hv =>
       left
       cases s <;> cases t <;>
-        simp [agmPrecRound, isNaN, isNegative, isZero, isInfinite, liftVal₂,
+        simp [agmPrecRoundFuel, isNaN, isNegative, isZero, isInfinite, liftVal₂,
           Spec.agm_top_of_pos (finiteVal_true_pos_ereal e hv), Spec.agm_of_neg_left,
           Spec.agm_of_neg_right, EReal.bot_lt_zero, finiteVal_false_neg_ereal e hv]
   | zero =>
     cases y with
-    | nan => left; simp [agmPrecRound, isNaN, liftVal₂]
+    | nan => left; simp [agmPrecRoundFuel, isNaN, liftVal₂]
     | infinity t =>
       left
-      cases t <;> simp [agmPrecRound, isNaN, isNegative, isZero, isInfinite, liftVal₂,
+      cases t <;> simp [agmPrecRoundFuel, isNaN, isNegative, isZero, isInfinite, liftVal₂,
         Spec.agm_zero_top, Spec.agm_of_neg_right, EReal.bot_lt_zero]
     | zero =>
       left
-      simp [agmPrecRound, isNaN, isNegative, isZero, isInfinite, liftVal₂,
+      simp [agmPrecRoundFuel, isNaN, isNegative, isZero, isInfinite, liftVal₂,
         Spec.agm_zero_of_nonneg_ne_top le_rfl EReal.zero_ne_top]
     | finite t e q m hv =>
       left
-      cases t <;> simp [agmPrecRound, isNaN, isNegative, isZero, isInfinite, liftVal₂,
+      cases t <;> simp [agmPrecRoundFuel, isNaN, isNegative, isZero, isInfinite, liftVal₂,
         Spec.agm_of_neg_right, finiteVal_false_neg_ereal e hv,
         Spec.agm_zero_of_nonneg_ne_top (finiteVal_true_pos_ereal e hv).le (EReal.coe_ne_top _)]
   | finite s e q m hv =>
     cases y with
-    | nan => left; simp [agmPrecRound, isNaN, liftVal₂]
+    | nan => left; simp [agmPrecRoundFuel, isNaN, liftVal₂]
     | infinity t =>
       left
       cases s <;> cases t <;>
-        simp [agmPrecRound, isNaN, isNegative, isZero, isInfinite, liftVal₂,
+        simp [agmPrecRoundFuel, isNaN, isNegative, isZero, isInfinite, liftVal₂,
           Spec.agm_of_pos_top (finiteVal_true_pos_ereal e hv), Spec.agm_of_neg_left,
           Spec.agm_of_neg_right, EReal.bot_lt_zero, finiteVal_false_neg_ereal e hv]
     | zero =>
       left
-      cases s <;> simp [agmPrecRound, isNaN, isNegative, isZero, isInfinite, liftVal₂,
+      cases s <;> simp [agmPrecRoundFuel, isNaN, isNegative, isZero, isInfinite, liftVal₂,
         Spec.agm_of_neg_left, finiteVal_false_neg_ereal e hv,
         Spec.agm_of_nonneg_ne_top_zero (finiteVal_true_pos_ereal e hv).le (EReal.coe_ne_top _)]
     | finite t e' q' m' hv' =>
       cases s with
       | false =>
         left
-        simp [agmPrecRound, isNaN, isNegative, liftVal₂, Spec.agm_of_neg_left,
+        simp [agmPrecRoundFuel, isNaN, isNegative, liftVal₂, Spec.agm_of_neg_left,
           finiteVal_false_neg_ereal e hv]
       | true =>
         cases t with
         | false =>
           left
-          simp [agmPrecRound, isNaN, isNegative, liftVal₂, Spec.agm_of_neg_right,
+          simp [agmPrecRoundFuel, isNaN, isNegative, liftVal₂, Spec.agm_of_neg_right,
             finiteVal_false_neg_ereal e' hv']
         | true =>
           set X := finite true e q m hv with hX
@@ -564,10 +618,10 @@ theorem agmPrecRound_eq_or (x y : AzFloat) (p : ℕ) [NeZero p] (mode : Rounding
           have hy : Y.toVal = some ((finiteVal true e' m' : ℝ) : EReal) := rfl
           have ha := finiteVal_true_pos e hv
           have hb := finiteVal_true_pos e' hv'
-          have hred : agmPrecRound X Y p mode
+          have hred : agmPrecRoundFuel fuel X Y p mode
               = if eqIEEE X Y then setPrecRound X p mode
-                else zivLoop (agmApprox X Y) p mode (agmFuel p) (p + zivGuardBits) := by
-            simp [agmPrecRound, hX, hY, isNaN, isNegative, isZero, isInfinite]
+                else zivLoop (agmApprox X Y) p mode fuel (p + zivGuardBits) := by
+            simp [agmPrecRoundFuel, hX, hY, isNaN, isNegative, isZero, isInfinite]
           rw [hred, liftVal₂, hx, hy, Option.bind_some, Option.bind_some, Spec.agm_coe_coe ha hb]
           by_cases heq : eqIEEE X Y = true
           · left
@@ -582,12 +636,31 @@ theorem agmPrecRound_eq_or (x y : AzFloat) (p : ℕ) [NeZero p] (mode : Rounding
           · simp only [heq]
             have hab : finiteVal true e m ≠ finiteVal true e' m' := fun h =>
               heq ((eqIEEE_iff X Y).mpr ⟨_, hx, by rw [hy, h]⟩)
-            rcases eq_or_ne (zivLoop (agmApprox X Y) p mode (agmFuel p) (p + zivGuardBits))
-              (nan, .eq) with hz | hz
-            · right; exact hz
-            · left
-              exact zivLoop_eq_of_ne_nan p mode _ (AGM _ _) (fun w hw => by
-                have : NeZero w := ⟨hw.ne'⟩
-                exact agmApprox_spec hx hy ha hb hab w) _ _ (by unfold zivGuardBits; omega) hz
+            exact Or.inr ⟨_, _, hx, hy, ha, hb, hab, rfl⟩
+
+/-- **`agmPrecRoundFuel` is the correctly rounded AGM, unless the fuel runs out.** -/
+theorem agmPrecRoundFuel_eq_or (fuel : ℕ) (x y : AzFloat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    agmPrecRoundFuel fuel x y p mode = liftVal₂ Spec.agm x y p mode ∨
+      agmPrecRoundFuel fuel x y p mode = (nan, .eq) := by
+  rcases agmPrecRoundFuel_eq_or_loop fuel x y p mode with h | ⟨a, b, hx, hy, ha, hb, hab, h⟩
+  · exact Or.inl h
+  · rw [h]
+    rcases eq_or_ne (zivLoop (agmApprox x y) p mode fuel (p + zivGuardBits)) (nan, .eq)
+      with hz | hz
+    · right; exact hz
+    · left
+      rw [liftVal₂, hx, hy, Option.bind_some, Option.bind_some, Spec.agm_coe_coe ha hb]
+      exact zivLoop_eq_of_ne_nan p mode _ (AGM _ _) (fun w hw => by
+        have : NeZero w := ⟨hw.ne'⟩
+        exact agmApprox_spec hx hy ha hb hab w) _ _ (by unfold zivGuardBits; omega) hz
+
+/-- **`agmPrecRound` is the correctly rounded AGM, unless the fuel runs out** (which the
+transcendence of the AGM of distinct positive algebraic numbers rules out in principle). -/
+theorem agmPrecRound_eq_or (x y : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    agmPrecRound x y p mode = liftVal₂ Spec.agm x y p mode ∨
+      agmPrecRound x y p mode = (nan, .eq) :=
+  agmPrecRoundFuel_eq_or (agmFuel p) x y p mode
+
 
 end Azurite.AzFloat

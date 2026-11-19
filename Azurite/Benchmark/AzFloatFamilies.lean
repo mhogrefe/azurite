@@ -365,8 +365,16 @@ private def misc : List Entry :=
    F "lnAbsGamma" (fun x p m => (lnAbsGammaPrecRound x p m).1) [a "1/3", a "-7/3", a "-301/3"],
    R "lnAbsGammaRat" (fun q p m => (lnAbsGammaRatPrecRound q p m).1)
      [a "1/3", a "-7/3", a "-301/3"],
-   F "gamma" gammaPrecRound [a "1/3", a "150", a "301/3", a "-7/3", a "-301/3"],
-   R "gammaRat" gammaRatPrecRound [a "1/3", a "150", a "301/3", a "-7/3", a "-301/3"],
+   F "gamma" gammaPrecRound
+     [a "1/3", a "1/4", a "1/2", a "3/4", a "-5/2", a "150", a "301/2", a "301/3", a "-7/3",
+      a "-301/3"],
+   R "gammaRat" gammaRatPrecRound
+     [a "1/3", a "1/4", a "1/2", a "2/3", a "3/4", a "1/6", a "5/6", a "-1/3", a "1/5", a "150",
+      a "301/2", a "-301/6", a "4001/2", a "301/3", a "-7/3", a "-301/3"],
+   F "reciprocalGamma" reciprocalGammaPrecRound [a "1/3", a "1/2", a "-5/2"],
+   R "reciprocalGammaRat" reciprocalGammaRatPrecRound [a "1/5", a "1/6", a "-5/2"],
+   F "gammaOneQuarter" (fun _ => gammaOneQuarterPrecRound) [a "1"],
+   F "gammaOneThird" (fun _ => gammaOneThirdPrecRound) [a "1"],
    F "lnBeta x 5/2" (fun x => lnBetaPrecRound x fiveHalves) [a "1/3", a "150"],
    R "lnBetaRat q 5/2" (fun q => lnBetaRatPrecRound q (AzRat.parse "5/2").get!)
      [a "1/3", a "150"],

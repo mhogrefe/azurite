@@ -114,7 +114,7 @@ def betaReal (a b : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Orderi
       | some r => r
       | none =>
         if sumIsNonposInt a b then (zero, .eq)
-        else zivLoop (betaApprox a b) p mode gammaFuel (max 64 (p + 32))
+        else zivLoop (betaApprox a b) p mode (gammaFuel p) (max 64 (p + 32))
 
 /-- `B(+∞, y)`: `0` for `y > 0`, `NaN` otherwise. -/
 def betaInfinite (y : AzFloat) : AzFloat × Ordering :=

@@ -101,27 +101,6 @@ end Spec
 
 /-! ### Integer `y` -/
 
-/-- The truncation of an integer float, as a natural number, is its absolute value. -/
-theorem truncToAzInt_abs_of_int {y : AzFloat} {yv : ℝ} (hy : y.toVal = some (yv : EReal))
-    (hi : isInteger y = true) : (((truncToAzInt y).abs.toNat : ℕ) : ℝ) = |yv| := by
-  obtain ⟨k, rfl⟩ := (isInteger_iff_of_toVal hy).mp hi
-  obtain ⟨h1, -⟩ := truncToAzInt_spec hy
-  set z := truncToAzInt y
-  have hzk : z.toInt = k := by
-    have : |((z.toInt - k : ℤ) : ℝ)| < 1 := by push_cast; exact h1
-    have : |z.toInt - k| < 1 := by exact_mod_cast this
-    have := Int.abs_lt_one_iff.mp this
-    omega
-  have htoInt : z.toInt = if z.sign then (z.abs.toNat : ℤ) else -(z.abs.toNat : ℤ) := rfl
-  have : (z.abs.toNat : ℤ) = |k| := by
-    rw [← hzk, htoInt]
-    split_ifs
-    · exact (abs_of_nonneg (Int.natCast_nonneg _)).symm
-    · rw [abs_neg]; exact (abs_of_nonneg (Int.natCast_nonneg _)).symm
-  rw [show ((z.abs.toNat : ℕ) : ℝ) = ((z.abs.toNat : ℤ) : ℝ) by push_cast; rfl, this]
-  push_cast
-  rfl
-
 /-- **`genPochPole` decides whether `(x − n) ⋯ (x − 1)` vanishes.** -/
 theorem genPochPole_iff {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (n : ℕ) :
     genPochPole x n = true ↔ ∏ j ∈ range n, (xv - n + j) = 0 := by
@@ -230,7 +209,7 @@ theorem genPochNegInt_eq_or {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : 
   rw [ite_eq_right hpole, ite_eq_right (NeZero.ne p), ite_eq_right hne]
   split
   · next r hr => left; exact recipPochExact?_eq hx hne p mode hr
-  · rcases eq_or_ne (zivLoop (fun w => gammaApproxOf (recipPochCore x n w) w) p mode gammaFuel
+  · rcases eq_or_ne (zivLoop (fun w => gammaApproxOf (recipPochCore x n w) w) p mode (gammaFuel p)
       (max 64 (p + 32))) (nan, .eq) with hzv | hzv
     · right; exact hzv
     · left
@@ -379,7 +358,7 @@ theorem genPochReal_eq_or {x y : AzFloat} {xv yv : ℝ} (hx : x.toVal = some (xv
     rw [ite_eq_left hs, ite_eq_left ((sumIsNonposInt_iff hx hy).mp hs), roundVal_none]
   rw [ite_eq_right hs, ite_eq_right (NeZero.ne p),
     ite_eq_right (fun h => hs ((sumIsNonposInt_iff hx hy).mpr h))]
-  rcases eq_or_ne (zivLoop (fun w => gammaApproxOf (genPochCore x y w) w) p mode gammaFuel
+  rcases eq_or_ne (zivLoop (fun w => gammaApproxOf (genPochCore x y w) w) p mode (gammaFuel p)
     (max 64 (p + 32))) (nan, .eq) with hz | hz
   · right; exact hz
   · left

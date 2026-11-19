@@ -161,7 +161,7 @@ theorem digammaRatPrecRound_eq_or (q : AzRat) (p : ℕ) [NeZero p] (mode : Round
   · rename_i r hr
     left
     exact digammaRatTiny?_eq q h0 _ p mode hr
-  · rcases eq_or_ne (zivLoop (digammaRatApprox q (gammaRatExp q) q.sign) p mode lnGammaFuel
+  · rcases eq_or_ne (zivLoop (digammaRatApprox q (gammaRatExp q) q.sign) p mode (lnGammaFuel p)
       (digammaRatStart q (gammaRatExp q) p)) (nan, .eq) with hz | hz
     · right; exact hz
     · left

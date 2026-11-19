@@ -154,8 +154,9 @@ def gammaApprox (recip : Bool) (x : AzFloat) (e : AzInt) (pos : Bool) (w : Nat) 
     Roundable × Roundable :=
   gammaApproxOf (gammaCore recip x e pos w) w
 
-/-- The fuel of the Ziv loops for `Γ` and `1/Γ`: ten doublings of the working precision. -/
-def gammaFuel : Nat := 10
+/-- The fuel of the Ziv loops for `Γ`, `1/Γ` and the functions built on their brackets: the
+common convention `zivDefaultFuel`. -/
+def gammaFuel (p : Nat) : Nat := zivDefaultFuel p
 
 /-- **The tiny-argument path of `Γ`** for a finite `x` of exponent `e` and precision `q`: when
 `e ≤ −(p + 72)`, `−Γ(x)` lies in `(−1/x, −1/x + 2)`, so it is rounded (in the negated mode, the
@@ -197,5 +198,11 @@ def gammaIntBound (p : Nat) : Nat := 8 * p + 2048
 /-- Is `x` a positive integer at most `bound`? -/
 def gammaSmallInt (x : AzFloat) (bound : Nat) : Bool :=
   isInteger x && lt zero x && le x (ofAzNat (AzNat.ofNat bound))
+
+/-- Is `x` a quarter-integer that is not an integer (`x = n/4`, denominator `2` or `4`)?
+Then `Γ(x)` is irrational (`Azurite.Chudnovsky.irrational_gamma_of_den`, by Chudnovsky's
+theorem) and the Ziv loop needs no fuel (`gammaApprox_cert`, `Equiv/GammaCertificate.lean`). -/
+def gammaSpecial (x : AzFloat) : Bool :=
+  isInteger (x <<< AzInt.ofInt 2) && !isInteger x
 
 end Azurite.AzFloat

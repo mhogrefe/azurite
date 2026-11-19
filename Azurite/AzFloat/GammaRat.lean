@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Gamma
+import Azurite.AzFloat.GammaRatBracket
 import Azurite.AzFloat.LnGamma
 import Azurite.AzFloat.Conversion
 import Azurite.AzRat.Sub
@@ -38,44 +39,18 @@ value; `gammaRat q p` and `reciprocalGammaRat q p` round to nearest.
   of `q` (or of `1 − q`, an exact rational, for `q < 0`) for the bracket of `ln Γ`, and those
   of `|q − k|`, `k` the integer nearest to `q`, for the sine of the reflection formula.
 
+* **Denominators `2, 3, 4, 6`** (`gammaRatSpecial`): closed forms in `√π`, `Γ(1/4)`, `Γ(1/3)`
+  with an exact rational factor (`gammaSpecialFast?`, `AzFloat/GammaSpecial.lean`), and behind
+  them a certified loop without fuel (`gammaRatCertified`), since `Γ(q)` is irrational there
+  by Chudnovsky's theorem.
+
 The specifications `gammaRatPrecRound_eq_or` and `reciprocalGammaRatPrecRound_eq_or`
-("correctly rounded, or `NaN`") are in `Equiv/GammaRat.lean`.
+("correctly rounded, or `NaN`") and `gammaRatPrecRound_eq_of_special`,
+`reciprocalGammaRatPrecRound_eq_of_special` ("correctly rounded") are in
+`Equiv/GammaRat.lean`.
 -/
 
 namespace Azurite.AzFloat
-
-/-- An exponent `e` with `|q| < 2^e`, from the rounding of `q` away from zero. -/
-def gammaRatExp (q : AzRat) : AzInt :=
-  expOf (ofAzRatRound q 32 (if q.sign then .Ceiling else .Floor)).1
-
-/-- `(neg, S)` with `S` a positive enclosure of `|sin (π q)|` and `neg` the sign of
-`sin (π q)` (`true`: negative); `none` when `q` is an integer or the enclosure is not
-positive. -/
-def gammaRatSinEncl (q : AzRat) (W w : Nat) : Option (Bool × Encl) :=
-  let k := (q.round .Nearest).1
-  let d := q - k.toAzRat
-  if d.num = 0 then none
-  else gammaSinOfFrac (!d.sign) k (lnGammaRatEncl (if d.sign then d else -d) W) W w
-
-/-- `gammaCore` for a rational `q ≠ 0` that is positive (`pos`) or negative and not an
-integer, with `|q| < 2^e`. -/
-def gammaRatCore (recip : Bool) (q : AzRat) (e : AzInt) (pos : Bool) (w : Nat) :
-    Option (Bool × Encl) :=
-  if pos then
-    let wL := w + gammaLnBits e
-    (gammaExpEncl recip (lnGammaBracketEncl (lnGammaRatEncl q wL) e wL) w).map
-      fun b => (false, b)
-  else
-    let e' := (if e.sign then e else 0) + 1
-    let wL := w + gammaLnBits e'
-    gammaReflect recip
-      (gammaExpEncl false (lnGammaBracketEncl (lnGammaRatEncl (1 - q) wL) e' wL) w)
-      (gammaRatSinEncl q (w + 16) w) w
-
-/-- The bracket of `Γ(q)` or `1/Γ(q)` as a pair of `Roundable`s. -/
-def gammaRatApprox (recip : Bool) (q : AzRat) (e : AzInt) (pos : Bool) (w : Nat) :
-    Roundable × Roundable :=
-  gammaApproxOf (gammaRatCore recip q e pos w) w
 
 /-- Is `q` tiny at precision `p`: `|q| < 2^e` with `e ≤ −(p + 72)`, and `|q| ≤ 1/2` by its
 roundings at 64 bits (the latter is what the proofs use). -/
@@ -112,41 +87,93 @@ whose one-test path failed. -/
 def gammaRatStart (q : AzRat) (e : AzInt) (p : Nat) : Nat :=
   max 64 (p + 32 + (if gammaRatIsTiny q e p then e.abs.toNat else 0))
 
-/-- Is `q` a positive integer at most `bound`? -/
-def gammaRatSmallInt (q : AzRat) (bound : Nat) : Bool :=
-  decide (q.den = 1) && q.sign && decide (q.num ≤ AzNat.ofNat bound)
+/-- Is `q = 1/d`? -/
+def isUnitFraction (q : AzRat) (d : Nat) : Bool :=
+  q.sign && decide (q.num = 1) && decide (q.den = AzNat.ofNat d)
+
+/-- The certified Ziv loop of `Γ(q)` (`recip = false`) or `1/Γ(q)` for a rational `q` with
+denominator `2, 3, 4` or `6`: no fuel (`gammaRatApprox_cert`). -/
+def gammaRatCertified (recip : Bool) (q : AzRat) (hc : gammaRatSpecial q = true) (p : Nat)
+    [NeZero p] (mode : RoundingMode) : AzFloat × Ordering :=
+  zivLoopCertified (gammaRatApprox recip q (gammaRatExp q) q.sign) p mode (max 64 (p + 32))
+    (gammaRatApprox_cert recip hc _ p mode _ (by omega))
+
+/-- **`Γ(q)` with the fuel of its Ziv loop as an argument**: `Γ(q)` rounded to precision `p`
+with `mode`, and the comparison with the exact value (`(nan, .eq)` at the poles, for `p = 0`
+unless the value is `+∞`, or if the fuel runs out).  The specification is
+`gammaRatPrecRoundFuel_zivSpec` (`Equiv/GammaRat.lean`).
+
+* **The denominators `2, 3, 4, 6`** (`gammaRatSpecial`) go through `√π` and the AGM constants
+  `Γ(1/4)`, `Γ(1/3)` (`gammaSpecialFast?`, `AzFloat/GammaSpecial.lean`).  There `Γ(q)` is
+  irrational by Chudnovsky's theorem, so behind the constants stands a certified loop without
+  fuel (`gammaRatCertified`).
+* **Positive integers** beyond `gammaIntBound p`: `(n − 1)!` is no rounding boundary, and the
+  loop is a certified one (`gammaRatApprox_cert_int`). -/
+def gammaRatPrecRoundFuel (fuel : Nat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  if h0 : q.num = 0 then (infinity true, .eq)
+  else if hpole : q.den = 1 ∧ q.sign = false then (nan, .eq)
+  else if hp : p = 0 then (nan, .eq)
+  else
+    haveI : NeZero p := ⟨hp⟩
+    if hsm : gammaRatSmallInt q (gammaIntBound p) = true then
+      setPrecRound (ofAzNat (AzNat.factorial (q.num.toNat - 1))) p mode
+    else if hc : gammaRatSpecial q = true then
+      match gammaSpecialFast? false q.sign q.num q.den.toNat p mode with
+      | some r => nanOrElse r fun _ => gammaRatCertified false q hc p mode
+      | none => gammaRatCertified false q hc p mode
+    else if hI : q.den = 1 then
+      zivLoopCertified (gammaRatApprox false q (gammaRatExp q) q.sign) p mode (max 64 (p + 32))
+        (gammaRatApprox_cert_int false h0 hpole hsm hI _ mode _ (by omega))
+    else
+      let e := gammaRatExp q
+      match gammaRatTiny? q e p mode with
+      | some r => r
+      | none => zivLoop (gammaRatApprox false q e q.sign) p mode fuel (gammaRatStart q e p)
 
 /-- `Γ(q)` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` at the poles, for `p = 0` unless the value is `+∞`, or if the fuel runs out). -/
+(`(nan, .eq)` at the poles, for `p = 0` unless the value is `+∞`, or if the fuel runs out):
+`gammaRatPrecRoundFuel` at the fuel `gammaFuel p`.  No fuel is involved at the integers and
+for the denominators `2, 3, 4, 6`, where the result is always the correctly rounded value
+(`gammaRatPrecRound_eq_of_special`, `gammaRatPrecRound_eq_of_den_one`). -/
 def gammaRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  if q.num = 0 then (infinity true, .eq)
-  else if q.den = 1 ∧ q.sign = false then (nan, .eq)
-  else if p = 0 then (nan, .eq)
-  else if gammaRatSmallInt q (gammaIntBound p) then
-    setPrecRound (ofAzNat (AzNat.factorial (q.num.toNat - 1))) p mode
-  else
-    let e := gammaRatExp q
-    match gammaRatTiny? q e p mode with
-    | some r => r
-    | none => zivLoop (gammaRatApprox false q e q.sign) p mode gammaFuel (gammaRatStart q e p)
+  gammaRatPrecRoundFuel (gammaFuel p) q p mode
 
 /-- `Γ(q)` rounded to nearest at precision `p`. -/
 def gammaRat (q : AzRat) (p : Nat) : AzFloat := (gammaRatPrecRound q p .Nearest).1
 
+/-- **`1/Γ(q)` with the fuel of its Ziv loop as an argument** (`(nan, .eq)` for `p = 0`
+unless the value is `0`, or if the fuel runs out).  The branches are those of
+`gammaRatPrecRoundFuel`; the specification is `reciprocalGammaRatPrecRoundFuel_zivSpec`. -/
+def reciprocalGammaRatPrecRoundFuel (fuel : Nat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  if h0 : q.num = 0 then (zero, .eq)
+  else if hpole : q.den = 1 ∧ q.sign = false then (zero, .eq)
+  else if hp : p = 0 then (nan, .eq)
+  else
+    haveI : NeZero p := ⟨hp⟩
+    if hsm : gammaRatSmallInt q (gammaIntBound p) = true then
+      divPrecRound one (ofAzNat (AzNat.factorial (q.num.toNat - 1))) p mode
+    else if hc : gammaRatSpecial q = true then
+      match gammaSpecialFast? true q.sign q.num q.den.toNat p mode with
+      | some r => nanOrElse r fun _ => gammaRatCertified true q hc p mode
+      | none => gammaRatCertified true q hc p mode
+    else if hI : q.den = 1 then
+      zivLoopCertified (gammaRatApprox true q (gammaRatExp q) q.sign) p mode (max 64 (p + 32))
+        (gammaRatApprox_cert_int true h0 hpole hsm hI _ mode _ (by omega))
+    else
+      let e := gammaRatExp q
+      match reciprocalGammaRatTiny? q e p mode with
+      | some r => r
+      | none => zivLoop (gammaRatApprox true q e q.sign) p mode fuel (gammaRatStart q e p)
+
 /-- `1/Γ(q)` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` for `p = 0` unless the value is `0`, or if the fuel runs out). -/
+(`(nan, .eq)` for `p = 0` unless the value is `0`, or if the fuel runs out):
+`reciprocalGammaRatPrecRoundFuel` at the fuel `gammaFuel p`.  No fuel at the integers and for
+the denominators `2, 3, 4, 6`, as for `gammaRatPrecRound`. -/
 def reciprocalGammaRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) :
     AzFloat × Ordering :=
-  if q.num = 0 then (zero, .eq)
-  else if q.den = 1 ∧ q.sign = false then (zero, .eq)
-  else if p = 0 then (nan, .eq)
-  else if gammaRatSmallInt q (gammaIntBound p) then
-    divPrecRound one (ofAzNat (AzNat.factorial (q.num.toNat - 1))) p mode
-  else
-    let e := gammaRatExp q
-    match reciprocalGammaRatTiny? q e p mode with
-    | some r => r
-    | none => zivLoop (gammaRatApprox true q e q.sign) p mode gammaFuel (gammaRatStart q e p)
+  reciprocalGammaRatPrecRoundFuel (gammaFuel p) q p mode
 
 /-- `1/Γ(q)` rounded to nearest at precision `p`. -/
 def reciprocalGammaRat (q : AzRat) (p : Nat) : AzFloat :=

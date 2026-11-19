@@ -12,6 +12,8 @@ import Azurite.AzFloat.Ziv
 import Azurite.AzFloat.Compare
 import Azurite.AzFloat.GammaBracket
 import Azurite.AzFloat.LnEncl
+import Azurite.AzFloat.RoundToInteger
+import Azurite.AzFloat.Equiv.LnGammaCertificate
 
 /-!
 ## The logarithm of the gamma function, `ln Γ(x)` for `x > 0`
@@ -27,25 +29,15 @@ with the comparison against the exact value; `lnGamma x` rounds to nearest at th
   and Stirling's series with its proven remainder).  Near the zeros `x = 1` and `x = 2` the
   value is about `|x − 1|` or `|x − 2|` while the terms of the formula are of order `1`, so the
   first working precision is `p + 32` plus the bits lost there (`lnGammaCancelBits`).
-* **Fuel.**  The loop has fuel (`lnGammaFuel`, ten doublings): a termination certificate would
-  need `ln Γ(x)` to be irrational at the float `x`, which is known only in special cases.
+* **Fuel.**  The loop has fuel (`lnGammaFuel p`, the common `zivDefaultFuel`): a termination
+  certificate would need `ln Γ(x)` to be irrational at the float `x`, which is known only in
+  special cases.
   The specification `lnGammaPrecRound_eq_or` (`Equiv/LnGamma.lean`) is "correctly rounded, or
-  `NaN`"; the fuel is not exhausted unless the value lies within about `2^(−1000 p)` of a
-  rounding boundary.
+  `NaN`"; the fuel is not exhausted unless the value lies extremely close to a rounding
+  boundary.
 -/
 
 namespace Azurite.AzFloat
-
-/-- A bracket as a pair of `Roundable`s, the lower end lowered by `2^(−4w)` so that it is
-strictly below the value. -/
-def lnGammaApproxOf (b : Encl) (w : Nat) : Roundable × Roundable :=
-  let lo := (subPrecRound b.1 (powerOf2 (-(AzNat.ofNat (4 * w)).toAzInt)) (2 * w + 64) .Floor).1
-  (fun p mode => setPrecRound lo p mode, fun p mode => setPrecRound b.2 p mode)
-
-/-- The bracket of `ln Γ(x)` as a pair of `Roundable`s, the lower end strictly below the
-value. -/
-def lnGammaApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
-  lnGammaApproxOf (lnGammaBracket x e w) w
 
 /-- The bits lost near the zeros `x = 1` and `x = 2` of `ln Γ`: `k` when `x − 1` or `x − 2` is
 about `2^(−k)` (`q` is the precision of `x`). -/
@@ -56,25 +48,42 @@ def lnGammaCancelBits (x : AzFloat) (q : Nat) : Nat :=
   max (f (subPrecRound x one (q + 2) .Nearest).1)
     (f (subPrecRound x (ofAzNat (AzNat.ofNat 2)) (q + 2) .Nearest).1)
 
-/-- The fuel of the Ziv loop for `ln Γ`: ten doublings of the working precision. -/
-def lnGammaFuel : Nat := 10
+/-- The fuel of the Ziv loops for `ln Γ`, `ψ` and the functions built on their brackets: the
+common convention `zivDefaultFuel`. -/
+def lnGammaFuel (p : Nat) : Nat := zivDefaultFuel p
 
-/-- `ln Γ(x)` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` for `p = 0` unless the value is `0` or `+∞`, for `x < 0`, or if the fuel runs
-out). -/
-def lnGammaPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- **`ln Γ(x)` with the fuel of its Ziv loop as an argument**: `ln Γ(x)` rounded to precision
+`p` with `mode`, and the comparison with the exact value (`(nan, .eq)` for `p = 0` unless the
+value is `0` or `+∞`, for `x < 0`, or if the fuel runs out).  At an integer `n ≥ 3` the value
+`ln (n − 1)!` is irrational, and the loop is a certified one (`lnGammaApprox_cert_int`).  The
+specification is `lnGammaPrecRoundFuel_zivSpec` (`Equiv/LnGamma.lean`). -/
+def lnGammaPrecRoundFuel (fuel : Nat) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   match x with
   | nan => (nan, .eq)
   | infinity s => if s then (infinity true, .eq) else (nan, .eq)
   | zero => (infinity true, .eq)
   | finite false _ _ _ _ => (nan, .eq)
   | finite true e q m hv =>
-    if eqIEEE (finite true e q m hv) one
-        || eqIEEE (finite true e q m hv) (ofAzNat (AzNat.ofNat 2)) then (zero, .eq)
-    else if p = 0 then (nan, .eq)
+    if h12 : (eqIEEE (finite true e q m hv) one
+        || eqIEEE (finite true e q m hv) (ofAzNat (AzNat.ofNat 2))) = true then (zero, .eq)
+    else if hp : p = 0 then (nan, .eq)
     else
-      zivLoop (lnGammaApprox (finite true e q m hv) e) p mode lnGammaFuel
-        (max 64 (p + 32 + lnGammaCancelBits (finite true e q m hv) q))
+      haveI : NeZero p := ⟨hp⟩
+      if hI : isInteger (finite true e q m hv) = true then
+        zivLoopCertified (lnGammaApprox (finite true e q m hv) e) p mode
+          (max 64 (p + 32 + lnGammaCancelBits (finite true e q m hv) q))
+          (lnGammaApprox_cert_int hv h12 hI p mode _ (by omega))
+      else
+        zivLoop (lnGammaApprox (finite true e q m hv) e) p mode fuel
+          (max 64 (p + 32 + lnGammaCancelBits (finite true e q m hv) q))
+
+/-- `ln Γ(x)` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`(nan, .eq)` for `p = 0` unless the value is `0` or `+∞`, for `x < 0`, or if the fuel runs
+out): `lnGammaPrecRoundFuel` at the fuel `lnGammaFuel p`.  No fuel is involved at the
+integers. -/
+def lnGammaPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  lnGammaPrecRoundFuel (lnGammaFuel p) x p mode
 
 /-- `ln Γ(x)` rounded to nearest at the precision of `x`. -/
 def lnGamma (x : AzFloat) : AzFloat := (lnGammaPrecRound x (x.precision?.getD 1) .Nearest).1
@@ -142,23 +151,32 @@ def gammaSign (x : AzFloat) : Bool :=
   | finite false e q m hv => (truncToAzInt (finite false e q m hv)).isOdd
   | _ => true
 
-/-- `ln |Γ(x)|` rounded to precision `p` with `mode`, the comparison with the exact value, and
-the sign of `Γ(x)` (`true`: positive).  The first component is `(nan, .eq)` for `p = 0` unless
-the value is `0` or `+∞`, or if the fuel runs out. -/
-def lnAbsGammaPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) :
+/-- **`ln |Γ(x)|` with the fuel of its Ziv loop as an argument**: `ln |Γ(x)|` rounded to
+precision `p` with `mode`, the comparison with the exact value, and the sign of `Γ(x)` (`true`:
+positive).  The first component is `(nan, .eq)` for `p = 0` unless the value is `0` or `+∞`, or
+if the fuel runs out.  The specification is `lnAbsGammaPrecRoundFuel_zivSpec`. -/
+def lnAbsGammaPrecRoundFuel (fuel : Nat) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
     (AzFloat × Ordering) × Bool :=
   match x with
   | nan => ((nan, .eq), true)
   | infinity _ => ((infinity true, .eq), true)
   | zero => ((infinity true, .eq), true)
-  | finite true e q m hv => (lnGammaPrecRound (finite true e q m hv) p mode, true)
+  | finite true e q m hv => (lnGammaPrecRoundFuel fuel (finite true e q m hv) p mode, true)
   | finite false e q m hv =>
     if isInteger (finite false e q m hv) then ((infinity true, .eq), true)
     else
       (if p = 0 then (nan, .eq)
-        else zivLoop (lnAbsGammaApprox (finite false e q m hv) e) p mode lnGammaFuel
+        else zivLoop (lnAbsGammaApprox (finite false e q m hv) e) p mode fuel
           (max 64 (p + 32)),
         gammaSign (finite false e q m hv))
+
+/-- `ln |Γ(x)|` rounded to precision `p` with `mode`, the comparison with the exact value, and
+the sign of `Γ(x)` (`true`: positive): `lnAbsGammaPrecRoundFuel` at the fuel `lnGammaFuel p`.
+The first component is `(nan, .eq)` for `p = 0` unless the value is `0` or `+∞`, or if the
+fuel runs out. -/
+def lnAbsGammaPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) :
+    (AzFloat × Ordering) × Bool :=
+  lnAbsGammaPrecRoundFuel (lnGammaFuel p) x p mode
 
 /-- `ln |Γ(x)|` rounded to nearest at the precision of `x`, and the sign of `Γ(x)`. -/
 def lnAbsGamma (x : AzFloat) : AzFloat × Bool :=

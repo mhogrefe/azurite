@@ -121,3 +121,34 @@ private def t200' : String := "1606938044258990275541962092341162602522202993782
 #guard D (R ("1/" ++ t200') 53) == ("6.223015277861142e-61", .gt)
 #guard D (R ("-1/" ++ t200) 53) == ("-6.223015277861142e-61", .lt)
 #guard (G ("3/" ++ t200) 53 .Floor).2 == .lt && (R ("3/" ++ t200) 53 .Floor).2 == .lt
+
+-- denominators 2, 3, 4, 6: the certified loops (no fuel; `Γ(q)` is irrational)
+#guard ["1/2", "-1/2", "3/4", "2/3", "1/6", "5/6", "-1/3", "1/4", "1/3", "22/6"].all fun s =>
+  gammaRatSpecial (Q s)
+#guard ["1/5", "7", "7/12", "0", "-3"].all fun s => !gammaRatSpecial (Q s)
+#guard D (G "2/3" 53) == ("1.3541179394264005", .gt)
+#guard D (G "1/6" 53) == ("5.566316001780235", .lt)
+#guard D (G "5/6" 53 .Down) == ("1.128787029908126", .lt)
+#guard D (G "-1/3" 53) == ("-4.062353818279202", .lt)
+#guard D (G "1/3" 53) == ("2.6789385347077475", .lt)
+#guard D (G "1/4" 53) == ("3.625609908221908", .lt)
+#guard D (G "-17/6" 53) == ("-1.2859082955984287", .lt)
+#guard D (G "100/3" 53) == ("8.411595456441839e35", .gt)
+#guard D (G "1/2" 200)
+  == ("1.772453850905516027298167483341145182797549456122387128213808", .lt)
+#guard D (R "1/6" 53) == ("0.17965203550789735", .gt)
+#guard D (R "-5/2" 53) == ("-1.057855469152043", .gt)
+
+-- the same denominators through the constants (`gammaSpecialFast?`), with integer shifts
+#guard D (G "301/2" 53) == ("4.661072627097378e261", .gt)
+#guard D (G "-301/6" 53) == ("-1.0742431898422673e-64", .lt)
+#guard [(1, 2), (1, 3), (2, 3), (1, 4), (3, 4), (1, 6), (5, 6)].all fun (r, d) =>
+  (gammaBaseEncl r d 64).1.isFinite && (gammaBaseEncl r d 64).2.isFinite
+#guard (gammaSpecialFast? false true (AzNat.ofNat 1000001) 3 53 .Nearest).isNone
+#guard (gammaAP 1 3 4).toNat == 1 * 4 * 7 * 10
+
+-- no fuel at the integers: a certified loop beyond the factorial bound
+#guard D (gammaRatPrecRoundFuel 0 (Q "3000") 53 .Nearest) == ("1.383119867812618e9127", .lt)
+#guard D (reciprocalGammaRatPrecRoundFuel 0 (Q "3000") 53 .Nearest)
+  == ("7.230031346317684e-9128", .lt)
+#guard G "7/5" 53 == gammaRatPrecRoundFuel (gammaFuel 53) (Q "7/5") 53 .Nearest

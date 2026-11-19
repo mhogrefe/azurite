@@ -84,7 +84,7 @@ theorem genPochRatNegInt_eq_or (x : AzRat) {n : ℕ} (hn : n ≠ 0) (p : ℕ) [N
   · left
     exact recipPochIntQuot_eq (by rw [AzRat.toInt_toAzInt']; exact_mod_cast den_pos_real x)
       (mkNorm_div_den_eq x) hne p mode
-  · rcases eq_or_ne (zivLoop (recipPochRatApprox (x - (n : AzRat)) n) p mode gammaFuel
+  · rcases eq_or_ne (zivLoop (recipPochRatApprox (x - (n : AzRat)) n) p mode (gammaFuel p)
       (max 64 (p + 32))) (nan, .eq) with hzv | hzv
     · right; exact hzv
     · left
@@ -166,7 +166,7 @@ theorem genPochhammerRatPrecRound_eq_or (x y : AzRat) (p : ℕ) [NeZero p]
     rw [← hsum] at h
     exact hs ((nonpos_int_iff (x + y)).mpr h)
   rw [ite_eq_right hs, ite_eq_right (NeZero.ne p), ite_eq_right hns]
-  rcases eq_or_ne (zivLoop (genPochRatApprox x (x + y)) p mode gammaFuel (max 64 (p + 32)))
+  rcases eq_or_ne (zivLoop (genPochRatApprox x (x + y)) p mode (gammaFuel p) (max 64 (p + 32)))
     (nan, .eq) with hzv | hzv
   · right; exact hzv
   · left

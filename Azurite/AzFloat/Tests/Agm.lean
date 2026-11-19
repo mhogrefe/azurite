@@ -94,3 +94,10 @@ private def A (x y : String) (p : Nat) (mode : RoundingMode) : AzFloat × Orderi
 #guard D (agmFloatRatPrecRound (infinity true) (Q "1") 20 .Nearest) == ("Infinity", .eq)
 #guard (agmFloatRatPrecRound (infinity true) (Q "0") 20 .Nearest).1.isNaN
 #guard (agmFloatRatPrecRound nan (Q "1") 20 .Nearest).1.isNaN
+
+-- explicit fuel: the public functions are the variants at `agmFuel p`
+#guard A "1" "2" 53 .Nearest == agmPrecRoundFuel (agmFuel 53) (X "1" 53) (X "2" 53) 53 .Nearest
+#guard D (agmPrecRoundFuel 0 (X "1" 53) (X "2" 53) 53 .Nearest) == ("1.4567910310469068", .lt)
+#guard D (agmRatPrecRoundFuel 0 (Q "1/3") (Q "1/3") 53 .Nearest)
+  == ("0.3333333333333333", .lt)
+

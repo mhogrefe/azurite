@@ -75,7 +75,7 @@ def betaRatPrecRound (a b : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × 
       | some r => r
       | none =>
         if (a + b).den = 1 ∧ ((a + b).num = 0 ∨ (a + b).sign = false) then (zero, .eq)
-        else zivLoop (betaRatApprox a b (a + b)) p mode gammaFuel (max 64 (p + 32))
+        else zivLoop (betaRatApprox a b (a + b)) p mode (gammaFuel p) (max 64 (p + 32))
 
 /-- `B(a, b)` rounded to nearest at precision `p`. -/
 def betaRat (a b : AzRat) (p : Nat) : AzFloat := (betaRatPrecRound a b p .Nearest).1

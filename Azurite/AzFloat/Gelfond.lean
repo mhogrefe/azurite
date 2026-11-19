@@ -7,38 +7,35 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.ExpApprox
-import Azurite.AzFloat.PiBracket
+import Azurite.AzFloat.GelfondBracket
+import Azurite.AzFloat.Equiv.GelfondBracket
 
 /-!
 ## Gelfond's constant `e^π`
 
-`gelfondBracket w = expOfBracket (piBracket w) w` (`AzFloat/ExpApprox`: the exponential of a
-bracket, `AzFloat/Ramanujan` applies it to the bracket of `π √163`).  The Ziv
-loop (`zivLoop`) has fuel `gelfondFuel p` and the specification is "correctly rounded or `NaN`"
-(`Equiv/Gelfond.lean`): the termination certificate would need the irrationality of `e^π` —
-Gelfond's theorem (1929), not available in Mathlib (see the pending-irrationality ledger in
-`docs/azfloat_plan.md`).  The fuel is exhausted only if `e^π` lies within about `2^(−16p)` of a
-rounding boundary.
+`gelfondBracket w = expOfBracket (piBracket w) w` (`AzFloat/GelfondBracket.lean`;
+`AzFloat/ExpApprox`: the exponential of a bracket).  `e^π = (−1)^(−i)` is irrational —
+Gelfond's theorem (1929), here `Azurite.irrational_exp_pi`
+(`Transcendental/GelfondSchneider.lean`) — and the brackets converge, so the Ziv loop has a
+termination certificate (`gelfondApprox_cert`, `Equiv/GelfondBracket.lean`): no fuel is
+involved in the result, and the specification `gelfondPrecRound_eq_liftVal₀`
+(`Equiv/Gelfond.lean`) is "correctly rounded".
 -/
 
 namespace Azurite.AzFloat
 
-/-- The bracket of `e^π` at working precision `w`. -/
-def gelfondBracket (w : Nat) : AzFloat × AzFloat := expOfBracket (piBracket w) w
-
-/-- The two ends of the `e^π` bracket, rounded at any requested precision. -/
-def gelfondApprox (w : Nat) : Roundable × Roundable :=
-  let b := gelfondBracket w
-  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
-
-/-- The fuel of the Ziv loop for `e^π`: enough doublings to reach `16 (p + 64)` bits. -/
-def gelfondFuel (p : Nat) : Nat := zivFuel (16 * (p + zivGuardBits))
-
 /-- `e^π` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`NaN` at precision `0` or if the fuel runs out). -/
+(`NaN` at precision `0`).  The value is irrational (Gelfond's theorem,
+`Azurite.irrational_exp_pi`), so the Ziv loop has a termination certificate
+(`gelfondApprox_cert`) and the result is always the correctly rounded value
+(`gelfondPrecRound_eq_liftVal₀`); the loop with fuel in front of the certified one keeps the
+function evaluable by the kernel (`zivLoopBacked`). -/
 def gelfondPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  if p = 0 then (nan, .eq) else zivLoop gelfondApprox p mode (gelfondFuel p) (p + zivGuardBits)
+  if hp : p = 0 then (nan, .eq)
+  else
+    haveI : NeZero p := ⟨hp⟩
+    zivLoopBacked gelfondApprox p mode (zivDefaultFuel p) (p + zivGuardBits)
+      (gelfondApprox_cert p mode _ (by unfold zivGuardBits; omega))
 
 /-- `e^π` rounded to nearest at precision `p`. -/
 def gelfond (p : Nat) : AzFloat := (gelfondPrecRound p .Nearest).1

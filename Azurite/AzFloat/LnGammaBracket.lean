@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.LnEncl
+import Azurite.AzFloat.Ziv
 import Azurite.AzFloat.Conversion
 import Azurite.AzNat.TangentNumbers
 
@@ -150,5 +151,26 @@ def lnGammaBracket (x : AzFloat) (e : AzInt) (w : Nat) : Encl :=
 /-- The enclosure of a rational `q` by its roundings down and up at `w + 32` bits. -/
 def lnGammaRatEncl (q : AzRat) (w : Nat) : Encl :=
   ((ofAzRatRound q (w + 32) .Floor).1, (ofAzRatRound q (w + 32) .Ceiling).1)
+
+/-- A bracket as a pair of `Roundable`s, the lower end lowered by `2^(−4w)` so that it is
+strictly below the value. -/
+def lnGammaApproxOf (b : Encl) (w : Nat) : Roundable × Roundable :=
+  let lo := (subPrecRound b.1 (powerOf2 (-(AzNat.ofNat (4 * w)).toAzInt)) (2 * w + 64) .Floor).1
+  (fun p mode => setPrecRound lo p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- The bracket of `ln Γ(x)` as a pair of `Roundable`s, the lower end strictly below the
+value. -/
+def lnGammaApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
+  lnGammaApproxOf (lnGammaBracket x e w) w
+
+/-- The bracket of `ln Γ(q)` at Ziv level `w` for a rational `q > 0`. -/
+def lnGammaRatBracket (q : AzRat) (w : Nat) : Encl :=
+  lnGammaBracketEncl (lnGammaRatEncl q w)
+    ((lnGammaRatEncl q w).2.exponent?.getD (AzInt.ofInt 0)) w
+
+/-- The bracket of `ln Γ(q)` as a pair of `Roundable`s, the lower end strictly below the
+value. -/
+def lnGammaRatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
+  lnGammaApproxOf (lnGammaRatBracket q w) w
 
 end Azurite.AzFloat

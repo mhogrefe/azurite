@@ -12,6 +12,7 @@ import Azurite.AzFloat.Equiv.LnGammaBracket
 import Azurite.AzFloat.Equiv.ExpApprox
 import Azurite.AzFloat.Equiv.TanBracket
 import Azurite.AzFloat.Equiv.LnP1
+import Azurite.AzFloat.Equiv.RoundToInteger
 import Azurite.AzInt.Equiv.Parity
 import Azurite.Transcendental.GammaNearZero
 
@@ -442,5 +443,26 @@ theorem reciprocalGammaTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat}
   rw [fval_of_toVal_coe hhi] at hR2
   exact roundingPossible_eq p mode (v := (Real.Gamma xv)⁻¹) hR1 hR2 hG1.le (by linarith)
     (fun h' => absurd h' hG1.ne) h
+
+/-- The truncation of an integer float, as a natural number, is its absolute value. -/
+theorem truncToAzInt_abs_of_int {y : AzFloat} {yv : ℝ} (hy : y.toVal = some (yv : EReal))
+    (hi : isInteger y = true) : (((truncToAzInt y).abs.toNat : ℕ) : ℝ) = |yv| := by
+  obtain ⟨k, rfl⟩ := (isInteger_iff_of_toVal hy).mp hi
+  obtain ⟨h1, -⟩ := truncToAzInt_spec hy
+  set z := truncToAzInt y
+  have hzk : z.toInt = k := by
+    have : |((z.toInt - k : ℤ) : ℝ)| < 1 := by push_cast; exact h1
+    have : |z.toInt - k| < 1 := by exact_mod_cast this
+    have := Int.abs_lt_one_iff.mp this
+    omega
+  have htoInt : z.toInt = if z.sign then (z.abs.toNat : ℤ) else -(z.abs.toNat : ℤ) := rfl
+  have : (z.abs.toNat : ℤ) = |k| := by
+    rw [← hzk, htoInt]
+    split_ifs
+    · exact (abs_of_nonneg (Int.natCast_nonneg _)).symm
+    · rw [abs_neg]; exact (abs_of_nonneg (Int.natCast_nonneg _)).symm
+  rw [show ((z.abs.toNat : ℕ) : ℝ) = ((z.abs.toNat : ℤ) : ℝ) by push_cast; rfl, this]
+  push_cast
+  rfl
 
 end Azurite.AzFloat

@@ -129,7 +129,7 @@ def pochReal (x : AzFloat) (n p : Nat) (mode : RoundingMode) : AzFloat × Orderi
   else
     match pochExact? x n p mode with
     | some r => r
-    | none => zivLoop (pochApprox x n) p mode gammaFuel (max 64 (p + 32))
+    | none => zivLoop (pochApprox x n) p mode (gammaFuel p) (max 64 (p + 32))
 
 /-- `(x)ₙ` rounded to precision `p` with `mode`, and the comparison with the exact value
 (`(nan, .eq)` for `p = 0` unless the value is `0` or infinite, or if the fuel runs out). -/

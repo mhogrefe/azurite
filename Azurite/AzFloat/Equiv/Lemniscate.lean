@@ -15,10 +15,10 @@ import Azurite.BrentZimmermann.Chapter4.Lemniscate
 /-!
 # Equivalence: the lemniscate constant
 
-`lemniscateConstantPrecRound p mode` is `liftVal₀ ϖ p mode` or the `NaN` fallback
-(`lemniscateConstantPrecRound_eq_or`), with `ϖ = 2∫₀¹ dt/√(1 − t⁴)` (`BZ.lemniscate`): the
-product of the brackets of `π` and `G` brackets `π · G = ϖ` (`lemniscate_eq_pi_mul_gauss`),
-strictly from below.
+`lemniscateConstantPrecRound p mode` is `liftVal₀ ϖ p mode`, unconditionally
+(**`lemniscateConstantPrecRound_eq_liftVal₀`**: `ϖ` is irrational by Chudnovsky's theorem),
+with `ϖ = 2∫₀¹ dt/√(1 − t⁴)` (`BZ.lemniscate`): the product of the brackets of `π` and `G`
+brackets `π · G = ϖ` (`lemniscate_eq_pi_mul_gauss`), strictly from below.
 -/
 
 namespace Azurite.AzFloat
@@ -51,16 +51,24 @@ theorem lemniscateApprox_spec {w : ℕ} (hw : 64 ≤ w) :
   · have := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
     rwa [fval_of_toVal_coe hhi] at this
 
-/-- **The lemniscate constant is correctly rounded, unless the fuel runs out.** -/
+/-- **The lemniscate constant is correctly rounded**: it is irrational
+(`irrational_lemniscate`, Chudnovsky's theorem) and the Ziv loop has a termination
+certificate. -/
+theorem lemniscateConstantPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    lemniscateConstantPrecRound p mode = liftVal₀ (some ((BZ.lemniscate : ℝ) : EReal)) p mode := by
+  unfold lemniscateConstantPrecRound liftVal₀
+  rw [dite_eq_right (NeZero.ne p)]
+  exact zivLoopBacked_eq p mode lemniscateApprox
+    (not_mem_floatSet_of_irrational p irrational_lemniscate) 64
+    (fun w hw => Or.inl (by
+      obtain ⟨lv, hv, h1, h2, h3, h4, -⟩ := lemniscateApprox_spec hw
+      exact ⟨lv, hv, h1, h2, h3, h4⟩))
+    _ _ (by unfold zivGuardBits; omega) (by unfold zivGuardBits; omega) _
+
+/-- The lemniscate constant is correctly rounded (the weaker form, kept for its users). -/
 theorem lemniscateConstantPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :
     lemniscateConstantPrecRound p mode = liftVal₀ (some ((BZ.lemniscate : ℝ) : EReal)) p mode ∨
-      lemniscateConstantPrecRound p mode = (nan, .eq) := by
-  unfold lemniscateConstantPrecRound liftVal₀
-  rcases eq_or_ne (zivLoop lemniscateApprox p mode (agmFuel p) (p + zivGuardBits)) (nan, .eq)
-    with hz | hz
-  · right; exact hz
-  · left
-    exact zivLoop_eq_of_ne_nan_threshold p mode _ _ 64 (fun w hw => lemniscateApprox_spec hw) _ _
-      (by unfold zivGuardBits; omega) hz
+      lemniscateConstantPrecRound p mode = (nan, .eq) :=
+  Or.inl (lemniscateConstantPrecRound_eq_liftVal₀ p mode)
 
 end Azurite.AzFloat

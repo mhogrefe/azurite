@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.Equiv.Constants
 import Azurite.AzFloat.Equiv.Pow2Bracket
 import Azurite.AzFloat.GelfondSchneider
+import Azurite.AzFloat.Equiv.GelfondBracket
 
 /-!
 # Equivalence: the Gelfond–Schneider constant
@@ -17,10 +18,10 @@ import Azurite.AzFloat.GelfondSchneider
 `sqrt2Ln2Bracket_spec` (a strict enclosure of `√2 ln 2` of width at most `1`: the lower end is
 strict since the float below `√2` is rational), `gelfondSchneiderBracket_spec` (a strict
 enclosure of `2^√2`, from `expOfBracket_spec`), `gelfondSchneiderApprox_spec`, and
-`gelfondSchneiderPrecRound_eq_or`: `gelfondSchneiderPrecRound p mode` is the correctly rounded
-`2^√2` (`liftVal₀ (some (2^√2))`) unless the fuel runs out (`(nan, .eq)`).  A termination
-certificate would need `Irrational (2^√2)` (the Gelfond–Schneider theorem), which is not
-available.
+**`gelfondSchneiderPrecRound_eq_liftVal₀`**: `gelfondSchneiderPrecRound p mode` is the correctly
+rounded `2^√2` (`liftVal₀ (some (2^√2))`), unconditionally: `2^√2` is irrational by the
+Gelfond–Schneider theorem (`Transcendental/GelfondSchneider.lean`) and the Ziv loop has a
+termination certificate (`Equiv/GelfondBracket.lean`).
 -/
 
 namespace Azurite.AzFloat
@@ -104,21 +105,25 @@ theorem gelfondSchneiderApprox_spec {w : ℕ} (hw : 64 ≤ w) :
     rw [fval_of_toVal_coe hhi] at hR
     exact hR
 
-/-- **`2^√2` is correctly rounded unless the fuel runs out.** -/
+/-- **`2^√2` is correctly rounded**: the value is irrational (the Gelfond–Schneider theorem,
+`Azurite.irrational_two_rpow_sqrt_two`), and the Ziv loop has a termination certificate. -/
+theorem gelfondSchneiderPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    gelfondSchneiderPrecRound p mode
+      = liftVal₀ (some (((2 : ℝ) ^ Real.sqrt 2 : ℝ) : EReal)) p mode := by
+  unfold gelfondSchneiderPrecRound liftVal₀
+  rw [dite_eq_right (NeZero.ne p)]
+  exact zivLoopBacked_eq p mode gelfondSchneiderApprox
+    (not_mem_floatSet_of_irrational p irrational_two_rpow_sqrt_two) 64
+    (fun w hw => Or.inl (by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi⟩ := gelfondSchneiderApprox_spec hw
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi⟩))
+    _ _ (by unfold zivGuardBits; omega) (by unfold zivGuardBits; omega) _
+
+/-- `2^√2` is correctly rounded (the weaker form, kept for its users). -/
 theorem gelfondSchneiderPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :
     gelfondSchneiderPrecRound p mode
         = liftVal₀ (some (((2 : ℝ) ^ Real.sqrt 2 : ℝ) : EReal)) p mode ∨
-      gelfondSchneiderPrecRound p mode = (nan, .eq) := by
-  unfold gelfondSchneiderPrecRound liftVal₀
-  rw [ite_eq_right (NeZero.ne p)]
-  rcases eq_or_ne (zivLoop gelfondSchneiderApprox p mode (gelfondSchneiderFuel p)
-    (p + zivGuardBits)) (nan, .eq) with hz | hz
-  · right; exact hz
-  · left
-    exact zivLoop_eq_of_ne_nan_threshold p mode gelfondSchneiderApprox ((2 : ℝ) ^ Real.sqrt 2) 64
-      (fun w hw => by
-        obtain ⟨lv, hv, hl, hh, hlo, hhi⟩ := gelfondSchneiderApprox_spec hw
-        exact ⟨lv, hv, hl, hh, hlo.le, hhi, fun h => absurd h hlo.ne⟩)
-      _ _ (by unfold zivGuardBits; omega) hz
+      gelfondSchneiderPrecRound p mode = (nan, .eq) :=
+  Or.inl (gelfondSchneiderPrecRound_eq_liftVal₀ p mode)
 
 end Azurite.AzFloat

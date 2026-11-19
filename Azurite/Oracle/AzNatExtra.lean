@@ -28,6 +28,7 @@ import Azurite.AzNat.Lucas
 import Azurite.AzNat.Primorial
 import Azurite.AzNat.Bell
 import Azurite.AzNat.Landau
+import Azurite.AzNat.TangentNumbers
 import Azurite.AzVector.DotSign
 import Azurite.AzVector.DotSignInt
 import Azurite.AzVector.DotSignRat
@@ -683,6 +684,10 @@ def checkBellNumbersPrefix : String → Verdict :=
 `landau_function_prefix(n)`. -/
 def checkLandauFunctionPrefix : String → Verdict :=
   checkIndexedList "landau_function_prefix" AzNat.landauFunctionPrefix
+
+/-- `tangent_numbers_prefix(n) = [T(1), …, T(n)]`, for Malachite's `tangent_numbers_prefix(n)`. -/
+def checkTangentNumbersPrefix : String → Verdict :=
+  checkIndexedList "tangent_numbers_prefix" fun n => (AzNat.tangentNumbers n).toList
 
 /-! ### Vectors -/
 

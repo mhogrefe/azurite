@@ -742,6 +742,96 @@ def checkBigExponentFloatAcotPi : String → Verdict :=
 def checkBigExponentFloatAcotPiRational : String → Verdict :=
   withBigExponentFloatNames checkFloatAcotPiRational
 
+def checkBigExponentFloatSinh : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinh
+
+def checkBigExponentFloatSinhRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinhRational
+
+def checkBigExponentFloatCosh : String → Verdict :=
+  withBigExponentFloatNames checkFloatCosh
+
+def checkBigExponentFloatCoshRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatCoshRational
+
+def checkBigExponentFloatSinhCosh : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinhCosh
+
+def checkBigExponentFloatSinhCoshRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinhCoshRational
+
+def checkBigExponentFloatTanh : String → Verdict :=
+  withBigExponentFloatNames checkFloatTanh
+
+def checkBigExponentFloatTanhRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatTanhRational
+
+def checkBigExponentFloatSech : String → Verdict :=
+  withBigExponentFloatNames checkFloatSech
+
+def checkBigExponentFloatSechRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSechRational
+
+/-- The hyperbolic cosecant has a pole at `0`, where Azurite gives `+∞` and a `BigExponentFloat`
+`NaN`, so both forms go through `poleAsNaN`. -/
+def checkBigExponentFloatCsch : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryWith "csch"
+    (fun x p m => poleAsNaN (AzFloat.cschPrecRound x p m))
+
+def checkBigExponentFloatCschRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRational "csch_rational"
+    (fun q p m => poleAsNaN (AzFloat.cschRatPrecRound q p m))
+
+/-- The hyperbolic cotangent has a pole at `0`, where Azurite gives `+∞` and a `BigExponentFloat`
+`NaN`, so both forms go through `poleAsNaN`. -/
+def checkBigExponentFloatCoth : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryWith "coth"
+    (fun x p m => poleAsNaN (AzFloat.cothPrecRound x p m))
+
+def checkBigExponentFloatCothRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRational "coth_rational"
+    (fun q p m => poleAsNaN (AzFloat.cothRatPrecRound q p m))
+
+def checkBigExponentFloatAsinh : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsinh
+
+def checkBigExponentFloatAsinhRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsinhRational
+
+def checkBigExponentFloatAcosh : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcosh
+
+def checkBigExponentFloatAcoshRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcoshRational
+
+def checkBigExponentFloatAtanh : String → Verdict :=
+  withBigExponentFloatNames checkFloatAtanh
+
+def checkBigExponentFloatAtanhRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAtanhRational
+
+def checkBigExponentFloatAsech : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsech
+
+def checkBigExponentFloatAsechRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsechRational
+
+/-- The inverse hyperbolic cosecant has a pole at `0`, where Azurite gives `+∞` and a
+`BigExponentFloat` `NaN`, so both forms go through `poleAsNaN`. -/
+def checkBigExponentFloatAcsch : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryWith "acsch"
+    (fun x p m => poleAsNaN (AzFloat.acschPrecRound x p m))
+
+def checkBigExponentFloatAcschRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRational "acsch_rational"
+    (fun q p m => poleAsNaN (AzFloat.acschRatPrecRound q p m))
+
+def checkBigExponentFloatAcoth : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcoth
+
+def checkBigExponentFloatAcothRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcothRational
+
 /-- `y·z`, formed exactly. -/
 def exactProduct (y z : AzFloat) : AzFloat :=
   (AzFloat.mulPrecRound y z (exactProductPrecision [y, z]) .Nearest).1

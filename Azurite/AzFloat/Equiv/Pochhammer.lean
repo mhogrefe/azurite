@@ -268,7 +268,7 @@ theorem pochReal_eq_or {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal
   rw [ite_eq_right hz, ite_eq_right (NeZero.ne p)]
   split
   · next r hr => left; exact pochExact?_eq hx p mode hr
-  · rcases eq_or_ne (zivLoop (pochApprox x n) p mode gammaFuel (max 64 (p + 32)))
+  · rcases eq_or_ne (zivLoop (pochApprox x n) p mode (gammaFuel p) (max 64 (p + 32)))
       (nan, .eq) with hzv | hzv
     · right; exact hzv
     · left

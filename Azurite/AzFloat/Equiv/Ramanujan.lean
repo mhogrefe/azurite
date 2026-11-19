@@ -15,8 +15,10 @@ import Azurite.AzFloat.Equiv.SqrtPiBracket
 # Equivalence: Ramanujan's constant
 
 `piSqrt163Bracket_spec` (a strict enclosure of `π √163` of width at most `1`),
-`ramanujanBracket_spec`, `ramanujanApprox_spec`, and `ramanujanPrecRound_eq_or`:
-`ramanujanPrecRound p mode` is the correctly rounded `e^(π √163)` unless the fuel runs out.
+`ramanujanBracket_spec`, `ramanujanApprox_spec`, and **`ramanujanPrecRound_eq_liftVal₀`**:
+`ramanujanPrecRound p mode` is the correctly rounded `e^(π √163)`, unconditionally (the value is
+irrational by the Gelfond–Schneider theorem, and the Ziv loop has a termination certificate,
+`Equiv/GelfondBracket.lean`).
 -/
 
 namespace Azurite.AzFloat
@@ -97,22 +99,25 @@ theorem ramanujanApprox_spec {w : ℕ} (hw : 64 ≤ w) :
     rw [fval_of_toVal_coe hhi] at hR
     exact hR
 
-/-- **`e^(π √163)` is correctly rounded unless the fuel runs out.** -/
+/-- **`e^(π √163)` is correctly rounded**: the value is irrational (the Gelfond–Schneider
+theorem, `Azurite.irrational_exp_pi_sqrt`), and the Ziv loop has a termination certificate. -/
+theorem ramanujanPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    ramanujanPrecRound p mode
+      = liftVal₀ (some ((Real.exp (Real.pi * Real.sqrt 163) : ℝ) : EReal)) p mode := by
+  unfold ramanujanPrecRound liftVal₀
+  rw [dite_eq_right (NeZero.ne p)]
+  exact zivLoopBacked_eq p mode ramanujanApprox
+    (not_mem_floatSet_of_irrational p irrational_ramanujan) 64
+    (fun w hw => Or.inl (by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi⟩ := ramanujanApprox_spec hw
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi⟩))
+    _ _ (by unfold zivGuardBits; omega) (by unfold zivGuardBits; omega) _
+
+/-- `e^(π √163)` is correctly rounded (the weaker form, kept for its users). -/
 theorem ramanujanPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :
     ramanujanPrecRound p mode
         = liftVal₀ (some ((Real.exp (Real.pi * Real.sqrt 163) : ℝ) : EReal)) p mode ∨
-      ramanujanPrecRound p mode = (nan, .eq) := by
-  unfold ramanujanPrecRound liftVal₀
-  rw [ite_eq_right (NeZero.ne p)]
-  rcases eq_or_ne (zivLoop ramanujanApprox p mode (ramanujanFuel p) (p + zivGuardBits))
-    (nan, .eq) with hz | hz
-  · right; exact hz
-  · left
-    exact zivLoop_eq_of_ne_nan_threshold p mode ramanujanApprox
-      (Real.exp (Real.pi * Real.sqrt 163)) 64
-      (fun w hw => by
-        obtain ⟨lv, hv, hl, hh, hlo, hhi⟩ := ramanujanApprox_spec hw
-        exact ⟨lv, hv, hl, hh, hlo.le, hhi, fun h => absurd h hlo.ne⟩)
-      _ _ (by unfold zivGuardBits; omega) hz
+      ramanujanPrecRound p mode = (nan, .eq) :=
+  Or.inl (ramanujanPrecRound_eq_liftVal₀ p mode)
 
 end Azurite.AzFloat

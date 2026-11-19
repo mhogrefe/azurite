@@ -85,7 +85,7 @@ def genPochNegInt (x : AzFloat) (n p : Nat) (mode : RoundingMode) : AzFloat × O
     match recipPochExact? x n p mode with
     | some r => r
     | none =>
-      zivLoop (fun w => gammaApproxOf (recipPochCore x n w) w) p mode gammaFuel
+      zivLoop (fun w => gammaApproxOf (recipPochCore x n w) w) p mode (gammaFuel p)
         (max 64 (p + 32))
 
 /-! ### A `y` that is not an integer -/
@@ -135,7 +135,7 @@ def genPochReal (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
   else if sumIsNonposInt x y then (nan, .eq)
   else if p = 0 then (nan, .eq)
   else
-    zivLoop (fun w => gammaApproxOf (genPochCore x y w) w) p mode gammaFuel (max 64 (p + 32))
+    zivLoop (fun w => gammaApproxOf (genPochCore x y w) w) p mode (gammaFuel p) (max 64 (p + 32))
 
 /-- `Γ(x + y)/Γ(x)` rounded to precision `p` with `mode`, and the comparison with the exact
 value (`(nan, .eq)` at a pole, for an infinite argument, for `p = 0` unless the value is `0`,

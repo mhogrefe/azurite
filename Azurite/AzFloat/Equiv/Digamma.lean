@@ -116,7 +116,7 @@ theorem digammaPrecRound_eq_or (x : AzFloat) (p : ℕ) [NeZero p] (mode : Roundi
       rw [Spec.digamma_coe hx0 hnp]
       split
       · next r hT => left; exact digammaTiny?_eq hv p mode hT
-      · rcases eq_or_ne (zivLoop (digammaApprox (finite s e q m hv) e s) p mode lnGammaFuel
+      · rcases eq_or_ne (zivLoop (digammaApprox (finite s e q m hv) e s) p mode (lnGammaFuel p)
           (digammaStart e p)) (nan, .eq) with hz | hz
         · right; exact hz
         · left

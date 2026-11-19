@@ -72,7 +72,7 @@ def pochhammerRatPrecRound (q : AzRat) (n p : Nat) (mode : RoundingMode) : AzFlo
   else
     match pochRatExact? q n p mode with
     | some r => r
-    | none => zivLoop (pochRatApprox q n) p mode gammaFuel (max 64 (p + 32))
+    | none => zivLoop (pochRatApprox q n) p mode (gammaFuel p) (max 64 (p + 32))
 
 /-- `(q)ₙ` rounded to nearest at precision `p`. -/
 def pochhammerRat (q : AzRat) (n p : Nat) : AzFloat := (pochhammerRatPrecRound q n p .Nearest).1

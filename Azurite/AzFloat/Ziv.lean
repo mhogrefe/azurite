@@ -87,6 +87,13 @@ def zivGuardBits : Nat := 64
 working precision of at least `W` bits: the bit length of `W` doublings. -/
 def zivFuel (W : Nat) : Nat := (AzNat.ofNat W).size
 
+/-- **The fuel of the fuel-bound Ziv loops** at precision `p`: enough doublings for a working
+precision of `16 (p + zivGuardBits)` bits from any start (`zivFuel`).  One convention for every
+function whose value is not known to be irrational (so that no termination certificate is
+available): the loop gives up (`NaN`) only far beyond any precision that is computed in
+practice. -/
+def zivDefaultFuel (p : Nat) : Nat := zivFuel (16 * (p + zivGuardBits))
+
 end Azurite.AzFloat
 
 namespace Azurite.AzFloat
@@ -125,6 +132,26 @@ where
       · rw [hf _ hlt'] at hspec; exact Bool.false_ne_true hspec
       · rw [heq, hr] at hspec; exact Bool.false_ne_true hspec
     omega
+
+/-- `r`, or `f ()` when `r` is `NaN`: a fuel-bound loop that ran out hands over to a certified
+one. -/
+def nanOrElse (r : AzFloat × Ordering) (f : Unit → AzFloat × Ordering) : AzFloat × Ordering :=
+  match r with
+  | (nan, _) => f ()
+  | r => r
+
+/-- **Ziv's loop with fuel, backed by the certified loop.**  The fuel loop is structurally
+recursive, so the kernel can evaluate it (`decide +kernel` on a result, as in
+`Transcendental/Ramanujan.lean`), which it cannot do with the well-founded recursion of
+`zivLoopCertified`; should the fuel run out, the certified loop takes over from the same
+start.  With a certificate the result is always the correctly rounded value
+(`zivLoopBacked_eq`, `Equiv/ZivSpec.lean`). -/
+def zivLoopBacked (approx : Nat → Roundable × Roundable) (p : Nat) (mode : RoundingMode)
+    (fuel w₀ : Nat)
+    (h : ∃ f : Nat,
+      (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
+    AzFloat × Ordering :=
+  nanOrElse (zivLoop approx p mode fuel w₀) fun _ => zivLoopCertified approx p mode w₀ h
 
 /-- An optional answer computed only when the cheap condition `c` holds.  Lean evaluates
 arguments eagerly: a fast path of the shape `f (expensive) cond`, with `f` testing `cond` before

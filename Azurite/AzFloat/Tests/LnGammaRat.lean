@@ -182,3 +182,11 @@ private def viaGamma (s : String) (m : RoundingMode) : Bool :=
 #guard lnAbsGammaRat (Q "-1/3") 53 == ((L "-1/3" 53).1.1, false)
 
 end LnAbsGammaRatTests
+
+-- explicit fuel; no fuel at the integers (ln (n − 1)! is irrational from 3 on)
+#guard D (lnGammaRatPrecRoundFuel 0 (Q "100") 53 .Nearest) == ("359.1342053695754", .lt)
+#guard D (lnGammaRatPrecRoundFuel 0 (Q "3") 53 .Floor) == ("0.6931471805599453", .lt)
+#guard D (lnAbsGammaRatPrecRoundFuel 0 (Q "100") 53 .Nearest).1 == ("359.1342053695754", .lt)
+#guard D (lnAbsGammaRatPrecRoundFuel 0 (Q "-5/2") 53 .Nearest).1
+  == ("-0.056243716497674054", .lt)
+#guard G "7/5" 53 == lnGammaRatPrecRoundFuel (lnGammaFuel 53) (Q "7/5") 53 .Nearest

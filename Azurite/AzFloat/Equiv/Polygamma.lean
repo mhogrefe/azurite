@@ -250,7 +250,7 @@ theorem polygammaPrecRound_eq_or (n : ℕ) (x : AzFloat) (p : ℕ) [NeZero p]
       rw [Spec.polygamma_coe hn hx0 hnp]
       split
       · next r hT => left; exact polygammaTiny?_eq hn1 hv p mode hT
-      · rcases eq_or_ne (zivLoop (polygammaApprox n (finite s e q m hv) s p) p mode lnGammaFuel
+      · rcases eq_or_ne (zivLoop (polygammaApprox n (finite s e q m hv) s p) p mode (lnGammaFuel p)
           (polygammaStart n e p)) (nan, .eq) with hz | hz
         · right; exact hz
         · left

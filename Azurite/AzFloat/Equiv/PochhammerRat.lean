@@ -78,7 +78,7 @@ theorem pochhammerRatPrecRound_eq_or (q : AzRat) (n p : ℕ) [NeZero p] (mode : 
     subst hr
     exact pochIntQuot_eq (by rw [AzRat.toInt_toAzInt']; exact_mod_cast den_pos_real q)
       (mkNorm_div_den_eq q) n p mode
-  · rcases eq_or_ne (zivLoop (pochRatApprox q n) p mode gammaFuel (max 64 (p + 32)))
+  · rcases eq_or_ne (zivLoop (pochRatApprox q n) p mode (gammaFuel p) (max 64 (p + 32)))
       (nan, .eq) with hzv | hzv
     · right; exact hzv
     · left
