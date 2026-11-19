@@ -92,6 +92,7 @@ import Azurite.AzFloat.Tests.ExpM1
 import Azurite.AzFloat.Tests.ExpM1Rat
 import Azurite.AzFloat.Tests.ExpRat
 import Azurite.AzFloat.Tests.Factorial
+import Azurite.AzFloat.Tests.FallingFactorial
 import Azurite.AzFloat.Tests.Float64
 import Azurite.AzFloat.Tests.Float64Emulate
 import Azurite.AzFloat.Tests.Gamma
@@ -103,6 +104,8 @@ import Azurite.AzFloat.Tests.GdInvRat
 import Azurite.AzFloat.Tests.GdRat
 import Azurite.AzFloat.Tests.Gelfond
 import Azurite.AzFloat.Tests.GelfondSchneider
+import Azurite.AzFloat.Tests.GenPochhammer
+import Azurite.AzFloat.Tests.GenPochhammerRat
 import Azurite.AzFloat.Tests.HexString
 import Azurite.AzFloat.Tests.LambertW
 import Azurite.AzFloat.Tests.LambertWRat
@@ -142,6 +145,8 @@ import Azurite.AzFloat.Tests.Pi
 import Azurite.AzFloat.Tests.PiConstants
 import Azurite.AzFloat.Tests.Pochhammer
 import Azurite.AzFloat.Tests.PochhammerRat
+import Azurite.AzFloat.Tests.Polygamma
+import Azurite.AzFloat.Tests.PolygammaRat
 import Azurite.AzFloat.Tests.Pow
 import Azurite.AzFloat.Tests.Pow10
 import Azurite.AzFloat.Tests.Pow2

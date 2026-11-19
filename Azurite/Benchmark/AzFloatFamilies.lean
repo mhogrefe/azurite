@@ -103,7 +103,12 @@ import Azurite.AzFloat.LogBaseExact
 import Azurite.AzFloat.Beta
 import Azurite.AzFloat.BetaRat
 import Azurite.AzFloat.Pochhammer
+import Azurite.AzFloat.Polygamma
+import Azurite.AzFloat.PolygammaRat
 import Azurite.AzFloat.Factorial
+import Azurite.AzFloat.GenPochhammer
+import Azurite.AzFloat.GenPochhammerRat
+import Azurite.AzFloat.FallingFactorial
 import Azurite.AzFloat.PochhammerRat
 import Azurite.AzFloat.LnBetaRat
 import Azurite.AzFloat.LnGamma
@@ -391,6 +396,33 @@ private def misc : List Entry :=
    R "factorial" (fun q => factorialPrecRound q.num)
      [a "20", a "150", a "2000", a "100000", a "1000000000000000000"],
    R "pochhammerRat q 600" (fun q => pochhammerRatPrecRound q 600) [a "1/3", a "-901/3"],
+   F "fallingFactorial x 201" (fun x => fallingFactorialPrecRound x 201) [a "1/3", a "301/3"],
+   R "fallingFactorialRat q 201" (fun q => fallingFactorialRatPrecRound q 201)
+     [a "1/3", a "301/3"],
+   R "fallingFactorialRat q 10^6+1" (fun q => fallingFactorialRatPrecRound q 1000001)
+     [a "1/3", a "301/3"],
+   F "genPochhammer x 5/2" (fun x => genPochhammerPrecRound x fiveHalves)
+     [a "1/3", a "150", a "-7/3", sh "3" 100],
+   F "genPochhammer x -7/3" (fun x => genPochhammerPrecRound x (-sevenThirds))
+     [a "1/3", a "150", a "-1/3"],
+   F "genPochhammer x -200" (fun x => genPochhammerPrecRound x (-(ofAzNat (AzNat.ofNat 200))))
+     [a "1/3", a "301/3"],
+   R "genPochhammerRat q 5/2" (fun q => genPochhammerRatPrecRound q (AzRat.parse "5/2").get!)
+     [a "1/3", a "150", a "-7/3"],
+   R "genPochhammerRat q -7/3" (fun q => genPochhammerRatPrecRound q (AzRat.parse "-7/3").get!)
+     [a "1/3", a "150", a "-1/3"],
+   R "genPochhammerRat q -200" (fun q => genPochhammerRatPrecRound q (AzRat.parse "-200").get!)
+     [a "1/3", a "301/3"],
+   F "trigamma" trigammaPrecRound
+     [a "1/3", a "3/2", a "150", a "-201/2", a "-301/3", tiny, sh "1/3" (-1000)],
+   F "polygamma 2" (polygammaPrecRound 2) [a "1/3", a "150", a "-201/2", a "-301/3"],
+   F "polygamma 10" (polygammaPrecRound 10) [a "1/3", a "150", a "-201/2", a "-301/3"],
+   F "polygamma 100" (polygammaPrecRound 100) [a "1/3", a "150"],
+   R "trigammaRat" trigammaRatPrecRound
+     [a "1/3", a "3/2", a "150", a "-201/2", a "-301/3", a "-1000000000000000001/3"],
+   R "polygammaRat 2" (polygammaRatPrecRound 2) [a "1/3", a "150", a "-201/2", a "-301/3"],
+   R "polygammaRat 10" (polygammaRatPrecRound 10) [a "1/3", a "150", a "-201/2", a "-301/3"],
+   R "polygammaRat 100" (polygammaRatPrecRound 100) [a "1/3", a "150"],
    F "psiZero 0" (fun _ => psiZeroPrecRound 0) [a "1"],
    F "psiZero 1" (fun _ => psiZeroPrecRound 1) [a "1"],
    F "psiZero 1000" (fun _ => psiZeroPrecRound 1000) [a "1"],

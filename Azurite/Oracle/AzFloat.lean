@@ -118,6 +118,38 @@ import Azurite.AzFloat.Sec
 import Azurite.AzFloat.SecWithPeriod
 import Azurite.AzFloat.Csc
 import Azurite.AzFloat.Cot
+import Azurite.AzFloat.Atan
+import Azurite.AzFloat.AtanRat
+import Azurite.AzFloat.AtanWithPeriod
+import Azurite.AzFloat.AtanRatWithPeriod
+import Azurite.AzFloat.AtanPi
+import Azurite.AzFloat.Atan2
+import Azurite.AzFloat.Atan2Rat
+import Azurite.AzFloat.Atan2WithPeriod
+import Azurite.AzFloat.Atan2RatWithPeriod
+import Azurite.AzFloat.Atan2Pi
+import Azurite.AzFloat.Asin
+import Azurite.AzFloat.AsinRat
+import Azurite.AzFloat.AsinWithPeriod
+import Azurite.AzFloat.AsinRatWithPeriod
+import Azurite.AzFloat.AsinPi
+import Azurite.AzFloat.Acos
+import Azurite.AzFloat.AcosRat
+import Azurite.AzFloat.AcosWithPeriod
+import Azurite.AzFloat.AcosRatWithPeriod
+import Azurite.AzFloat.AcosPi
+import Azurite.AzFloat.Asec
+import Azurite.AzFloat.AsecRat
+import Azurite.AzFloat.AsecWithPeriod
+import Azurite.AzFloat.AsecPi
+import Azurite.AzFloat.Acsc
+import Azurite.AzFloat.AcscRat
+import Azurite.AzFloat.AcscWithPeriod
+import Azurite.AzFloat.AcscPi
+import Azurite.AzFloat.Acot
+import Azurite.AzFloat.AcotRat
+import Azurite.AzFloat.AcotWithPeriod
+import Azurite.AzFloat.AcotPi
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -1299,12 +1331,13 @@ shapes: `(x).{name}(a…) = r`, `(x).{name}_prec[_round][_ref](a…, p[, rm]) = 
 `(x).{name}_round[_ref](a…, rm) = (r, o)`, and the assignments
 `x := x; x.{name}[…]_assign(a…, …) = o; x = r` (or with no `= o`). Only the tags `prec`, `round`,
 `ref`, and `assign` may follow the name, so `ln` does not match `ln_1_plus_x`. The precision
-defaults to `x`'s and the mode to `Nearest`. A method named in `aliases` (such as the trait
-method `log_base` for `log_base_float_base`) is read as `name` with no tags. Returns the method,
-`x`, `a`, `p`, the rounding mode, the printed result `r`, and whether `r` is printed with an
-ordering. -/
+defaults to `defaultPrec x a` (`x`'s when it is `none`) and the mode to `Nearest`. A method named
+in `aliases` (such as the trait method `log_base` for `log_base_float_base`) is read as `name` with
+no tags. Returns the method, `x`, `a`, `p`, the rounding mode, the printed result `r`, and whether
+`r` is printed with an ordering. -/
 def readFloatUnaryLine {α : Type} (name : String) (n : Nat) (parseLead : List String → Option α)
-    (line : String) (aliases : List String := []) :
+    (line : String) (aliases : List String := [])
+    (defaultPrec : Option (AzFloat → α → Nat) := none) :
     Except Failure (String × (AzFloat × Bool) × α × Nat × Rounding × String × Bool) := do
   let (x, method, args, res, withOrdering) ← if line.startsWith "x := " then
       match line.splitOn "; " with
@@ -1340,7 +1373,9 @@ def readFloatUnaryLine {α : Type} (name : String) (n : Nat) (parseLead : List S
   let x ← expect "x" (parseFloat (stripRef x))
   let p ← match p with
     | some p => expect "precision" (parseNat p)
-    | none => pure (x.1.precision?.getD 1)
+    | none => pure <| match defaultPrec with
+      | some d => d x.1 a
+      | none => x.1.precision?.getD 1
   let rm ← match rm with
     | some rm => expect "rounding mode" (parseRounding rm)
     | none => pure (.mode .Nearest)
@@ -1350,8 +1385,10 @@ def readFloatUnaryLine {α : Type} (name : String) (n : Nat) (parseLead : List S
 def checkFloatUnaryArgsWith {α : Type} (name : String) (n : Nat)
     (parseLead : List String → Option α)
     (f : AzFloat → α → Nat → RoundingMode → AzFloat × Ordering) (line : String)
-    (aliases : List String := []) : Verdict := do
-  let (method, x, a, p, rm, res, withOrdering) ← readFloatUnaryLine name n parseLead line aliases
+    (aliases : List String := []) (defaultPrec : Option (AzFloat → α → Nat) := none) :
+    Verdict := do
+  let (method, x, a, p, rm, res, withOrdering) ←
+    readFloatUnaryLine name n parseLead line aliases defaultPrec
   let computed ← roundedResult method (f x.1 a p) rm
   if withOrdering then expectFloatPair method computed (← parseFloatPair res)
   else
@@ -2252,6 +2289,239 @@ def checkFloatCotPi (line : String) : Verdict :=
 /-- `Float::cot_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.cotPiRatPrecRound`. -/
 def checkFloatCotPiRational : String → Verdict :=
   checkFloatOfRational "cot_pi_rational" AzFloat.cotPiRatPrecRound
+
+/-- `Float`'s `atan` family, against `AzFloat.atanPrecRound`. -/
+def checkFloatAtan : String → Verdict := checkFloatUnaryWith "atan" AzFloat.atanPrecRound
+
+/-- `Float::atan_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.atanRatPrecRound`. -/
+def checkFloatAtanRational : String → Verdict :=
+  checkFloatOfRational "atan_rational" AzFloat.atanRatPrecRound
+
+/-- `Float`'s `atan_with_period` family (`(x).atan_with_period[…](u, …)`), against
+`AzFloat.atanWithPeriodPrecRound`. -/
+def checkFloatAtanWithPeriod : String → Verdict :=
+  checkFloatUnaryArgsWith "atan_with_period" 1 parseLogBase
+    (fun x u => AzFloat.atanWithPeriodPrecRound x u)
+
+/-- `Float::atan_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.atanRatWithPeriodPrecRound`. -/
+def checkFloatAtanWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "atan_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.atanRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `atan_pi` family, against `AzFloat.atanPiPrecRound`. -/
+def checkFloatAtanPi : String → Verdict := checkFloatUnaryWith "atan_pi" AzFloat.atanPiPrecRound
+
+/-- `Float::atan_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.atanPiRatPrecRound`. -/
+def checkFloatAtanPiRational : String → Verdict :=
+  checkFloatOfRational "atan_pi_rational" AzFloat.atanPiRatPrecRound
+
+/-- An `atan2` function `f y x p m` at Malachite's arguments, `y` with its negative-zero flag `yNeg`
+and `x` as printed. Malachite follows IEEE 754 for signed zeros: `atan2(±0, x)` is `±0` for `x`
+positive or `+0` and `±π` for `x` negative or `-0`, where Azurite, with no signed zero, reads every
+zero as `+0`. So for a zero `y`, a `-0` `x` is replaced by `-1`, which has the same angle, and for
+`y = -0` the result is negated (computed in the negated mode); any other argument has the same
+value on both sides. -/
+def malachiteAtan2 (f : AzFloat → AzFloat → Nat → RoundingMode → AzFloat × Ordering)
+    (yNeg : Bool) (y : AzFloat) (x : AzFloat × Bool) (p : Nat) (m : RoundingMode) :
+    AzFloat × Ordering :=
+  if y matches .zero then
+    let x' := if x.2 then -AzFloat.one else x.1
+    if yNeg then
+      let r := f .zero x' p (-m)
+      (-r.1, r.2.swap)
+    else f .zero x' p m
+  else f y x.1 p m
+
+/-- The precision of Malachite's `atan2` without a precision: the larger of the arguments'. -/
+def atan2Precision (y : AzFloat) (x : AzFloat × Bool) : Nat := combined y x.1
+
+/-- `Float`'s `atan2` family, `(y).atan2[…](x, …)`, against `AzFloat.atan2PrecRound` (through
+`malachiteAtan2`). -/
+def checkFloatAtan2 (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "atan2" 1 (fun | [x] => parseFloat (stripRef x) | _ => none)
+    (malachiteAtan2 AzFloat.atan2PrecRound (negativeZeroArgument line)) line []
+    (some atan2Precision)
+
+/-- `Float::atan2_rational_prec[_round][_ref](y, x, p[, rm])`, against
+`AzFloat.atan2RatPrecRound`. -/
+def checkFloatAtan2Rational : String → Verdict :=
+  checkFloatOfRationalArgsWith "atan2_rational" 1 (fun | [x] => parseAzRat (stripRef x) | _ => none)
+    AzFloat.atan2RatPrecRound
+
+/-- `x` and the period `u` of an `atan2_with_period` line. -/
+def parseAtan2Period (parseX : String → Option α) : List String → Option (α × UInt64)
+  | [x, u] => do pure ((← parseX (stripRef x)), (← parseLogBase [u]))
+  | _ => none
+
+/-- `Float`'s `atan2_with_period` family, `(y).atan2_with_period[…](x, u, …)`, against
+`AzFloat.atan2WithPeriodPrecRound` (through `malachiteAtan2`). -/
+def checkFloatAtan2WithPeriod (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "atan2_with_period" 2 (parseAtan2Period parseFloat)
+    (fun y xu => malachiteAtan2 (fun y x => AzFloat.atan2WithPeriodPrecRound y x xu.2)
+      (negativeZeroArgument line) y xu.1) line [] (some fun y xu => atan2Precision y xu.1)
+
+/-- `Float::atan2_with_period_rational_prec[_round][_ref](y, x, u, p[, rm])`, against
+`AzFloat.atan2RatWithPeriodPrecRound`. -/
+def checkFloatAtan2WithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "atan2_with_period_rational" 2 (parseAtan2Period parseAzRat)
+    (fun y xu => AzFloat.atan2RatWithPeriodPrecRound y xu.1 xu.2)
+
+/-- `Float`'s `atan2_pi` family, `(y).atan2_pi[…](x, …)`, against `AzFloat.atan2PiPrecRound`
+(through `malachiteAtan2`). -/
+def checkFloatAtan2Pi (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "atan2_pi" 1 (fun | [x] => parseFloat (stripRef x) | _ => none)
+    (malachiteAtan2 AzFloat.atan2PiPrecRound (negativeZeroArgument line)) line []
+    (some atan2Precision)
+
+/-- `Float::atan2_pi_rational_prec[_round][_ref](y, x, p[, rm])`, against
+`AzFloat.atan2PiRatPrecRound`. -/
+def checkFloatAtan2PiRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "atan2_pi_rational" 1
+    (fun | [x] => parseAzRat (stripRef x) | _ => none) AzFloat.atan2PiRatPrecRound
+
+/-- `Float`'s `asin` family, against `AzFloat.asinPrecRound`. -/
+def checkFloatAsin : String → Verdict := checkFloatUnaryWith "asin" AzFloat.asinPrecRound
+
+/-- `Float::asin_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.asinRatPrecRound`. -/
+def checkFloatAsinRational : String → Verdict :=
+  checkFloatOfRational "asin_rational" AzFloat.asinRatPrecRound
+
+/-- `Float`'s `asin_with_period` family (`(x).asin_with_period[…](u, …)`), against
+`AzFloat.asinWithPeriodPrecRound`. -/
+def checkFloatAsinWithPeriod : String → Verdict :=
+  checkFloatUnaryArgsWith "asin_with_period" 1 parseLogBase
+    (fun x u => AzFloat.asinWithPeriodPrecRound x u)
+
+/-- `Float::asin_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.asinRatWithPeriodPrecRound`. -/
+def checkFloatAsinWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "asin_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.asinRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `asin_pi` family, against `AzFloat.asinPiPrecRound`. -/
+def checkFloatAsinPi : String → Verdict := checkFloatUnaryWith "asin_pi" AzFloat.asinPiPrecRound
+
+/-- `Float::asin_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.asinPiRatPrecRound`. -/
+def checkFloatAsinPiRational : String → Verdict :=
+  checkFloatOfRational "asin_pi_rational" AzFloat.asinPiRatPrecRound
+
+/-- `Float`'s `acos` family, against `AzFloat.acosPrecRound`. -/
+def checkFloatAcos : String → Verdict := checkFloatUnaryWith "acos" AzFloat.acosPrecRound
+
+/-- `Float::acos_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.acosRatPrecRound`. -/
+def checkFloatAcosRational : String → Verdict :=
+  checkFloatOfRational "acos_rational" AzFloat.acosRatPrecRound
+
+/-- `Float`'s `acos_with_period` family (`(x).acos_with_period[…](u, …)`), against
+`AzFloat.acosWithPeriodPrecRound`. -/
+def checkFloatAcosWithPeriod : String → Verdict :=
+  checkFloatUnaryArgsWith "acos_with_period" 1 parseLogBase
+    (fun x u => AzFloat.acosWithPeriodPrecRound x u)
+
+/-- `Float::acos_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.acosRatWithPeriodPrecRound`. -/
+def checkFloatAcosWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "acos_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.acosRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `acos_pi` family, against `AzFloat.acosPiPrecRound`. -/
+def checkFloatAcosPi : String → Verdict := checkFloatUnaryWith "acos_pi" AzFloat.acosPiPrecRound
+
+/-- `Float::acos_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.acosPiRatPrecRound`. -/
+def checkFloatAcosPiRational : String → Verdict :=
+  checkFloatOfRational "acos_pi_rational" AzFloat.acosPiRatPrecRound
+
+/-- `Float`'s `asec` family, against `AzFloat.asecPrecRound`. -/
+def checkFloatAsec : String → Verdict := checkFloatUnaryWith "asec" AzFloat.asecPrecRound
+
+/-- `Float::asec_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.asecRatPrecRound`. -/
+def checkFloatAsecRational : String → Verdict :=
+  checkFloatOfRational "asec_rational" AzFloat.asecRatPrecRound
+
+/-- `Float`'s `asec_with_period` family (`(x).asec_with_period[…](u, …)`), against
+`AzFloat.asecWithPeriodPrecRound`. -/
+def checkFloatAsecWithPeriod : String → Verdict :=
+  checkFloatUnaryArgsWith "asec_with_period" 1 parseLogBase
+    (fun x u => AzFloat.asecWithPeriodPrecRound x u)
+
+/-- `Float::asec_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.asecRatWithPeriodPrecRound`. -/
+def checkFloatAsecWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "asec_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.asecRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `asec_pi` family, against `AzFloat.asecPiPrecRound`. -/
+def checkFloatAsecPi : String → Verdict := checkFloatUnaryWith "asec_pi" AzFloat.asecPiPrecRound
+
+/-- `Float::asec_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.asecPiRatPrecRound`. -/
+def checkFloatAsecPiRational : String → Verdict :=
+  checkFloatOfRational "asec_pi_rational" AzFloat.asecPiRatPrecRound
+
+/-- `Float`'s `acsc` family, against `AzFloat.acscPrecRound`. -/
+def checkFloatAcsc : String → Verdict := checkFloatUnaryWith "acsc" AzFloat.acscPrecRound
+
+/-- `Float::acsc_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.acscRatPrecRound`. -/
+def checkFloatAcscRational : String → Verdict :=
+  checkFloatOfRational "acsc_rational" AzFloat.acscRatPrecRound
+
+/-- `Float`'s `acsc_with_period` family (`(x).acsc_with_period[…](u, …)`), against
+`AzFloat.acscWithPeriodPrecRound`. -/
+def checkFloatAcscWithPeriod : String → Verdict :=
+  checkFloatUnaryArgsWith "acsc_with_period" 1 parseLogBase
+    (fun x u => AzFloat.acscWithPeriodPrecRound x u)
+
+/-- `Float::acsc_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.acscRatWithPeriodPrecRound`. -/
+def checkFloatAcscWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "acsc_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.acscRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `acsc_pi` family, against `AzFloat.acscPiPrecRound`. -/
+def checkFloatAcscPi : String → Verdict := checkFloatUnaryWith "acsc_pi" AzFloat.acscPiPrecRound
+
+/-- `Float::acsc_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.acscPiRatPrecRound`. -/
+def checkFloatAcscPiRational : String → Verdict :=
+  checkFloatOfRational "acsc_pi_rational" AzFloat.acscPiRatPrecRound
+
+/-- Malachite's arccotangent of `-0.0` is the negative side of the jump at zero, `-π/2` (or a
+negative quarter turn, or `-1/2`), where Azurite, with one zero only, gives the positive side;
+`negZero` marks such an argument, and negates Azurite's value, computed in the negated mode, as the
+arccotangent's oddness does elsewhere. -/
+def acotNegativeZero (negZero : Bool) (f : RoundingMode → AzFloat × Ordering)
+    (mode : RoundingMode) : AzFloat × Ordering :=
+  if negZero then let r := f (-mode); (-r.1, r.2.swap) else f mode
+
+/-- `Float`'s `acot` family, against `AzFloat.acotPrecRound` (through `acotNegativeZero`). -/
+def checkFloatAcot (line : String) : Verdict :=
+  checkFloatUnaryWith "acot"
+    (fun x p => acotNegativeZero (negativeZeroArgument line) (AzFloat.acotPrecRound x p)) line
+
+/-- `Float::acot_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.acotRatPrecRound`. -/
+def checkFloatAcotRational : String → Verdict :=
+  checkFloatOfRational "acot_rational" AzFloat.acotRatPrecRound
+
+/-- `Float`'s `acot_with_period` family (`(x).acot_with_period[…](u, …)`), against
+`AzFloat.acotWithPeriodPrecRound` (through `acotNegativeZero`). -/
+def checkFloatAcotWithPeriod (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "acot_with_period" 1 parseLogBase
+    (fun x u p =>
+      acotNegativeZero (negativeZeroArgument line) (AzFloat.acotWithPeriodPrecRound x u p)) line
+
+/-- `Float::acot_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.acotRatWithPeriodPrecRound`. -/
+def checkFloatAcotWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "acot_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.acotRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `acot_pi` family, against `AzFloat.acotPiPrecRound` (through `acotNegativeZero`). -/
+def checkFloatAcotPi (line : String) : Verdict :=
+  checkFloatUnaryWith "acot_pi"
+    (fun x p => acotNegativeZero (negativeZeroArgument line) (AzFloat.acotPiPrecRound x p)) line
+
+/-- `Float::acot_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.acotPiRatPrecRound`. -/
+def checkFloatAcotPiRational : String → Verdict :=
+  checkFloatOfRational "acot_pi_rational" AzFloat.acotPiRatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound

@@ -8990,6 +8990,225 @@ User request.  `factorialPrecRound (n : AzNat) p mode`, `factorial n p`
 
 
 
+### 5f. The falling factorial (DONE 2026-11-18, fuel-based)
+
+User request.  `fallingFactorialPrecRound x n p mode`, `fallingFactorial x n` for a float,
+`fallingFactorialRatPrecRound q n p mode`, `fallingFactorialRat q n p` for an `AzRat`
+(`AzFloat/FallingFactorial.lean`, `Equiv/FallingFactorial.lean`,
+`Tests/FallingFactorial.lean`).
+
+* `x (x − 1) ⋯ (x − n + 1) = (−1)ⁿ (−x)ₙ`: Pochhammer's symbol at `−x` for an even `n`, its
+  negation in the opposite rounding mode for an odd `n` (`negRounded`, `roundVal_neg`).
+  Nothing new is computed: the exact zero (`x` an integer with `0 ≤ x < n`), the exact path
+  and the loop are those of 5c/5d.
+* Specification: Mathlib's `(descPochhammer ℝ n).eval x` (`Spec.fallingFactorial n`); `1` for
+  `n = 0`, `+∞` at `+∞`, `(−1)ⁿ ∞` at `−∞`.  `fallingFactorialPrecRound_eq_or`,
+  `fallingFactorialRatPrecRound_eq_or`, both through `falling_of_rising`.
+* Tests: against exact rational products for even and odd `n` in the directed modes, the
+  reflection `= (x − n + 1)ₙ`, agreement of the float and rational functions.
+* Cost: that of Pochhammer's symbol (benchmark rows `fallingFactorial…` in `family:misc`).
+
+### 5g. The generalized Pochhammer symbol `Γ(x + y)/Γ(x)` (DONE 2026-11-18, fuel-based, TIMED)
+
+User request.  `genPochhammerPrecRound x y p mode`, `genPochhammer x y` for floats
+(`AzFloat/GenPochhammer.lean`, `Equiv/GenPochhammer.lean`, `Tests/GenPochhammer.lean`).
+
+* **Specification** `Spec.genPochhammerReal x y` — the quotient continued to the poles of
+  `Γ(x)` wherever it has a limit:
+  * integer `y ≥ 0`: the polynomial `x (x + 1) ⋯ (x + y − 1)`;
+  * integer `y < 0`: `1/((x + y) ⋯ (x − 1))`, undefined (`NaN`) at `x = 1, …, −y`;
+  * otherwise `Γ(x + y)/Γ(x)`: `0` at `x = 0, −1, …`, undefined at `x + y = 0, −1, …`.
+  `Spec.genPochhammerReal_eq_of_not_pole`: off the poles of both it is `Γ(x + y)/Γ(x)`.
+  Infinite arguments: `NaN`.  The pole `x + y = 0` is `NaN` (the sign of the infinity
+  depends on `Γ(x)`), unlike `Γ(0) = +∞` and `B(0, b) = +∞`.  Both conventions **confirmed
+  by the user** (2026-11-18).
+* **Integer `y ≥ 0`**: `pochReal` (5c).  **Integer `y < 0`**: `genPochNegInt` — the exact
+  quotient `Dⁿ/∏ (N − nD + jD)` under the conditions of `pochExact?`, else the reciprocal of
+  the `pochCoreOf` enclosure of `(x − n)ₙ` (`recipPochCore`).
+* **Other `y`**: Ziv's loop with fuel on `genPochCore` = `gammaQuotEnclOf`, generic over
+  enclosures like `betaEnclOf`: two `lnGammaPiece`s (Stirling + reflection), one table of
+  tangent numbers, one `π`, one logarithm `½ ln (q_s/q_x)`, one exponential.
+* Contract: `genPochhammerPrecRound_eq_or`.
+* Tests: against `Γ(1 + y)` and `Γ(2 + y)` by `gammaPrecRound` (an independent loop), against
+  `pochhammerPrecRound`, all sign patterns, zeros and poles.
+* Known weakness: a large `x` with a small `y` — the two `ln Γ` cancel (`Γ(10¹⁰ + ½)/Γ(10¹⁰)`
+  is fine; `x = 3·2¹⁰⁰⁰` pays 1000 bits).  Remedy as for Beta: DLMF 5.11.13.
+* Timings (`az_float_families family:misc`, ms at 53 / 200 / 1000 bits; `Γ(1/3)` 0.53 / 1.20 /
+  9.9, `B(1/3, 5/2)` 1.03 / 2.40 / 22.4): `(1/3)_{5/2}` 0.79 / 1.83 / 16.7; `(150)_{5/2}`
+  0.59 / 1.21 / 14.0; `(−7/3)_{5/2}` 1.01 / 2.16 / 18.1; `(−1/3)_{−7/3}` 1.14 / 2.45 / 19.1;
+  `(3·2¹⁰⁰)_{5/2}` 0.64 / 0.98 / 3.4; integer `y = −200`: 0.20 / 1.07 / 13.5 (the exact
+  quotient).  So ≈ 1.5 `Γ`, three quarters of a Beta.
+* Also timed: `fallingFactorial x 201` 0.20 / 1.03 / 13.4 (float `1/3`),
+  `fallingFactorialRat q 201` 0.04 at every precision, `q 10⁶+1` 1.2 / 3.0 / 23.9 (two
+  ratios: `−1/3` has one negative factor) — the costs of Pochhammer's symbol, as expected.
+* `AzRat` arguments: 5h.
+
+### 5h. The generalized Pochhammer symbol of two rationals (DONE 2026-11-18, fuel-based, TIMED)
+
+User request.  `genPochhammerRatPrecRound x y p mode`, `genPochhammerRat x y p`
+(`AzFloat/GenPochhammerRat.lean`, `Equiv/GenPochhammerRat.lean`,
+`Tests/GenPochhammerRat.lean`).  The cases and the specification (`Spec.genPochhammerReal`) of
+5g; the tests on the arguments are those of the reduced fractions (`y.den = 1`, …), the sums
+`x + y` and `x − n` are formed exactly, and the cores are the generic ones:
+`pochhammerRatPrecRound` for an integer `y ≥ 0`; `recipPochIntQuot` or `recipPochCoreOf`
+(factored out of the float `recipPochCore` for this) for an integer `y < 0`;
+`gammaQuotEnclOf` on `lnGammaRatEncl`/`gammaRatFrac` otherwise.
+`genPochhammerRatPrecRound_eq_or`.  Tests: against `gammaRatPrecRound` (`x = 1, 2`),
+`pochhammerRatPrecRound`, exact rational products for negative integer `y` up to
+`n = 1001`, and the float function on dyadic arguments.
+
+Timings (`az_float_families family:misc`, ms at 53 / 200 / 1000 bits; `gammaRat 1/3` 0.52 /
+1.22 / 10.2): `(1/3)_{5/2}` 0.84 / 1.89 / 17.1; `(150)_{5/2}` 0.58 / 1.24 / 15.1;
+`(−7/3)_{5/2}` 0.98 / 2.15 / 18.1; `(−1/3)_{−7/3}` 1.13 / 2.50 / 19.3 — the float figures
+within noise.  Integer `y = −200`: 0.042 / 0.042 / 0.048 (exact quotient of short integers;
+the float function, whose `1/3` has `max(p, 64)` bits, takes 0.21 / 1.09 / 13.7).  The row
+`(1/3)_{−7/3}` is the pole `x + y = −2`: 0.002.
+
+
+### 6. The polygamma functions `ψ⁽ⁿ⁾(x)` (DONE 2026-11-18, fuel-based, TIMED)
+
+User request ("Should trigamma have a separate implementation or no?" — no: one algorithm
+for every `n ≥ 1`, in which `n` only enters the terms of the series; `trigammaPrecRound`,
+`trigamma` are the instance `n = 1`).  `polygammaPrecRound n x p mode`, `polygamma n x`
+(`AzFloat/Polygamma.lean`, `AzFloat/PolygammaBracket.lean`, their `Equiv/` files,
+`Transcendental/PolygammaStirling.lean`, `Tests/Polygamma.lean`).  `n = 0` is `digamma`.
+
+* **Theory** (`Transcendental/PolygammaStirling.lean`), on DLMF §5.15 as formalized in
+  `DLMF/Chapter5/Section15*.lean`: `polygammaR n x` (real part of `iteratedDeriv n digamma`),
+  `polygamma_ofReal`, the series `hasSum_polygammaR` (5.15.1), the recurrence
+  `polygammaR_add_nat` (5.15.5), and **the asymptotic series with a remainder bound**
+  `polygammaR_eq_sum_add`: for `x > 0`,
+  `(−1)ⁿ⁺¹ ψ⁽ⁿ⁾(x) = (n−1)!/xⁿ + n!/(2xⁿ⁺¹) + ∑_{k<N} (−1)^(k+1) c_k (2k)⋯(2k+n−1)/x^(2k+n) + r`
+  with `r` of the sign of the first omitted term and at most it — new: the remainder of
+  `polygamma_eq_expansion` rewritten with `B̃_{2N} − B_{2N}` (`polyStirRem_eq`), whose sign is
+  constant, as in §5.11(ii) for `ψ`.
+* **`x > 0`**: shift `y = x + δ` and the series, `polySumLoop` = `psiSumLoop` with the terms
+  multiplied by `(2k)⋯(2k+n−1)` (`AzNat.factorialQuotient`).  The term ratio is
+  `(2k+n)(2k+n+1)/(2πy)²`, so the shift target is `2^L (1 + n/(2M)) + 1` (`polyShift`); the
+  shift sum `∑ (x+j)^{−n−1}` takes one power and one division a term (`polyShiftSum`).
+* **`x < 0`: no reflection formula.**  `polygammaR_reflect`:
+  `ψ⁽ⁿ⁾(x) = ψ⁽ⁿ⁾(x+m) + (−1)ⁿ (ψ⁽ⁿ⁾(1−x) − ψ⁽ⁿ⁾(1−x−m))` for every `m : ℕ` — the two finite
+  sums of the recurrence at `x` and at `1−x−m` agree up to sign.  With `0 < x + m < 1` it is
+  three positive arguments at a cost independent of `|x|`, and no `cot`, no `π`, no
+  derivative polynomials of the cotangent (which 5.15.6 would need).
+* **Special values** (`Spec.polygamma n`), **confirmed by the user** 2026-11-18: `ψ⁽ⁿ⁾(+∞) = 0`;
+  `NaN` at `−∞`; at `0` the limit from the right `(−1)ⁿ⁺¹∞`; at the negative integers `+∞`
+  for odd `n` (two-sided limit), `NaN` for even `n`.
+* **Contract**: `polygammaPrecRound_eq_or`.
+* Tests: `π²/6`, `π²/2`, `−2ζ(3)`, `π⁴/15`, `π²/2 + 4`, `16 − 14ζ(3)`, `−100! ζ(101)`,
+  60 digits of `π²/6` and `−2ζ(3)` at 200 bits.
+* **Tiny arguments** (`polygammaTiny?`, user request): `(−1)ⁿ⁺¹ ψ⁽ⁿ⁾(x) = n!/xⁿ⁺¹ + t`,
+  `0 < t ≤ 2ⁿ⁺² (n+1)!` for `0 < |x| ≤ 1/4` (`polygammaR_near_zero`: `t` is the value at
+  `x + 1`, bounded by the first terms of its series); one test of `roundingPossible` on an
+  enclosure of `n!/|x|ⁿ⁺¹` (signed, widened upwards by the bound), with the leading term —
+  a float when `x = ±2^k` — at the open side; for even `n`, negated mode and negated result.
+  Tried when `(n+1)(|e|−2) ≥ p + 74 + lg(n+1)`.  `ψ′(2^(−10⁶))` is immediate.
+* **Powers by repeated squaring** (`Encl.powBin`, `IsEnclPos.powBin`): `Encl.pow` multiplies
+  `n` times; the shift sum takes one power `n + 1` a term.  `ψ⁽¹⁰⁰⁾(1/3)`: 28 → 4.7 ms.
+* Timings (`az_float_families family:misc`, ms at 53 / 200 / 1000 bits; `ψ(1/3)` 0.30 / 0.87 /
+  9.5):
+
+  | function | argument | 53 | 200 | 1000 |
+  |---|---|---|---|---|
+  | `trigamma` | 1/3 | 0.45 | 1.33 | 18.7 |
+  | `trigamma` | 150 | 0.12 | 0.48 | 14.8 |
+  | `trigamma` | −301/3 | 1.00 | 3.16 | 59.0 |
+  | `trigamma` | 1/3·2⁻¹⁰⁰ | 0.008 | 3.44 | 26.0 |
+  | `trigamma` | 1/3·2⁻¹⁰⁰⁰ | 0.008 | 0.009 | 0.022 |
+  | `polygamma 2` | 1/3 | 0.46 | 1.47 | 31.4 |
+  | `polygamma 2` | −301/3 | 1.14 | 3.44 | 60.9 |
+  | `polygamma 10` | 1/3 | 0.84 | 2.12 | 34.3 |
+  | `polygamma 10` | 150 | 0.16 | 0.59 | 24.3 |
+  | `polygamma 10` | −301/3 | 1.81 | 4.73 | 99.0 |
+  | `polygamma 10` | −201/2 | 5.47 | 18.4 | 521 |
+  | `polygamma 100` | 1/3 | 4.71 | 9.68 | 66.0 |
+  | `polygamma 100` | 150 | 0.32 | 0.99 | 49.9 |
+
+  So `ψ′` ≈ 1.5 `ψ` for `x > 0` (2 at 1000 bits: the shift sum has a division a term where
+  `ψ` has one for two), and a negative argument ≈ 2.3–3 positive ones.  `1/3·2⁻¹⁰⁰` at 200
+  and 1000 bits is tiny but not tiny enough for the test (the loop starts `(n+1)|e|` bits
+  higher).  `ψ⁽¹⁰⁾(−201/2)`: for even `n`, `ψ⁽ⁿ⁾` has a zero next to every negative
+  half-integer, where `H(x+m)` and `H(1−x−m)` cancel — 35 decimal digits here — and Ziv's
+  doublings pay for it.
+* Open: (a) the three evaluations for `x < 0` repeat the tangent table and could share the
+  shift sums of `x + m` and `1 − x − m`; (b) the shift sum could pair terms as `harmonicLoop`
+  does; (c) `AzRat` argument; (d) with trigamma enclosures the zeros of `ψ` (4a) could take
+  certified Newton steps; (e) at a near-cancellation the loop could add the lost bits
+  instead of doubling.
+
+### Perf 20. Polygamma: one-sided shift sum, short negative path, second evaluation (2026-11-18)
+
+User request ("Let's try the first three follow-ups").  Before/after in ms at 53 / 200 / 1000
+bits (`az_float_families family:misc`):
+
+| function | argument | before | after |
+|---|---|---|---|
+| `trigamma` | 1/3 | 0.45 / 1.33 / 18.7 | 0.34 / 1.04 / 12.5 |
+| `trigamma` | 150 | 0.12 / 0.48 / 14.8 | 0.12 / 0.47 / 10.5 |
+| `trigamma` | −301/3 | 1.00 / 3.16 / 59.0 | 0.80 / 2.55 / 15.5 |
+| `polygamma 2` | 1/3 | 0.46 / 1.47 / 31.4 | 0.35 / 1.12 / 15.4 |
+| `polygamma 2` | −301/3 | 1.14 / 3.44 / 60.9 | 0.86 / 2.72 / 15.5 |
+| `polygamma 10` | 1/3 | 0.84 / 2.12 / 34.3 | 0.60 / 1.54 / 20.6 |
+| `polygamma 10` | −301/3 | 1.81 / 4.73 / 99.0 | 1.31 / 3.59 / 23.6 |
+| `polygamma 10` | −201/2 | 5.47 / 18.4 / 521 | 2.98 / 6.81 / 44.0 |
+| `polygamma 100` | 1/3 | 4.71 / 9.68 / 66.0 | 2.78 / 5.56 / 38.7 |
+| `polygamma 100` | 150 | 0.32 / 0.99 / 49.9 | 0.33 / 0.99 / 29.1 |
+
+1. **Shift sum once, rounded down** (`polyShiftLoop`, `polyShiftSum`, `powUp`), as
+   `harmonicEncl` does for `ψ`: each quotient `⌊1/⌈⌈b+j⌉^k⌉⌋` is a lower bound of its term
+   and within `(b/a)^k (1+ε)^(5k)/(1−ε)` of it (`poly_single`; `powUpAux_spec`: repeated
+   squaring rounded up is within `(1+ε)^(2^(fuel+1)−2) ≤ (1+ε)^(4k)`), so the upper end is
+   the upward sum times `⌈⌈b/a⌉^k⌉ (1 + 2^(c−V))` (`shift_factor_le`: Bernoulli).  Half the
+   operations.  *Pairing* two terms into one division as `harmonicLoop` does was examined
+   and not done: with powers it saves one division out of ten operations a pair.
+   Also tried: the shift exponent `L − 1`, `L − 2`, `L + 1` — all slower (the series runs
+   out of table and Ziv doubles, or the shift doubles); `L` stays.
+2. **Short negative path**: for `m ≤ 2^L` (`m` with `0 < x + m < 1`) the recurrence in
+   positive terms, `H(x) = H(x+m) + (−1)ⁿ⁺¹ n! ∑_{j<m} (1−x−m+j)^{−n−1}`
+   (`polygammaR_neg_sum`): one evaluation and `m` terms in place of three evaluations.
+   Sharing between the three evaluations beyond that is not possible in the shift sums
+   (different points); the tangent table is a small part.
+3. **Second evaluation where digits cancel** (`enclAccuracy`, `polygammaEnclFor`): if the
+   enclosure at level `w` excludes `0` but has fewer than `p + 8` bits, one more evaluation
+   at `w + missing + 8` in the same Ziv level, instead of a doubling.  When the enclosure
+   contains `0` the missing bits are unknown and the loop doubles as before — the case of
+   `ψ⁽¹⁰⁾(−201/2)` at 53 bits, where 2 and 3 above still give 5.5 → 3.0 ms.
+
+### 6a. The polygamma functions of an `AzRat` (DONE 2026-11-18, fuel-based, TIMED)
+
+`polygammaRatPrecRound n q p mode`, `polygammaRat n q p`, `trigammaRatPrecRound`,
+`trigammaRat` (`AzFloat/PolygammaRat.lean`, proofs `Equiv/PolygammaRat.lean`, tests
+`Tests/PolygammaRat.lean`).  Spec: `Spec.polygamma n q`, the one of the float function;
+contract `polygammaRatPrecRound_eq_or` (correctly rounded, or `NaN` when the fuel runs out).
+
+* **No new analysis.**  `polygammaPosEncl` already takes an enclosure, so `q > 0` enters by
+  `lnGammaRatEncl q` at `polyWork n w` bits.  For `q < 0` (`polygammaRatNegEncl`):
+  `m = −⌊q⌋`, and `u = q + m`, `1 − u`, `1 − q` are exact rationals rounded once — no
+  cancellation next to the poles.  The definition checks the signs of `u` and `1 − u` (two
+  comparisons), which spares the proof a lemma on the floor; the identities
+  `polygammaR_neg_sum` and `polygammaR_reflect` hold for every `m`.
+* **Shared with the float function** (refactored out of it): `polygammaTinyOf` (the one test
+  of the tiny path from a positive enclosure of `|x|` and the sign; `polygammaTinyOf_eq`),
+  now with `Encl.powBin`, and `enclRefine` (the second evaluation with the missing bits, for
+  any family of enclosures by level; `enclRefine_spec`).
+* **Special values** as for a float: `(−1)ⁿ⁺¹ ∞` at `0`; at the negative integers `+∞` for an
+  odd `n`, `NaN` for an even one; `n = 0` is `digammaRatPrecRound`.
+* **Tiny arguments** (`polygammaRatIsTiny`): the exponent `gammaRatExp q` with the condition
+  of the float function, and `|q| ≤ 1/4` from the 64-bit roundings (what the proof uses).
+* **Timings** (2026-11-18, ms at 53 / 200 / 1000 bits; `family:misc`): the rational function
+  costs what the float one does, row by row (within 3 %, one row 10 %).
+
+  | function | `q` | 53 | 200 | 1000 |
+  |---|---|---|---|---|
+  | `trigammaRat` | `1/3` | 0.354 | 1.07 | 12.7 |
+  | `trigammaRat` | `150` | 0.121 | 0.49 | 10.9 |
+  | `trigammaRat` | `−301/3` | 0.859 | 2.63 | 16.0 |
+  | `trigammaRat` | `−(10¹⁸ + 1)/3` (three arguments) | 0.767 | 2.38 | 31.3 |
+  | `polygammaRat 2` | `1/3` | 0.366 | 1.15 | 16.0 |
+  | `polygammaRat 10` | `1/3` | 0.625 | 1.57 | 21.7 |
+  | `polygammaRat 10` | `−201/2` | 3.05 | 7.02 | 45.7 |
+  | `polygammaRat 100` | `1/3` | 2.90 | 5.83 | 40.3 |
+
 ### File layout of the logarithms of `Γ` and `B` (2026-11-18)
 
 User request, for consistency: one file per function family.  `AzFloat/LnBeta.lean` and

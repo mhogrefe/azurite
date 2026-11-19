@@ -273,6 +273,7 @@ import Azurite.AzFloat.Equiv.ExpM1Rat
 import Azurite.AzFloat.Equiv.ExpM1Tiny
 import Azurite.AzFloat.Equiv.ExpRat
 import Azurite.AzFloat.Equiv.Factorial
+import Azurite.AzFloat.Equiv.FallingFactorial
 import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.Float64Emulate
 import Azurite.AzFloat.Equiv.Gamma
@@ -285,6 +286,8 @@ import Azurite.AzFloat.Equiv.GdInv
 import Azurite.AzFloat.Equiv.GdInvBracket
 import Azurite.AzFloat.Equiv.Gelfond
 import Azurite.AzFloat.Equiv.GelfondSchneider
+import Azurite.AzFloat.Equiv.GenPochhammer
+import Azurite.AzFloat.Equiv.GenPochhammerRat
 import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Interval
 import Azurite.AzFloat.Equiv.LambertW
@@ -340,6 +343,9 @@ import Azurite.AzFloat.Equiv.PiConstants
 import Azurite.AzFloat.Equiv.PiDiv3Bracket
 import Azurite.AzFloat.Equiv.Pochhammer
 import Azurite.AzFloat.Equiv.PochhammerRat
+import Azurite.AzFloat.Equiv.Polygamma
+import Azurite.AzFloat.Equiv.PolygammaBracket
+import Azurite.AzFloat.Equiv.PolygammaRat
 import Azurite.AzFloat.Equiv.Pow
 import Azurite.AzFloat.Equiv.Pow10
 import Azurite.AzFloat.Equiv.Pow2
@@ -432,6 +438,7 @@ import Azurite.AzFloat.ExpM1Rat
 import Azurite.AzFloat.ExpM1Tiny
 import Azurite.AzFloat.ExpRat
 import Azurite.AzFloat.Factorial
+import Azurite.AzFloat.FallingFactorial
 import Azurite.AzFloat.Float64
 import Azurite.AzFloat.Float64Emulate
 import Azurite.AzFloat.Gamma
@@ -446,6 +453,8 @@ import Azurite.AzFloat.GdInvRat
 import Azurite.AzFloat.GdRat
 import Azurite.AzFloat.Gelfond
 import Azurite.AzFloat.GelfondSchneider
+import Azurite.AzFloat.GenPochhammer
+import Azurite.AzFloat.GenPochhammerRat
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Interval
 import Azurite.AzFloat.LambertW
@@ -500,6 +509,9 @@ import Azurite.AzFloat.PiConstants
 import Azurite.AzFloat.PiDiv3Bracket
 import Azurite.AzFloat.Pochhammer
 import Azurite.AzFloat.PochhammerRat
+import Azurite.AzFloat.Polygamma
+import Azurite.AzFloat.PolygammaBracket
+import Azurite.AzFloat.PolygammaRat
 import Azurite.AzFloat.Pow
 import Azurite.AzFloat.Pow10
 import Azurite.AzFloat.Pow2
@@ -3159,6 +3171,7 @@ import Azurite.Transcendental.LogGammaStirling
 import Azurite.Transcendental.Niven
 import Azurite.Transcendental.NivenSin
 import Azurite.Transcendental.NivenTan
+import Azurite.Transcendental.PolygammaStirling
 import Azurite.Transcendental.PsiZero
 import Azurite.Transcendental.Ramanujan
 import Azurite.Transcendental.Sinh

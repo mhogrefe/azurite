@@ -620,6 +620,128 @@ def checkBigExponentFloatCotPiRational : String → Verdict :=
   withBigExponentFloatNames <| checkFloatOfRational "cot_pi_rational"
     (fun q p m => poleAsNaN (AzFloat.cotPiRatPrecRound q p m))
 
+def checkBigExponentFloatAtan : String → Verdict := withBigExponentFloatNames checkFloatAtan
+
+def checkBigExponentFloatAtanRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAtanRational
+
+def checkBigExponentFloatAtanWithPeriod : String → Verdict :=
+  withBigExponentFloatNames checkFloatAtanWithPeriod
+
+def checkBigExponentFloatAtanWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAtanWithPeriodRational
+
+def checkBigExponentFloatAtanPi : String → Verdict := withBigExponentFloatNames checkFloatAtanPi
+
+def checkBigExponentFloatAtanPiRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAtanPiRational
+
+def checkBigExponentFloatAtan2 : String → Verdict := withBigExponentFloatNames checkFloatAtan2
+
+def checkBigExponentFloatAtan2Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAtan2Rational
+
+def checkBigExponentFloatAtan2WithPeriod : String → Verdict :=
+  withBigExponentFloatNames checkFloatAtan2WithPeriod
+
+def checkBigExponentFloatAtan2WithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAtan2WithPeriodRational
+
+def checkBigExponentFloatAtan2Pi : String → Verdict := withBigExponentFloatNames checkFloatAtan2Pi
+
+def checkBigExponentFloatAtan2PiRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAtan2PiRational
+
+def checkBigExponentFloatAsin : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsin
+
+def checkBigExponentFloatAsinRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsinRational
+
+def checkBigExponentFloatAsinWithPeriod : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsinWithPeriod
+
+def checkBigExponentFloatAsinWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsinWithPeriodRational
+
+def checkBigExponentFloatAsinPi : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsinPi
+
+def checkBigExponentFloatAsinPiRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsinPiRational
+
+def checkBigExponentFloatAcos : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcos
+
+def checkBigExponentFloatAcosRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcosRational
+
+def checkBigExponentFloatAcosWithPeriod : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcosWithPeriod
+
+def checkBigExponentFloatAcosWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcosWithPeriodRational
+
+def checkBigExponentFloatAcosPi : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcosPi
+
+def checkBigExponentFloatAcosPiRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcosPiRational
+
+def checkBigExponentFloatAsec : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsec
+
+def checkBigExponentFloatAsecRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsecRational
+
+def checkBigExponentFloatAsecWithPeriod : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsecWithPeriod
+
+def checkBigExponentFloatAsecWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsecWithPeriodRational
+
+def checkBigExponentFloatAsecPi : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsecPi
+
+def checkBigExponentFloatAsecPiRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAsecPiRational
+
+def checkBigExponentFloatAcsc : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcsc
+
+def checkBigExponentFloatAcscRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcscRational
+
+def checkBigExponentFloatAcscWithPeriod : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcscWithPeriod
+
+def checkBigExponentFloatAcscWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcscWithPeriodRational
+
+def checkBigExponentFloatAcscPi : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcscPi
+
+def checkBigExponentFloatAcscPiRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcscPiRational
+
+def checkBigExponentFloatAcot : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcot
+
+def checkBigExponentFloatAcotRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcotRational
+
+def checkBigExponentFloatAcotWithPeriod : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcotWithPeriod
+
+def checkBigExponentFloatAcotWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcotWithPeriodRational
+
+def checkBigExponentFloatAcotPi : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcotPi
+
+def checkBigExponentFloatAcotPiRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAcotPiRational
+
 /-- `y·z`, formed exactly. -/
 def exactProduct (y z : AzFloat) : AzFloat :=
   (AzFloat.mulPrecRound y z (exactProductPrecision [y, z]) .Nearest).1
