@@ -54,10 +54,20 @@ def gammaFloatFrac (x : AzFloat) (W : Nat) : Option (Bool × AzInt × Encl) :=
   let k := gammaNearInt x
   (gammaFracEncl x k W).map fun t => (t.1, k, t.2)
 
-/-- The same for the sum `a + b`: `k` next to the rounded sum, and `(a − k) + b` on
+/-- The precision at which `a + b` is rounded to find the integer next to it: `66` bits beyond
+the binary point, so that the rounded sum is within `2^(−65)` of the sum whatever the sizes of
+`a` and `b`. -/
+def betaSumPrec (a b : AzFloat) : Nat :=
+  let ea := expOf a
+  let eb := expOf b
+  let es := (if ea ≤ eb then eb else ea) + 1
+  66 + (if es.sign then es.abs.toNat else 0)
+
+/-- The same for the sum `a + b`: `k` next to the sum rounded at `betaSumPrec` bits (a
+negative sum is then less than `1` away from `k`, as the sine needs), and `(a − k) + b` on
 enclosures. -/
 def betaSumFrac (a b : AzFloat) (W : Nat) : Option (Bool × AzInt × Encl) :=
-  let k := gammaNearInt (addPrecRound a b 64 .Nearest).1
+  let k := gammaNearInt (addPrecRound a b (betaSumPrec a b) .Nearest).1
   (fracOfEncl (Encl.add W (Encl.sub W (Encl.exact a) (Encl.exact (ofAzInt k)))
     (Encl.exact b))).map fun t => (t.1, k, t.2)
 
@@ -152,5 +162,39 @@ def betaCore (a b : AzFloat) (w : Nat) : Option (Bool × Encl) :=
   let es := (if ea ≤ eb then eb else ea) + 1
   (lnAbsBetaCore a b (w + betaBits ea eb es) w).bind fun r =>
     (gammaExpEncl false r.2 w).map fun g => (r.1, g)
+
+/-- The bracket of `B(a, b)` as a pair of `Roundable`s, strict on both sides; the dummy bracket
+`[−1, 1]` when `betaCore` gives nothing. -/
+def betaApprox (a b : AzFloat) (w : Nat) : Roundable × Roundable :=
+  gammaApproxOf (betaCore a b w) w
+
+/-- Is `a + b` a non-positive integer?  For finite `a`, `b`.  When both are integers the sign of
+the sum is one comparison.  When neither is, both are below `2` to their precision in absolute
+value, so an integer sum is representable at `qa + qb + 2` bits: the sum is an integer exactly
+when the addition at that precision is exact and gives one.  (The exact sum itself can be
+astronomically long — `2^(−10⁹) + 3/2` — and is never formed.) -/
+def sumIsNonposInt (a b : AzFloat) : Bool :=
+  if isInteger a then isInteger b && le a (-b)
+  else if isInteger b then false
+  else
+    let r := addPrecRound a b (a.precision?.getD 1 + b.precision?.getD 1 + 2) .Nearest
+    if r.2 = .eq then isInteger r.1 && le r.1 zero else false
+
+/-- Is `a + b` a positive integer, for `a`, `b` that are not integers?  As in
+`sumIsNonposInt`: the sum is an integer exactly when the addition at `qa + qb + 2` bits is
+exact and gives one. -/
+def sumIsPosInt (a b : AzFloat) : Bool :=
+  let r := addPrecRound a b (a.precision?.getD 1 + b.precision?.getD 1 + 2) .Nearest
+  if r.2 = .eq then isInteger r.1 && lt zero r.1 else false
+
+/-- Arguments where `B(a, b)` is known to be irrational, so that Ziv's loop needs no fuel
+(`betaApprox_cert`, `Equiv/BetaCertificate.lean`): `a` and `b` are not integers, and either
+`a + b` is a positive integer — `B(a, b)` is then a rational multiple of `π / sin (π a)` — or
+both are quarter-integers, where `B(a, b)` is `Γ(1/4)^(±2)` times a number algebraic over
+`ℤ[π]` (Chudnovsky's theorem; `Azurite.Chudnovsky.irrational_beta_of_den`).  To be used off
+the zeros of `B` (`sumIsNonposInt`). -/
+def betaSpecial (a b : AzFloat) : Bool :=
+  a.isFinite && b.isFinite && !isInteger a && !isInteger b
+    && (sumIsPosInt a b || (gammaSpecial a && gammaSpecial b))
 
 end Azurite.AzFloat

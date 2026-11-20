@@ -256,30 +256,54 @@ theorem pochhammer_coe {n : ℕ} (hn : n ≠ 0) (xv : ℝ) :
 
 end Spec
 
-/-- `pochReal` is the correct rounding of `(x)ₙ`, or the fuel ran out. -/
-theorem pochReal_eq_or {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (n p : ℕ)
-    [NeZero p] (mode : RoundingMode) :
-    pochReal x n p mode = roundVal p mode (some ((∏ j ∈ range n, (xv + j) : ℝ) : EReal)) ∨
-      pochReal x n p mode = (nan, .eq) := by
-  unfold pochReal
+/-- `pochRealFuel` is the correct rounding of `(x)ₙ`, or it is the loop with fuel. -/
+theorem pochRealFuel_eq_or_loop (fuel : ℕ) {x : AzFloat} {xv : ℝ}
+    (hx : x.toVal = some (xv : EReal)) (n p : ℕ) [NeZero p] (mode : RoundingMode) :
+    pochRealFuel fuel x n p mode
+        = roundVal p mode (some ((∏ j ∈ range n, (xv + j) : ℝ) : EReal)) ∨
+      (pochHasZero x n = false ∧ pochRealFuel fuel x n p mode
+        = zivLoop (pochApprox x n) p mode fuel (max 64 (p + 32))) := by
+  unfold pochRealFuel
   by_cases hz : pochHasZero x n = true
   · left
     rw [ite_eq_left hz, pochHasZero_spec hx hz, EReal.coe_zero, roundVal_zero]
   rw [ite_eq_right hz, ite_eq_right (NeZero.ne p)]
   split
   · next r hr => left; exact pochExact?_eq hx p mode hr
-  · rcases eq_or_ne (zivLoop (pochApprox x n) p mode (gammaFuel p) (max 64 (p + 32)))
-      (nan, .eq) with hzv | hzv
-    · right; exact hzv
-    · left
-      exact zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
-        (fun w hw => gammaApproxOf_valid_or_none (fun _ _ hc => pochCore_spec hx hw hc) w p mode)
-        _ _ (le_max_left _ _) hzv
+  · exact Or.inr ⟨by simpa using hz, rfl⟩
 
-/-- **Pochhammer's symbol is correctly rounded, or the fuel ran out.** -/
-theorem pochhammerPrecRound_eq_or (x : AzFloat) (n p : ℕ) [NeZero p] (mode : RoundingMode) :
-    pochhammerPrecRound x n p mode = liftVal (Spec.pochhammer n) x p mode ∨
-      pochhammerPrecRound x n p mode = (nan, .eq) := by
+/-- The loop of `(x)ₙ` is correct when it does not give up. -/
+theorem pochLoop_eq_of_ne_nan {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (n p : ℕ) [NeZero p] (mode : RoundingMode) (fuel : ℕ)
+    (h : zivLoop (pochApprox x n) p mode fuel (max 64 (p + 32)) ≠ (nan, .eq)) :
+    zivLoop (pochApprox x n) p mode fuel (max 64 (p + 32))
+      = roundVal p mode (some ((∏ j ∈ range n, (xv + j) : ℝ) : EReal)) :=
+  zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
+    (fun w hw => gammaApproxOf_valid_or_none (fun _ _ hc => pochCore_spec hx hw hc) w p mode)
+    _ _ (le_max_left _ _) h
+
+/-- `pochRealFuel` is the correct rounding of `(x)ₙ`, or the fuel ran out. -/
+theorem pochRealFuel_eq_or (fuel : ℕ) {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (n p : ℕ) [NeZero p] (mode : RoundingMode) :
+    pochRealFuel fuel x n p mode
+        = roundVal p mode (some ((∏ j ∈ range n, (xv + j) : ℝ) : EReal)) ∨
+      pochRealFuel fuel x n p mode = (nan, .eq) := by
+  rcases pochRealFuel_eq_or_loop fuel hx n p mode with h | ⟨-, h⟩
+  · exact Or.inl h
+  · rw [h]
+    rcases eq_or_ne (zivLoop (pochApprox x n) p mode fuel (max 64 (p + 32)))
+      (nan, .eq) with hzv | hzv
+    · exact Or.inr hzv
+    · exact Or.inl (pochLoop_eq_of_ne_nan hx n p mode fuel hzv)
+
+/-- **Pochhammer's symbol is correctly rounded, or it is the loop with fuel** at a finite
+argument without a vanishing factor, `n ≥ 1`. -/
+theorem pochhammerPrecRoundFuel_eq_or_loop (fuel : ℕ) (x : AzFloat) (n p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    pochhammerPrecRoundFuel fuel x n p mode = liftVal (Spec.pochhammer n) x p mode ∨
+      (∃ xv : ℝ, x.toVal = some (xv : EReal) ∧ n ≠ 0 ∧ pochHasZero x n = false ∧
+        pochhammerPrecRoundFuel fuel x n p mode
+          = zivLoop (pochApprox x n) p mode fuel (max 64 (p + 32))) := by
   have hp := NeZero.ne p
   have hone : setPrecRound one p mode = roundVal p mode (some (1 : EReal)) := by
     rw [setPrecRound_eq_roundVal toVal_one', EReal.coe_one]
@@ -290,9 +314,9 @@ theorem pochhammerPrecRound_eq_or (x : AzFloat) (n p : ℕ) [NeZero p] (mode : R
     left
     by_cases hn : n = 0
     · subst hn
-      simp only [pochhammerPrecRound, ↓reduceIte, toVal_infinity, Option.bind_some,
+      simp only [pochhammerPrecRoundFuel, ↓reduceIte, toVal_infinity, Option.bind_some,
         Spec.pochhammer_zero, ite_eq_right hp, hone]
-    · simp only [pochhammerPrecRound, ite_eq_right hn, toVal_infinity, Option.bind_some]
+    · simp only [pochhammerPrecRoundFuel, ite_eq_right hn, toVal_infinity, Option.bind_some]
       cases s
       · by_cases he : n % 2 = 0
         · simp [Spec.pochhammer, hn, he]
@@ -302,19 +326,45 @@ theorem pochhammerPrecRound_eq_or (x : AzFloat) (n p : ℕ) [NeZero p] (mode : R
     by_cases hn : n = 0
     · left
       subst hn
-      simp only [pochhammerPrecRound, ↓reduceIte, toVal_zero, Option.bind_some,
+      simp only [pochhammerPrecRoundFuel, ↓reduceIte, toVal_zero, Option.bind_some,
         Spec.pochhammer_zero, ite_eq_right hp, hone]
-    · simp only [pochhammerPrecRound, ite_eq_right hn, toVal_zero, Option.bind_some]
+    · simp only [pochhammerPrecRoundFuel, ite_eq_right hn, toVal_zero, Option.bind_some]
       rw [← EReal.coe_zero, Spec.pochhammer_coe hn]
-      exact pochReal_eq_or toVal_zero' n p mode
+      rcases pochRealFuel_eq_or_loop fuel toVal_zero' n p mode with h | ⟨hz, h⟩
+      · exact Or.inl h
+      · exact Or.inr ⟨0, rfl, hn, hz, h⟩
   | finite s e q m hv =>
     by_cases hn : n = 0
     · left
       subst hn
-      simp only [pochhammerPrecRound, ↓reduceIte, toVal_finite, Option.bind_some,
+      simp only [pochhammerPrecRoundFuel, ↓reduceIte, toVal_finite, Option.bind_some,
         Spec.pochhammer_zero, ite_eq_right hp, hone]
-    · simp only [pochhammerPrecRound, ite_eq_right hn, toVal_finite, Option.bind_some]
+    · simp only [pochhammerPrecRoundFuel, ite_eq_right hn, toVal_finite, Option.bind_some]
       rw [Spec.pochhammer_coe hn]
-      exact pochReal_eq_or (toVal_finite s e q m hv) n p mode
+      rcases pochRealFuel_eq_or_loop fuel (toVal_finite s e q m hv) n p mode with h | ⟨hz, h⟩
+      · exact Or.inl h
+      · exact Or.inr ⟨_, rfl, hn, hz, h⟩
+
+/-- **Pochhammer's symbol is correctly rounded, or the fuel ran out**, at every fuel. -/
+theorem pochhammerPrecRoundFuel_eq_or (fuel : ℕ) (x : AzFloat) (n p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    pochhammerPrecRoundFuel fuel x n p mode = liftVal (Spec.pochhammer n) x p mode ∨
+      pochhammerPrecRoundFuel fuel x n p mode = (nan, .eq) := by
+  rcases pochhammerPrecRoundFuel_eq_or_loop fuel x n p mode with h | ⟨xv, hx, hn, -, h⟩
+  · exact Or.inl h
+  · rw [h]
+    rcases eq_or_ne (zivLoop (pochApprox x n) p mode fuel (max 64 (p + 32)))
+      (nan, .eq) with hzv | hzv
+    · exact Or.inr hzv
+    · left
+      unfold liftVal
+      rw [hx, Option.bind_some, Spec.pochhammer_coe hn]
+      exact pochLoop_eq_of_ne_nan hx n p mode fuel hzv
+
+/-- **Pochhammer's symbol is correctly rounded, or the fuel ran out.** -/
+theorem pochhammerPrecRound_eq_or (x : AzFloat) (n p : ℕ) [NeZero p] (mode : RoundingMode) :
+    pochhammerPrecRound x n p mode = liftVal (Spec.pochhammer n) x p mode ∨
+      pochhammerPrecRound x n p mode = (nan, .eq) :=
+  pochhammerPrecRoundFuel_eq_or (gammaFuel p) x n p mode
 
 end Azurite.AzFloat

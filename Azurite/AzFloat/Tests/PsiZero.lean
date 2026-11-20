@@ -106,3 +106,24 @@ private def signs (n p : Nat) : Bool :=
 #guard signs 1000 53
 #guard signs 0 300
 #guard signs 3 300
+
+-- the verified fallback: bisection on the sign of `ψ`
+/-- An enclosure as its two decimal outputs. -/
+private def E (o : Option Encl) : Option (String × String) :=
+  o.map fun b => (toString b.1, toString b.2)
+
+#guard E (psiZeroFallback 0 64) == some ("1.461632144968362341262367344002727687644",
+  "1.46163214496836234126283175831189344806")
+#guard E (psiZeroFallback 3 64) == some ("-2.61072086844414465000174174698089901266",
+  "-2.61072086844414465000129224999362704155")
+-- three steps for `x₁`: the middles `−1/2`, `−3/4`, `−5/8`, `−9/16`
+#guard (psiZeroBisect 1 88 (AzInt.ofInt 1) 3 0 (AzInt.ofInt (-1))).map (fun r =>
+  r.1 == psiZeroMid 3 (AzInt.ofInt (-5))) == some true
+-- the fast enclosure is narrow, so it is the one in use
+#guard (psiZeroFast 3 64).map (psiZeroNarrow · 64) == some true
+#guard psiZeroEncl 0 64 == psiZeroFast 0 64
+#guard psiZeroEncl 3 64 == psiZeroFast 3 64
+#guard !psiZeroNarrow (one, powerOf2 (AzInt.ofInt 1)) 64
+-- the fuel as an argument
+#guard D (psiZeroPrecRoundFuel 2 3 53 .Nearest) == ("-2.6107208684441447", .lt)
+#guard psiZeroPrecRoundFuel (lnGammaFuel 53) 7 53 .Nearest == Z 7 53

@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzInt.Equiv.SumProduct
 import Azurite.AzFloat.Beta
 import Azurite.AzFloat.Equiv.BetaBracket
+import Azurite.AzFloat.Equiv.ZivSpec
 import Azurite.AzFloat.Equiv.RoundToInteger
 import Azurite.AzFloat.Equiv.Add
 import Azurite.AzFloat.Equiv.Div
@@ -116,91 +117,6 @@ theorem isNegInt_iff {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
     isNegInt x = true ↔ xv < 0 ∧ ∃ k : ℤ, xv = k := by
   unfold isNegInt
   rw [Bool.and_eq_true, lt_eq_true_iff hx toVal_zero', isInteger_iff_of_toVal hx]
-
-/-- A float that is not an integer is a finite one, below `2` to its precision. -/
-theorem abs_lt_of_not_isInteger {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hni : ¬ isInteger x = true) : |xv| < (2 : ℝ) ^ (x.precision?.getD 1) := by
-  cases x with
-  | nan => simp at hx
-  | infinity s => cases s <;> simp at hx
-  | zero => exact absurd rfl hni
-  | finite s e q m hv =>
-    rw [toVal_finite, Option.some.injEq, EReal.coe_eq_coe_iff] at hx
-    rw [← hx]
-    have hqe : e.toInt < q := by
-      by_contra hcon
-      push Not at hcon
-      apply hni
-      simp only [isInteger, Bool.or_eq_true, decide_eq_true_eq, AzInt.le_iff_toInt_le,
-        toInt_toAzInt, AzNat.toNat_ofNat]
-      exact Or.inl hcon
-    have hb := (abs_finiteVal_bounds s e hv).2
-    show |finiteVal s e m| < (2 : ℝ) ^ q
-    refine lt_of_lt_of_le hb ?_
-    rw [← zpow_natCast]
-    exact zpow_le_zpow_right₀ (by norm_num) hqe.le
-
-/-- **`sumIsNonposInt` decides whether `a + b` is a non-positive integer.** -/
-theorem sumIsNonposInt_iff {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av : EReal))
-    (hb : b.toVal = some (bv : EReal)) :
-    sumIsNonposInt a b = true ↔ av + bv ≤ 0 ∧ ∃ k : ℤ, av + bv = k := by
-  unfold sumIsNonposInt
-  have hnb : (-b).toVal = some ((-bv : ℝ) : EReal) := by
-    rw [toVal_neg, hb, Option.map_some, EReal.coe_neg]
-  by_cases hia : isInteger a = true
-  · rw [ite_eq_left hia, Bool.and_eq_true, isInteger_iff_of_toVal hb, le_eq_true_iff ha hnb]
-    obtain ⟨na, hna⟩ := (isInteger_iff_of_toVal ha).mp hia
-    constructor
-    · rintro ⟨⟨nb, hnb'⟩, hle⟩
-      exact ⟨by linarith, na + nb, by rw [hna, hnb']; push_cast; ring⟩
-    · rintro ⟨hle, k, hk⟩
-      exact ⟨⟨k - na, by push_cast; linarith⟩, by linarith⟩
-  · rw [ite_eq_right hia]
-    by_cases hib : isInteger b = true
-    · rw [ite_eq_left hib]
-      obtain ⟨nb, hnb'⟩ := (isInteger_iff_of_toVal hb).mp hib
-      constructor
-      · intro h; exact absurd h (by simp)
-      · rintro ⟨-, k, hk⟩
-        exact absurd ((isInteger_iff_of_toVal ha).mpr ⟨k - nb, by push_cast; linarith⟩) hia
-    · rw [ite_eq_right hib]
-      dsimp only
-      set P := a.precision?.getD 1 + b.precision?.getD 1 + 2 with hP
-      have : NeZero P := ⟨by omega⟩
-      have hr : addPrecRound a b P .Nearest
-          = roundVal P .Nearest (some ((av + bv : ℝ) : EReal)) := by
-        rw [addPrecRound_eq_liftVal₂, liftVal₂, ha, hb, Option.bind_some, Option.bind_some,
-          Spec.add_coe_coe]
-      rw [hr]
-      obtain ⟨h1, h2⟩ := roundVal_coe P .Nearest (av + bv)
-      constructor
-      · intro h
-        split_ifs at h with heq
-        rw [Bool.and_eq_true] at h
-        rw [h2, compare_eq_iff_eq] at heq
-        rw [heq] at h1
-        exact ⟨(le_eq_true_iff h1 toVal_zero').mp h.2, (isInteger_iff_of_toVal h1).mp h.1⟩
-      · rintro ⟨hle, k, hk⟩
-        have hba := abs_lt_of_not_isInteger ha hia
-        have hbb := abs_lt_of_not_isInteger hb hib
-        have hkabs : |k| ≤ 2 ^ P := by
-          have h3 : |(k : ℝ)| < (2 : ℝ) ^ P := by
-            rw [← hk]
-            have hpa : (2 : ℝ) ^ (a.precision?.getD 1) ≤ 2 ^ (P - 1) :=
-              pow_le_pow_right₀ (by norm_num) (by omega)
-            have hpb : (2 : ℝ) ^ (b.precision?.getD 1) ≤ 2 ^ (P - 1) :=
-              pow_le_pow_right₀ (by norm_num) (by omega)
-            have hPP : (2 : ℝ) ^ P = 2 * 2 ^ (P - 1) := by
-              rw [← pow_succ', show P - 1 + 1 = P by omega]
-            calc |av + bv| ≤ |av| + |bv| := abs_add_le _ _
-              _ < 2 ^ P := by linarith
-          have h4 : ((|k| : ℤ) : ℝ) < ((2 ^ P : ℤ) : ℝ) := by push_cast; exact h3
-          exact (Int.cast_lt.mp h4).le
-        have hmem := mem_floatSet_mul_zpow P k 0 hkabs
-        rw [zpow_zero, mul_one, ← hk] at hmem
-        obtain ⟨m1, m2⟩ := roundVal_of_mem P .Nearest (av + bv) hmem
-        rw [ite_eq_left m2, Bool.and_eq_true]
-        exact ⟨(isInteger_iff_of_toVal m1).mpr ⟨k, hk⟩, (le_eq_true_iff m1 toVal_zero').mpr hle⟩
 
 /-! ### The driver -/
 
@@ -341,14 +257,19 @@ theorem betaSmallInt?_eq {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av 
   exact betaIntQuot_eq (by rw [AzRat.toInt_toAzInt']; exact_mod_cast hden) hN
     (ne_neg_nat_of_not_pole ha0 hnp) hn1 p mode
 
-/-- **`betaReal` is the correct rounding of `Spec.beta` on finite arguments, or the fuel ran
-out.** -/
-theorem betaReal_eq_or {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av : EReal))
-    (hb : b.toVal = some (bv : EReal)) (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    betaReal a b p mode = roundVal p mode (Spec.beta (av : EReal) (bv : EReal)) ∨
-      betaReal a b p mode = (nan, .eq) := by
+/-- **`betaRealFuel` on finite arguments**: the correct rounding of `Spec.beta`, or the
+general case — neither a special value nor an argument with a known irrational value — where
+it is the loop with fuel. -/
+theorem betaRealFuel_eq_or_loop (fuel : ℕ) {a b : AzFloat} {av bv : ℝ}
+    (ha : a.toVal = some (av : EReal)) (hb : b.toVal = some (bv : EReal)) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    betaRealFuel fuel a b p mode = roundVal p mode (Spec.beta (av : EReal) (bv : EReal)) ∨
+      (¬ ((av < 0 ∧ ∃ k : ℤ, av = k) ∨ (bv < 0 ∧ ∃ k : ℤ, bv = k)) ∧ av ≠ 0 ∧ bv ≠ 0 ∧
+        ¬ (av + bv ≤ 0 ∧ ∃ k : ℤ, av + bv = k) ∧ betaSpecial a b = false ∧
+        betaRealFuel fuel a b p mode
+          = zivLoop (betaApprox a b) p mode fuel (max 64 (p + 32))) := by
   have hp := NeZero.ne p
-  unfold betaReal
+  unfold betaRealFuel
   by_cases hpole : (isNegInt a || isNegInt b) = true
   · left
     rw [ite_eq_left hpole]
@@ -361,7 +282,7 @@ theorem betaReal_eq_or {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av : 
     rw [ite_eq_left hzero]
     rw [Bool.or_eq_true, isZeroVal_iff ha, isZeroVal_iff hb] at hzero
     rw [Spec.beta_coe_of_zero hpole hzero, roundVal_top]
-  rw [ite_eq_right hzero, ite_eq_right hp]
+  rw [ite_eq_right hzero, dite_eq_right hp]
   rw [Bool.or_eq_true, isZeroVal_iff ha, isZeroVal_iff hb] at hzero
   rw [Spec.beta_coe hpole hzero]
   push Not at hzero
@@ -391,19 +312,61 @@ theorem betaReal_eq_or {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av : 
     rw [this, mul_comm (Real.Gamma bv), add_comm bv]
   by_cases hs : sumIsNonposInt a b = true
   · left
-    rw [ite_eq_left hs]
+    rw [dite_eq_left hs]
     obtain ⟨hle, k, hk⟩ := (sumIsNonposInt_iff ha hb).mp hs
     have hG := gamma_eq_zero_of_nonpos_int hle hk
     rw [hG, div_zero, EReal.coe_zero, roundVal_zero]
-  rw [ite_eq_right hs]
-  rcases eq_or_ne (zivLoop (betaApprox a b) p mode (gammaFuel p) (max 64 (p + 32)))
-    (nan, .eq) with hz | hz
-  · right; exact hz
+  rw [dite_eq_right hs]
+  by_cases hc : betaSpecial a b = true
   · left
-    exact zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
-      (fun w hw => gammaApproxOf_valid_or_none
-        (fun _ _ hc => betaCore_spec ha hb hw hc) w p mode)
-      _ _ (le_max_left _ _) hz
+    rw [dite_eq_left hc]
+    exact zivLoopBacked_eq p mode (betaApprox a b)
+      (not_mem_floatSet_of_irrational p (irrational_beta_of_special ha hb hc hs)) 64
+      (fun w hw => (gammaApproxOf_valid_or_none
+        (fun _ _ hc' => betaCore_spec ha hb hw hc') w p mode).imp_left
+          fun ⟨lv, hv, h1, h2, h3, h4, _⟩ => ⟨lv, hv, h1, h2, h3, h4⟩)
+      fuel _ (le_max_left _ _) (by omega) _
+  · right
+    rw [dite_eq_right hc]
+    exact ⟨hpole, ha0, hb0, fun h => hs ((sumIsNonposInt_iff ha hb).mpr h), by simpa using hc,
+      rfl⟩
+
+/-- The bracket of `B(a, b)` is valid, or rejected. -/
+theorem betaApprox_valid_or_none {a b : AzFloat} {av bv : ℝ}
+    (ha : a.toVal = some (av : EReal)) (hb : b.toVal = some (bv : EReal)) {w : ℕ}
+    (hw : 64 ≤ w) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    (∃ lv hv : ℝ, Rounds (betaApprox a b w).1 lv ∧ Rounds (betaApprox a b w).2 hv ∧
+        lv ≤ Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv) ∧
+        Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv) ≤ hv ∧
+        (lv = Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv) →
+          hv = Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv))) ∨
+      roundingPossible (betaApprox a b w).1 (betaApprox a b w).2 p mode = none :=
+  gammaApproxOf_valid_or_none (fun _ _ hc => betaCore_spec ha hb hw hc) w p mode
+
+/-- **`betaRealFuel` is the correct rounding of `Spec.beta` on finite arguments, or the fuel
+ran out.** -/
+theorem betaRealFuel_eq_or (fuel : ℕ) {a b : AzFloat} {av bv : ℝ}
+    (ha : a.toVal = some (av : EReal)) (hb : b.toVal = some (bv : EReal)) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    betaRealFuel fuel a b p mode = roundVal p mode (Spec.beta (av : EReal) (bv : EReal)) ∨
+      betaRealFuel fuel a b p mode = (nan, .eq) := by
+  rcases betaRealFuel_eq_or_loop fuel ha hb p mode with h | ⟨hpole, ha0, hb0, -, -, h⟩
+  · exact Or.inl h
+  · rcases eq_or_ne (betaRealFuel fuel a b p mode) (nan, .eq) with hz | hz
+    · exact Or.inr hz
+    · left
+      rw [h] at hz ⊢
+      rw [Spec.beta_coe hpole (by push Not; exact ⟨ha0, hb0⟩)]
+      exact zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
+        (fun w hw => betaApprox_valid_or_none ha hb hw p mode) _ _ (le_max_left _ _) hz
+
+/-- **`betaReal` is the correct rounding of `Spec.beta` on finite arguments, or the fuel ran
+out.** -/
+theorem betaReal_eq_or {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av : EReal))
+    (hb : b.toVal = some (bv : EReal)) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    betaReal a b p mode = roundVal p mode (Spec.beta (av : EReal) (bv : EReal)) ∨
+      betaReal a b p mode = (nan, .eq) :=
+  betaRealFuel_eq_or (gammaFuel p) ha hb p mode
 
 /-- `betaInfinite` is the rounding of `B(+∞, y)` for a real `y`. -/
 theorem betaInfinite_eq {y : AzFloat} {yv : ℝ} (hy : y.toVal = some (yv : EReal)) (p : ℕ)
@@ -415,10 +378,31 @@ theorem betaInfinite_eq {y : AzFloat} {yv : ℝ} (hy : y.toVal = some (yv : ERea
   · rw [ite_eq_right (fun h' => h ((lt_eq_true_iff toVal_zero' hy).mp h')), ite_eq_right h,
       roundVal_none]
 
-/-- **`B` is correctly rounded, or the fuel ran out.** -/
-theorem betaPrecRound_eq_or (a b : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    betaPrecRound a b p mode = liftVal₂ Spec.beta a b p mode ∨
-      betaPrecRound a b p mode = (nan, .eq) := by
+/-- **`B` is correctly rounded, or it is the loop with fuel** on finite arguments in the
+general case. -/
+theorem betaPrecRoundFuel_eq_or_loop (fuel : ℕ) (a b : AzFloat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    betaPrecRoundFuel fuel a b p mode = liftVal₂ Spec.beta a b p mode ∨
+      ∃ av bv : ℝ, a.toVal = some (av : EReal) ∧ b.toVal = some (bv : EReal) ∧
+        ¬ ((av < 0 ∧ ∃ k : ℤ, av = k) ∨ (bv < 0 ∧ ∃ k : ℤ, bv = k)) ∧ av ≠ 0 ∧ bv ≠ 0 ∧
+        ¬ (av + bv ≤ 0 ∧ ∃ k : ℤ, av + bv = k) ∧ betaSpecial a b = false ∧
+        betaPrecRoundFuel fuel a b p mode
+          = zivLoop (betaApprox a b) p mode fuel (max 64 (p + 32)) := by
+  have key : ∀ {a b : AzFloat} {av bv : ℝ}, a.toVal = some (av : EReal) →
+      b.toVal = some (bv : EReal) →
+      betaPrecRoundFuel fuel a b p mode = betaRealFuel fuel a b p mode →
+      (betaPrecRoundFuel fuel a b p mode = liftVal₂ Spec.beta a b p mode ∨
+        ∃ av bv : ℝ, a.toVal = some (av : EReal) ∧ b.toVal = some (bv : EReal) ∧
+          ¬ ((av < 0 ∧ ∃ k : ℤ, av = k) ∨ (bv < 0 ∧ ∃ k : ℤ, bv = k)) ∧ av ≠ 0 ∧ bv ≠ 0 ∧
+          ¬ (av + bv ≤ 0 ∧ ∃ k : ℤ, av + bv = k) ∧ betaSpecial a b = false ∧
+          betaPrecRoundFuel fuel a b p mode
+            = zivLoop (betaApprox a b) p mode fuel (max 64 (p + 32))) := by
+    intro a b av bv ha hb heq
+    rw [heq]
+    rcases betaRealFuel_eq_or_loop fuel ha hb p mode with h | ⟨h1, h2, h3, h4, h5, h6⟩
+    · left
+      rw [h, liftVal₂, ha, hb, Option.bind_some, Option.bind_some]
+    · exact Or.inr ⟨av, bv, ha, hb, h1, h2, h3, h4, h5, h6⟩
   have hz : zero.toVal = some ((0 : ℝ) : EReal) := toVal_zero'
   cases a with
   | nan => left; cases b <;> rfl
@@ -428,20 +412,20 @@ theorem betaPrecRound_eq_or (a b : AzFloat) (p : ℕ) [NeZero p] (mode : Roundin
     | infinity sb =>
       left
       cases sa <;> cases sb <;>
-        simp [betaPrecRound, betaInfinite, liftVal₂, Spec.beta_bot_left, Spec.beta_bot_right,
+        simp [betaPrecRoundFuel, betaInfinite, liftVal₂, Spec.beta_bot_left, Spec.beta_bot_right,
           Spec.beta_top_top, lt, partialCompare]
     | zero =>
       left
       cases sa
-      · simp [betaPrecRound, liftVal₂, Spec.beta_bot_left]
-      · simp only [betaPrecRound, ↓reduceIte, liftVal₂, toVal_infinity, Option.bind_some, hz,
+      · simp [betaPrecRoundFuel, liftVal₂, Spec.beta_bot_left]
+      · simp only [betaPrecRoundFuel, ↓reduceIte, liftVal₂, toVal_infinity, Option.bind_some, hz,
           Spec.beta_top_coe]
         exact betaInfinite_eq hz p mode
     | finite s e q m hv =>
       left
       cases sa
-      · simp [betaPrecRound, liftVal₂, Spec.beta_bot_left]
-      · simp only [betaPrecRound, ↓reduceIte, liftVal₂, toVal_infinity, Option.bind_some,
+      · simp [betaPrecRoundFuel, liftVal₂, Spec.beta_bot_left]
+      · simp only [betaPrecRoundFuel, ↓reduceIte, liftVal₂, toVal_infinity, Option.bind_some,
           toVal_finite, Spec.beta_top_coe]
         exact betaInfinite_eq (toVal_finite s e q m hv) p mode
   | zero =>
@@ -450,31 +434,186 @@ theorem betaPrecRound_eq_or (a b : AzFloat) (p : ℕ) [NeZero p] (mode : Roundin
     | infinity sb =>
       left
       cases sb
-      · simp [betaPrecRound, liftVal₂, Spec.beta_bot_right]
-      · simp only [betaPrecRound, ↓reduceIte, liftVal₂, toVal_infinity, Option.bind_some, hz,
+      · simp [betaPrecRoundFuel, liftVal₂, Spec.beta_bot_right]
+      · simp only [betaPrecRoundFuel, ↓reduceIte, liftVal₂, toVal_infinity, Option.bind_some, hz,
           Spec.beta_coe_top]
         exact betaInfinite_eq hz p mode
     | zero =>
-      simp only [betaPrecRound, liftVal₂, hz, Option.bind_some]
-      exact betaReal_eq_or hz hz p mode
+      exact key hz hz rfl
     | finite s e q m hv =>
-      simp only [betaPrecRound, liftVal₂, hz, toVal_finite, Option.bind_some]
-      exact betaReal_eq_or hz (toVal_finite s e q m hv) p mode
+      exact key hz (toVal_finite s e q m hv) rfl
   | finite s e q m hv =>
     cases b with
     | nan => left; rfl
     | infinity sb =>
       left
       cases sb
-      · simp [betaPrecRound, liftVal₂, Spec.beta_bot_right]
-      · simp only [betaPrecRound, ↓reduceIte, liftVal₂, toVal_infinity, Option.bind_some,
+      · simp [betaPrecRoundFuel, liftVal₂, Spec.beta_bot_right]
+      · simp only [betaPrecRoundFuel, ↓reduceIte, liftVal₂, toVal_infinity, Option.bind_some,
           toVal_finite, Spec.beta_coe_top]
         exact betaInfinite_eq (toVal_finite s e q m hv) p mode
     | zero =>
-      simp only [betaPrecRound, liftVal₂, hz, toVal_finite, Option.bind_some]
-      exact betaReal_eq_or (toVal_finite s e q m hv) hz p mode
+      exact key (toVal_finite s e q m hv) hz rfl
     | finite s' e' q' m' hv' =>
-      simp only [betaPrecRound, liftVal₂, toVal_finite, Option.bind_some]
-      exact betaReal_eq_or (toVal_finite s e q m hv) (toVal_finite s' e' q' m' hv') p mode
+      exact key (toVal_finite s e q m hv) (toVal_finite s' e' q' m' hv') rfl
+
+/-- **`B` is correctly rounded, or the fuel ran out**, at every fuel. -/
+theorem betaPrecRoundFuel_eq_or (fuel : ℕ) (a b : AzFloat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    betaPrecRoundFuel fuel a b p mode = liftVal₂ Spec.beta a b p mode ∨
+      betaPrecRoundFuel fuel a b p mode = (nan, .eq) := by
+  rcases betaPrecRoundFuel_eq_or_loop fuel a b p mode with
+    h | ⟨av, bv, ha, hb, hpole, ha0, hb0, -, -, h⟩
+  · exact Or.inl h
+  · rcases eq_or_ne (betaPrecRoundFuel fuel a b p mode) (nan, .eq) with hz | hz
+    · exact Or.inr hz
+    · left
+      rw [h] at hz ⊢
+      rw [liftVal₂, ha, hb, Option.bind_some, Option.bind_some,
+        Spec.beta_coe hpole (by push Not; exact ⟨ha0, hb0⟩)]
+      exact zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
+        (fun w hw => betaApprox_valid_or_none ha hb hw p mode) _ _ (le_max_left _ _) hz
+
+/-- **`B` is correctly rounded, or the fuel ran out.** -/
+theorem betaPrecRound_eq_or (a b : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    betaPrecRound a b p mode = liftVal₂ Spec.beta a b p mode ∨
+      betaPrecRound a b p mode = (nan, .eq) :=
+  betaPrecRoundFuel_eq_or (gammaFuel p) a b p mode
+
+/-- A real value of `Spec.beta` is `0`, or the value at real arguments off the special
+values. -/
+theorem Spec.beta_eq_coe_cases {a b : EReal} {v : ℝ} (h : Spec.beta a b = some (v : EReal)) :
+    v = 0 ∨ ∃ av bv : ℝ, a = av ∧ b = bv ∧
+      ¬ ((av < 0 ∧ ∃ k : ℤ, av = k) ∨ (bv < 0 ∧ ∃ k : ℤ, bv = k)) ∧ ¬ (av = 0 ∨ bv = 0) ∧
+      v = Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv) := by
+  have h0 : ∀ {o : Option EReal}, o = some ((v : ℝ) : EReal) → o = some 0 → v = 0 := by
+    intro o h1 h2
+    rw [h1, Option.some.injEq] at h2
+    exact_mod_cast h2
+  induction a using EReal.rec with
+  | bot => rw [Spec.beta_bot_left] at h; exact absurd h (by simp)
+  | top =>
+    induction b using EReal.rec with
+    | bot => rw [Spec.beta_bot_right] at h; exact absurd h (by simp)
+    | top => exact Or.inl (h0 h Spec.beta_top_top)
+    | coe y =>
+      rw [Spec.beta_top_coe] at h
+      by_cases hy : 0 < y
+      · rw [ite_eq_left hy] at h
+        exact Or.inl (h0 h rfl)
+      · rw [ite_eq_right hy] at h
+        exact absurd h (by simp)
+  | coe x =>
+    induction b using EReal.rec with
+    | bot => rw [Spec.beta_bot_right] at h; exact absurd h (by simp)
+    | top =>
+      rw [Spec.beta_coe_top] at h
+      by_cases hx : 0 < x
+      · rw [ite_eq_left hx] at h
+        exact Or.inl (h0 h rfl)
+      · rw [ite_eq_right hx] at h
+        exact absurd h (by simp)
+    | coe y =>
+      by_cases hpole : (x < 0 ∧ ∃ k : ℤ, x = k) ∨ (y < 0 ∧ ∃ k : ℤ, y = k)
+      · rw [Spec.beta_coe_of_pole hpole] at h
+        exact absurd h (by simp)
+      · by_cases hzero : x = 0 ∨ y = 0
+        · rw [Spec.beta_coe_of_zero hpole hzero, Option.some.injEq] at h
+          exact absurd h.symm (EReal.coe_ne_top v)
+        · rw [Spec.beta_coe hpole hzero, Option.some.injEq, EReal.coe_eq_coe_iff] at h
+          exact Or.inr ⟨x, y, rfl, rfl, hpole, hzero, h.symm⟩
+
+/-- **The specification of `B`** (`ZivSpec`): sound at every fuel; complete in the limit of
+the fuel wherever the value is no rounding boundary (the bracket converges at every pair of
+arguments, `betaApprox_bracketConv`); and correct at every fuel on the special values (`NaN`,
+`+∞`, the zeros where `a + b` is a non-positive integer) and on the arguments recognized by
+`betaSpecial`, where the value is irrational: `a + b` a positive integer, or `a`, `b`
+quarter-integers. -/
+theorem betaPrecRoundFuel_zivSpec :
+    ZivSpec
+      (fun xy : AzFloat × AzFloat => xy.1.toVal.bind fun a => xy.2.toVal.bind fun b =>
+        Spec.beta a b)
+      (fun fuel xy p mode => betaPrecRoundFuel fuel xy.1 xy.2 p mode)
+      {xy | ∀ av bv : ℝ, xy.1.toVal = some (av : EReal) → xy.2.toVal = some (bv : EReal) →
+        (av < 0 ∧ ∃ k : ℤ, av = k) ∨ (bv < 0 ∧ ∃ k : ℤ, bv = k) ∨ av = 0 ∨ bv = 0 ∨
+          (av + bv ≤ 0 ∧ ∃ k : ℤ, av + bv = k)}
+      {xy | betaSpecial xy.1 xy.2 = true ∧ ¬ sumIsNonposInt xy.1 xy.2 = true} where
+  sound := fun fuel xy p _ mode => betaPrecRoundFuel_eq_or fuel xy.1 xy.2 p mode
+  complete := fun xy p _ mode hB => by
+    by_cases hgen : ∃ av bv : ℝ, xy.1.toVal = some (av : EReal) ∧
+        xy.2.toVal = some (bv : EReal) ∧
+        ¬ ((av < 0 ∧ ∃ k : ℤ, av = k) ∨ (bv < 0 ∧ ∃ k : ℤ, bv = k)) ∧ av ≠ 0 ∧ bv ≠ 0 ∧
+        ¬ (av + bv ≤ 0 ∧ ∃ k : ℤ, av + bv = k)
+    · obtain ⟨av, bv, ha, hb, hpole, ha0, hb0, hs⟩ := hgen
+      have hval : (xy.1.toVal.bind fun a => xy.2.toVal.bind fun b => Spec.beta a b)
+          = some ((Real.Gamma av * Real.Gamma bv / Real.Gamma (av + bv) : ℝ) : EReal) := by
+        rw [ha, hb, Option.bind_some, Option.bind_some,
+          Spec.beta_coe hpole (by push Not; exact ⟨ha0, hb0⟩)]
+      have hB' := hB _ hval
+      obtain ⟨F, hF⟩ := zivLoop_eventually_eq p mode (betaApprox xy.1 xy.2)
+        (betaApprox_bracketConv ha hb (beta_arg_cases ha0 fun h => hpole (Or.inl h))
+          (beta_arg_cases hb0 fun h => hpole (Or.inr h)) (beta_sum_cases hs))
+        (ne_zero_of_not_mem_floatSet hB') hB' (max 64 (p + 32)) (by omega)
+        (fun w hw =>
+          (betaApprox_valid_or_none ha hb (le_trans (le_max_left _ _) hw) p mode).imp_left
+            fun ⟨lv, hv, h1, h2, h3, h4, _⟩ => ⟨lv, hv, h1, h2, h3, h4⟩)
+      refine ⟨F, fun fuel hfuel => ?_⟩
+      rcases betaPrecRoundFuel_eq_or_loop fuel xy.1 xy.2 p mode with
+        h | ⟨-, -, -, -, -, -, -, -, -, h⟩
+      · exact h
+      · show betaPrecRoundFuel fuel xy.1 xy.2 p mode = _
+        rw [h, hval]
+        exact hF fuel hfuel
+    · refine ⟨0, fun fuel _ => ?_⟩
+      rcases betaPrecRoundFuel_eq_or_loop fuel xy.1 xy.2 p mode with
+        h | ⟨av, bv, ha, hb, h1, h2, h3, h4, -, -⟩
+      · exact h
+      · exact absurd ⟨av, bv, ha, hb, h1, h2, h3, h4⟩ hgen
+  dyadic := fun xy hxy v hv => by
+    cases hx : xy.1.toVal with
+    | none => rw [hx] at hv; exact absurd hv (by simp)
+    | some a' =>
+      cases hy : xy.2.toVal with
+      | none => rw [hx, hy] at hv; exact absurd hv (by simp)
+      | some b' =>
+        rw [hx, hy, Option.bind_some, Option.bind_some] at hv
+        rcases Spec.beta_eq_coe_cases hv with rfl | ⟨av, bv, rfl, rfl, hpole, hzero, rfl⟩
+        · exact isDyadic_zero
+        · rcases hxy av bv hx hy with h | h | h | h | ⟨hle, k, hk⟩
+          · exact absurd (Or.inl h) hpole
+          · exact absurd (Or.inr h) hpole
+          · exact absurd (Or.inl h) hzero
+          · exact absurd (Or.inr h) hzero
+          · rw [gamma_eq_zero_of_nonpos_int hle hk, div_zero]
+            exact isDyadic_zero
+  nondyadic := fun xy h => by
+    obtain ⟨hc, hs⟩ := h
+    obtain ⟨av, bv, ha, hb, hia, hib, -⟩ := betaSpecial_spec hc
+    have hirr := irrational_beta_of_special ha hb hc hs
+    have hpole : ¬ ((av < 0 ∧ ∃ k : ℤ, av = k) ∨ (bv < 0 ∧ ∃ k : ℤ, bv = k)) := by
+      rintro (h | h)
+      · exact hia ((isInteger_iff_of_toVal ha).mpr h.2)
+      · exact hib ((isInteger_iff_of_toVal hb).mpr h.2)
+    have hzero : ¬ (av = 0 ∨ bv = 0) := by
+      rintro (h | h)
+      · exact hia ((isInteger_iff_of_toVal ha).mpr ⟨0, by simpa using h⟩)
+      · exact hib ((isInteger_iff_of_toVal hb).mpr ⟨0, by simpa using h⟩)
+    refine ⟨_, ?_, not_isDyadic_of_irrational hirr⟩
+    show (xy.1.toVal.bind fun a => xy.2.toVal.bind fun b => Spec.beta a b) = _
+    rw [ha, hb, Option.bind_some, Option.bind_some, Spec.beta_coe hpole hzero]
+  correct := fun xy hxy fuel p _ mode => by
+    rcases betaPrecRoundFuel_eq_or_loop fuel xy.1 xy.2 p mode with
+      h | ⟨av, bv, ha, hb, hpole, ha0, hb0, hs, hc, -⟩
+    · exact h
+    · exfalso
+      rcases hxy with hD | hN
+      · rcases hD av bv ha hb with h | h | h | h | h
+        · exact hpole (Or.inl h)
+        · exact hpole (Or.inr h)
+        · exact ha0 h
+        · exact hb0 h
+        · exact hs h
+      · rw [hN.1] at hc
+        exact Bool.noConfusion hc
 
 end Azurite.AzFloat

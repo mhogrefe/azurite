@@ -126,3 +126,12 @@ private def LB (a b : String) (p : Nat) (m : RoundingMode := .Nearest) : String 
 #guard LB "0.5" "0.5" 0 == ("NaN", .eq)
 #guard toString (lnBeta (X "0.5" 53) (X "0.5" 53)) == "1.1447298858494002"
 #guard toString (lnBeta (X "-0.3" 53) (X "-0.4" 53)) == "NaN"
+
+-- the fuel as an argument
+#guard D (lnAbsBetaPrecRoundFuel 3 (X "0.25" 53) (X "0.75" 53) 53 .Nearest)
+  == ("1.4913034761293729", .gt, true)
+#guard D (lnAbsBetaPrecRoundFuel 0 (X "2.5" 53) (X "1" 53) 53 .Nearest)
+  == ("-0.9162907318741551", .lt, true)
+#guard lnAbsBetaPrecRoundFuel (gammaFuel 53) (X "10" 53) (X "10" 53) 53 .Nearest == L "10" "10" 53
+#guard (fun r : AzFloat × Ordering => (toString r.1, r.2))
+  (lnBetaPrecRoundFuel 3 (X "-0.5" 53) (X "0.25" 53) 53 .Nearest) == ("0.9639593356315369", .gt)

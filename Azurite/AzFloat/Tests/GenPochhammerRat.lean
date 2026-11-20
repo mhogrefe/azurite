@@ -112,3 +112,21 @@ private def recip (x : String) (n p : Nat) (m : RoundingMode) : AzFloat × Order
 -- `genPochhammerRat`
 #guard toString (genPochhammerRat (Q "1/3") (Q "-2") 53) == "0.9"
 #guard toString (genPochhammerRat (Q "1/3") (Q "1/3") 53) == "0.5054680881560892"
+
+-- the fuel as an argument
+#guard D (genPochhammerRatPrecRoundFuel 3 (Q "1/3") (Q "5/2") 53 .Nearest)
+  == ("0.6437384500594929", .lt)
+#guard D (genPochhammerRatPrecRoundFuel 3 (Q "901/3") (Q "-200") 53 .Nearest)
+  == ("6.338106190823902e-457", .lt)
+#guard genPochhammerRatPrecRoundFuel (gammaFuel 53) (Q "1/3") (Q "5/2") 53 .Nearest
+  == P "1/3" "5/2" 53
+
+-- no fuel for an integer `y` when the denominator of `x` is not a power of two (and `n ≥ 4`
+-- for `y < 0`: `1/((−2/3)(1/3)(4/3)) = −27/8` is dyadic)
+#guard !recipPochRatSpecial (Q "7/3") 3 && recipPochRatSpecial (Q "7/3") 4
+#guard !recipPochRatSpecial (Q "7/4") 200
+#guard D (genPochhammerRatPrecRoundFuel 0 (Q "7/3") (Q "-3") 53 .Nearest) == ("-3.375", .eq)
+#guard D (genPochhammerRatPrecRoundFuel 0 (Q "901/3") (Q "-200") 53 .Nearest)
+  == ("6.338106190823902e-457", .lt)
+#guard D (genPochhammerRatPrecRoundFuel 0 (Q "1/3") (Q "200") 53 .Nearest)
+  == ("8.603289796878314e372", .lt)

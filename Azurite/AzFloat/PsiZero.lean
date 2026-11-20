@@ -26,14 +26,20 @@ rounded to precision `p` in `mode`, with the comparison against the exact value;
   secant method runs along a schedule of accuracies planned backwards (`psiZeroPlan`: the step
   to `t` bits starts from an iterate with `5t/8 + 8` bits).  At 53 bits the candidate costs
   one evaluation of `ψ`.
-* **The enclosure** (`psiZeroEncl`): one enclosure `[D]` of `ψ(c)` at the candidate `c`, inside
+* **The enclosure** (`psiZeroFast`): one enclosure `[D]` of `ψ(c)` at the candidate `c`, inside
   `(−n, −n + 1)` (inside `(0, 2]` for `n = 0`) by float comparisons.  The slope of `ψ` is at
   least `1` on `(−n, −n + 1)` and at least `1/4` between two points of `(0, 2]` — bounds that
   come from the recurrence, without `ψ′` (`Transcendental/PsiZero.lean`) — so
   `|xₙ − c| ≤ δ` with `δ = max |D|` (`4δ` for `n = 0`).  The candidate is never trusted.
+* **The verified fallback** (`psiZeroFallback`): nothing is proved about `Float`, so nothing
+  is proved about the width of the fast enclosure.  When it is missing or wider than
+  `2^(−⌊w/2⌋)`, the enclosure comes from `w + 8` steps of bisection on the unit interval of
+  the zero, each by the sign of an enclosure of `ψ` at the exact middle.  Its width tends
+  to `0`, which makes the function complete.
 * **Fuel.**  Ziv's loop with the fuel of `ψ` itself (`lnGammaFuel`): nothing is known about
-  the arithmetic nature of the zeros.  The specification `psiZeroPrecRound_eq_or`
-  (`Equiv/PsiZero.lean`) is "correctly rounded, or `NaN`".
+  the arithmetic nature of the zeros.  The specification `psiZeroPrecRoundFuel_zivSpec`
+  (`Equiv/PsiZero.lean`): sound at every fuel, and complete in the limit of the fuel wherever
+  the zero is no rounding boundary.
 -/
 
 namespace Azurite.AzFloat
@@ -198,24 +204,75 @@ def psiZeroAround (n : Nat) (c : AzFloat) (D : Encl) (P : Nat) : Encl :=
   let r := if n = 0 then δ <<< AzInt.ofInt 2 else δ
   ((subPrecRound c r P .Floor).1, (addPrecRound c r P .Ceiling).1)
 
-/-- The enclosure of `xₙ` at Ziv level `w`; `none` when the candidate is not inside the
-interval or `ψ` has no enclosure there at this level. -/
-def psiZeroEncl (n w : Nat) : Option Encl :=
+/-- The fast enclosure of `xₙ` at Ziv level `w`, around the unverified candidate; `none` when
+the candidate is not inside the interval or `ψ` has no enclosure there at this level. -/
+def psiZeroFast (n w : Nat) : Option Encl :=
   let c := psiZeroCandidate n (w + 4)
   if c.isFinite && psiZeroInside n c then
     (digammaEncl c (expOf c) (decide (n = 0)) (w + 24)).map fun D =>
       psiZeroAround n c D (n.log2 + w + 64)
   else none
 
+/-! ### The verified fallback: bisection on the sign of `ψ` -/
+
+/-- The left end of the unit interval `(l, l + 1)` that the bisection for `xₙ` starts from:
+`1` for `n = 0`, `−n` otherwise. -/
+def psiZeroLo (n : Nat) : Int := if n = 0 then 1 else -(n : Int)
+
+/-- The point `(2a + 1)/2^(j+1)`, the middle of `[a, a + 1]/2^j`, exactly. -/
+def psiZeroMid (j : Nat) (a : AzInt) : AzFloat :=
+  ofAzInt (a + a + 1) <<< AzInt.ofInt (-((j + 1 : Nat) : Int))
+
+/-- `k` steps of bisection for the zero of `ψ` in `[a, a + 1]/2^j`, by the sign of the
+enclosure of `ψ` at the middle (at level `W`, for arguments below `2^e`): the last middle and
+the enclosure of `ψ` there.  It stops early at a middle whose enclosure contains `0`; `none`
+when `ψ` has no enclosure at a middle. -/
+def psiZeroBisect (n W : Nat) (e : AzInt) : Nat → Nat → AzInt → Option (AzFloat × Encl)
+  | 0, j, a =>
+    (digammaEncl (psiZeroMid j a) e (decide (n = 0)) W).map fun D => (psiZeroMid j a, D)
+  | k + 1, j, a =>
+    match digammaEncl (psiZeroMid j a) e (decide (n = 0)) W with
+    | none => none
+    | some D =>
+      if lt D.2 zero then psiZeroBisect n W e k (j + 1) (a + a + 1)
+      else if lt zero D.1 then psiZeroBisect n W e k (j + 1) (a + a)
+      else some (psiZeroMid j a, D)
+
+/-- **The verified enclosure of `xₙ`** at Ziv level `w`: `w + 8` steps of bisection on
+`(1, 2)` (`n = 0`) or `(−n, −n + 1)`, then the enclosure around the last middle.  Every step
+is one evaluation of `ψ`, so this is slow — and its width provably tends to `0`
+(`psiZeroFallback_conv`). -/
+def psiZeroFallback (n w : Nat) : Option Encl :=
+  (psiZeroBisect n (w + 24) (AzInt.ofInt ((n.log2 + 1 : Nat) : Int)) (w + 8) 0
+    (AzInt.ofInt (psiZeroLo n))).map fun r => psiZeroAround n r.1 r.2 (n.log2 + w + 64)
+
+/-- Is the enclosure narrower than `2^(−⌊w/2⌋)`? -/
+def psiZeroNarrow (b : Encl) (w : Nat) : Bool :=
+  le (subPrecRound b.2 b.1 64 .Ceiling).1 (powerOf2 (AzInt.ofInt (-((w / 2 : Nat) : Int))))
+
+/-- The enclosure of `xₙ` at Ziv level `w`: the fast one when it exists and is narrow, the
+verified fallback otherwise. -/
+def psiZeroEncl (n w : Nat) : Option Encl :=
+  match (psiZeroFast n w).filter (psiZeroNarrow · w) with
+  | some b => some b
+  | none => psiZeroFallback n w
+
 /-- The bracket of `xₙ` as a pair of `Roundable`s. -/
 def psiZeroApprox (n w : Nat) : Roundable × Roundable :=
   lnAbsGammaApproxOf (psiZeroEncl n w) w
 
 /-- The `n`-th real zero of `ψ` rounded to precision `p` with `mode`, and the comparison with
-the exact value (`(nan, .eq)` for `p = 0`, or if the fuel runs out). -/
-def psiZeroPrecRound (n p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+the exact value (`(nan, .eq)` for `p = 0`, or if the fuel runs out), with the fuel of the Ziv
+loop explicit. -/
+def psiZeroPrecRoundFuel (fuel n p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   if p = 0 then (nan, .eq)
-  else zivLoop (psiZeroApprox n) p mode (lnGammaFuel p) (max 64 (p + 32))
+  else zivLoop (psiZeroApprox n) p mode fuel (max 64 (p + 32))
+
+/-- The `n`-th real zero of `ψ` rounded to precision `p` with `mode`, and the comparison with
+the exact value: `psiZeroPrecRoundFuel` at the fuel `lnGammaFuel p`.  The specification is
+`psiZeroPrecRoundFuel_zivSpec` (`Equiv/PsiZero.lean`). -/
+def psiZeroPrecRound (n p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  psiZeroPrecRoundFuel (lnGammaFuel p) n p mode
 
 /-- The `n`-th real zero of `ψ` rounded to nearest at precision `p`. -/
 def psiZero (n p : Nat) : AzFloat := (psiZeroPrecRound n p .Nearest).1

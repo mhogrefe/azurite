@@ -36,8 +36,9 @@ def negLnAbsRat (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Orderin
 
 /-- `ln |B(a, b)|` rounded to precision `p` with `mode`, the comparison with the exact value,
 and the sign of `B(a, b)` (`true`: positive).  The first component is `(nan, .eq)` at a
-negative integer, for `p = 0` unless the value is infinite, or if the fuel runs out. -/
-def lnAbsBetaRatPrecRound (a b : AzRat) (p : Nat) (mode : RoundingMode) :
+negative integer, for `p = 0` unless the value is infinite, or if the fuel runs out.  The
+fuel of the loop is explicit. -/
+def lnAbsBetaRatPrecRoundFuel (fuel : Nat) (a b : AzRat) (p : Nat) (mode : RoundingMode) :
     (AzFloat × Ordering) × Bool :=
   if betaRatPole a || betaRatPole b then ((nan, .eq), true)
   else if a.num = 0 ∨ b.num = 0 then ((infinity true, .eq), true)
@@ -53,7 +54,14 @@ def lnAbsBetaRatPrecRound (a b : AzRat) (p : Nat) (mode : RoundingMode) :
     let bits := betaBits ea eb es
     lnAbsLoop (fun w => lnAbsBetaEncl (lnGammaRatEncl a) (lnGammaRatEncl b)
       (lnGammaRatEncl (a + b)) ea eb es (gammaRatFrac a) (gammaRatFrac b) (gammaRatFrac (a + b))
-      (w + bits) w) p mode (gammaFuel p) (max 64 (p + 32))
+      (w + bits) w) p mode fuel (max 64 (p + 32))
+
+/-- `ln |B(a, b)|` rounded to precision `p` with `mode`, the comparison with the exact value,
+and the sign of `B(a, b)`: `lnAbsBetaRatPrecRoundFuel` at the fuel `gammaFuel p`.  The
+specification of the value is `lnAbsBetaRatPrecRoundFuel_zivSpec` (`Equiv/LnBetaRat.lean`). -/
+def lnAbsBetaRatPrecRound (a b : AzRat) (p : Nat) (mode : RoundingMode) :
+    (AzFloat × Ordering) × Bool :=
+  lnAbsBetaRatPrecRoundFuel (gammaFuel p) a b p mode
 
 /-- `ln |B(a, b)|` rounded to nearest at precision `p`, and the sign of `B(a, b)`. -/
 def lnAbsBetaRat (a b : AzRat) (p : Nat) : AzFloat × Bool :=
@@ -63,9 +71,15 @@ def lnAbsBetaRat (a b : AzRat) (p : Nat) : AzFloat × Bool :=
 /-- `ln B(a, b)` for two rationals, rounded to precision `p` with `mode`, and the comparison
 with the exact value: `lnAbsBetaRatPrecRound` where `B(a, b) ≥ 0`, `(nan, .eq)` where
 `B(a, b) < 0`. -/
-def lnBetaRatPrecRound (a b : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  let r := lnAbsBetaRatPrecRound a b p mode
+def lnBetaRatPrecRoundFuel (fuel : Nat) (a b : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  let r := lnAbsBetaRatPrecRoundFuel fuel a b p mode
   if r.2 then r.1 else (nan, .eq)
+
+/-- `ln B(a, b)` for two rationals: `lnBetaRatPrecRoundFuel` at the fuel `gammaFuel p`
+(`lnBetaRatPrecRoundFuel_zivSpec`, `Equiv/LnBetaRat.lean`). -/
+def lnBetaRatPrecRound (a b : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  lnBetaRatPrecRoundFuel (gammaFuel p) a b p mode
 
 /-- `ln B(a, b)` rounded to nearest at precision `p`. -/
 def lnBetaRat (a b : AzRat) (p : Nat) : AzFloat := (lnBetaRatPrecRound a b p .Nearest).1

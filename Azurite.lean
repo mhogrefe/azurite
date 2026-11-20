@@ -122,6 +122,7 @@ import Azurite.AzFloat.Basic
 import Azurite.AzFloat.Beta
 import Azurite.AzFloat.BetaBracket
 import Azurite.AzFloat.BetaRat
+import Azurite.AzFloat.BetaRatBracket
 import Azurite.AzFloat.Catalan
 import Azurite.AzFloat.CatalanBracket
 import Azurite.AzFloat.Cbrt
@@ -190,6 +191,7 @@ import Azurite.AzFloat.Equiv.Agm
 import Azurite.AzFloat.Equiv.AgmConstants
 import Azurite.AzFloat.Equiv.AgmSpec
 import Azurite.AzFloat.Equiv.AgmWidth
+import Azurite.AzFloat.Equiv.AltSeriesWidth
 import Azurite.AzFloat.Equiv.Asec
 import Azurite.AzFloat.Equiv.AsecBracket
 import Azurite.AzFloat.Equiv.AsecPi
@@ -232,7 +234,10 @@ import Azurite.AzFloat.Equiv.AtanhBracket
 import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Beta
 import Azurite.AzFloat.Equiv.BetaBracket
+import Azurite.AzFloat.Equiv.BetaCertificate
 import Azurite.AzFloat.Equiv.BetaRat
+import Azurite.AzFloat.Equiv.BetaRatCertificate
+import Azurite.AzFloat.Equiv.BetaWidth
 import Azurite.AzFloat.Equiv.Catalan
 import Azurite.AzFloat.Equiv.CatalanBracket
 import Azurite.AzFloat.Equiv.Cbrt
@@ -262,6 +267,7 @@ import Azurite.AzFloat.Equiv.CschBracket
 import Azurite.AzFloat.Equiv.Digamma
 import Azurite.AzFloat.Equiv.DigammaBracket
 import Azurite.AzFloat.Equiv.DigammaRat
+import Azurite.AzFloat.Equiv.DigammaWidth
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
@@ -270,6 +276,7 @@ import Azurite.AzFloat.Equiv.DottieBracket
 import Azurite.AzFloat.Equiv.EnclConv
 import Azurite.AzFloat.Equiv.EnclWidth
 import Azurite.AzFloat.Equiv.EulerGamma
+import Azurite.AzFloat.Equiv.EulerGammaWidth
 import Azurite.AzFloat.Equiv.Exp
 import Azurite.AzFloat.Equiv.ExpApprox
 import Azurite.AzFloat.Equiv.ExpBracket
@@ -302,6 +309,7 @@ import Azurite.AzFloat.Equiv.GelfondBracket
 import Azurite.AzFloat.Equiv.GelfondSchneider
 import Azurite.AzFloat.Equiv.GenPochhammer
 import Azurite.AzFloat.Equiv.GenPochhammerRat
+import Azurite.AzFloat.Equiv.GenPochhammerRatCertificate
 import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Interval
 import Azurite.AzFloat.Equiv.LambertW
@@ -325,6 +333,7 @@ import Azurite.AzFloat.Equiv.LnGammaWidth
 import Azurite.AzFloat.Equiv.LnP1
 import Azurite.AzFloat.Equiv.LnRat
 import Azurite.AzFloat.Equiv.LnSmooth
+import Azurite.AzFloat.Equiv.LnSmoothWidth
 import Azurite.AzFloat.Equiv.Log10
 import Azurite.AzFloat.Equiv.Log2
 import Azurite.AzFloat.Equiv.Log2Bracket
@@ -359,10 +368,16 @@ import Azurite.AzFloat.Equiv.PiBracket
 import Azurite.AzFloat.Equiv.PiConstants
 import Azurite.AzFloat.Equiv.PiDiv3Bracket
 import Azurite.AzFloat.Equiv.Pochhammer
+import Azurite.AzFloat.Equiv.PochhammerDyadic
 import Azurite.AzFloat.Equiv.PochhammerRat
+import Azurite.AzFloat.Equiv.PochhammerRatCertificate
+import Azurite.AzFloat.Equiv.PochhammerWidth
 import Azurite.AzFloat.Equiv.Polygamma
 import Azurite.AzFloat.Equiv.PolygammaBracket
+import Azurite.AzFloat.Equiv.PolygammaCertificate
 import Azurite.AzFloat.Equiv.PolygammaRat
+import Azurite.AzFloat.Equiv.PolygammaRatCertificate
+import Azurite.AzFloat.Equiv.PolygammaWidth
 import Azurite.AzFloat.Equiv.Pow
 import Azurite.AzFloat.Equiv.Pow10
 import Azurite.AzFloat.Equiv.Pow2
@@ -477,6 +492,7 @@ import Azurite.AzFloat.GelfondBracket
 import Azurite.AzFloat.GelfondSchneider
 import Azurite.AzFloat.GenPochhammer
 import Azurite.AzFloat.GenPochhammerRat
+import Azurite.AzFloat.GenPochhammerRatBracket
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Interval
 import Azurite.AzFloat.LambertW
@@ -531,9 +547,11 @@ import Azurite.AzFloat.PiConstants
 import Azurite.AzFloat.PiDiv3Bracket
 import Azurite.AzFloat.Pochhammer
 import Azurite.AzFloat.PochhammerRat
+import Azurite.AzFloat.PochhammerRatBracket
 import Azurite.AzFloat.Polygamma
 import Azurite.AzFloat.PolygammaBracket
 import Azurite.AzFloat.PolygammaRat
+import Azurite.AzFloat.PolygammaRatBracket
 import Azurite.AzFloat.Pow
 import Azurite.AzFloat.Pow10
 import Azurite.AzFloat.Pow2
@@ -673,6 +691,7 @@ import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Equiv.Sub
 import Azurite.AzInt.Equiv.SumProduct
 import Azurite.AzInt.Equiv.SweeneyHorner
+import Azurite.AzInt.Equiv.SweeneyHornerWidth
 import Azurite.AzInt.Equiv.TrailingZeros
 import Azurite.AzInt.ExactDiv
 import Azurite.AzInt.ExtendedGcd
@@ -2472,6 +2491,7 @@ import Azurite.CatalanIrrational.ZetaFive.Identities.WeightedPNT
 import Azurite.Chudnovsky.AlgOver
 import Azurite.Chudnovsky.AuxFunction
 import Azurite.Chudnovsky.AxisODE
+import Azurite.Chudnovsky.BetaValues
 import Azurite.Chudnovsky.Bounds
 import Azurite.Chudnovsky.CM
 import Azurite.Chudnovsky.Core
@@ -3230,6 +3250,7 @@ import Azurite.Transcendental.Niven
 import Azurite.Transcendental.NivenSin
 import Azurite.Transcendental.NivenTan
 import Azurite.Transcendental.PolygammaStirling
+import Azurite.Transcendental.PolygammaValues
 import Azurite.Transcendental.PsiZero
 import Azurite.Transcendental.Ramanujan
 import Azurite.Transcendental.Sinh

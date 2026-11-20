@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.PolygammaRat
+import Azurite.AzFloat.Equiv.PolygammaRatCertificate
 import Azurite.AzFloat.Equiv.Polygamma
 import Azurite.AzFloat.Equiv.DigammaRat
 
@@ -23,114 +24,6 @@ runs out.  The steps: `polygammaRatNegEncl_spec`, `polygammaRatEncl_spec`,
 namespace Azurite.AzFloat
 
 open Real Finset Nat
-
-/-- **`polygammaRatNegEncl n q w` encloses `(−1)ⁿ⁺¹ ψ⁽ⁿ⁾(q)`** for a rational `q < 0` that is
-not an integer. -/
-theorem polygammaRatNegEncl_spec {n : ℕ} (hn : 1 ≤ n) (q : AzRat)
-    (hlt : ((AzRat.toRat q : ℚ) : ℝ) < 0) (hni : ∀ k : ℤ, ((AzRat.toRat q : ℚ) : ℝ) ≠ k)
-    {w : ℕ} (hw : 64 ≤ w) {H : Encl} (h : polygammaRatNegEncl n q w = some H) :
-    IsEncl H ((-1) ^ (n + 1) * polygammaR n ((AzRat.toRat q : ℚ) : ℝ)) := by
-  unfold polygammaRatNegEncl at h
-  dsimp only at h
-  generalize (q.round .Floor).1 = k at h
-  set xv := ((AzRat.toRat q : ℚ) : ℝ) with hxv
-  set m := k.abs.toNat with hm
-  by_cases hc : k.sign = false ∧ (q - k.toAzRat).num ≠ 0 ∧ (q - k.toAzRat).sign = true
-      ∧ (1 - (q - k.toAzRat)).num ≠ 0 ∧ (1 - (q - k.toAzRat)).sign = true
-  swap
-  · rw [ite_eq_right hc] at h
-    exact absurd h (by simp)
-  rw [ite_eq_left hc] at h
-  obtain ⟨hks, hu0, hus, ha0, has⟩ := hc
-  have hk : (k.toInt : ℝ) = -(m : ℝ) := by
-    have htoInt : k.toInt = if k.sign then (k.abs.toNat : ℤ) else -(k.abs.toNat : ℤ) := rfl
-    rw [htoInt, hks]
-    simp [hm]
-  have hu : ((AzRat.toRat (q - k.toAzRat) : ℚ) : ℝ) = xv + (m : ℕ) := by
-    rw [AzRat.toRat_sub, AzRat.toRat_toAzRat_int]
-    push_cast
-    rw [hk]
-    ring
-  have ha₂ : ((AzRat.toRat (1 - (q - k.toAzRat)) : ℚ) : ℝ) = 1 - xv - (m : ℕ) := by
-    rw [AzRat.toRat_sub, AzRat.toRat_one]
-    push_cast
-    rw [hu]
-    ring
-  have ha₁ : ((AzRat.toRat (1 - q) : ℚ) : ℝ) = 1 - xv := by
-    rw [AzRat.toRat_sub, AzRat.toRat_one]
-    push_cast
-    rfl
-  obtain ⟨hV, h32⟩ := polyWork_bounds hn hw
-  have : NeZero (polyWork n w) := ⟨by omega⟩
-  have : NeZero (w + 32) := ⟨by omega⟩
-  have hU := lnGammaRatEncl_spec _ ((toRat_sign_iff _ hu0).mp hus) (polyWork n w)
-  have hA₂ := lnGammaRatEncl_spec _ ((toRat_sign_iff _ ha0).mp has) (polyWork n w)
-  have hA₁ := lnGammaRatEncl_spec (1 - q) (by rw [ha₁]; linarith) (polyWork n w)
-  rw [hu] at hU
-  rw [ha₂] at hA₂
-  rw [ha₁] at hA₁
-  have hGu := polygammaPosEncl_spec hn hU hw
-  by_cases hsmall : m ≤ 2 ^ lnGammaShiftExp w
-  · rw [ite_eq_left hsmall, Option.some.injEq] at h
-    subst h
-    have hT := ((isEncl0_ofAzNat (AzNat.factorial n)).mul (w := polyWork n w)
-      (polyShiftSum_spec (by omega) h32 hA₂ m)).encloses
-    rw [AzNat.toNat_factorial] at hT
-    have hid := polygammaR_neg_sum hn hni m
-    by_cases ho : n % 2 = 1
-    · rw [ite_eq_left ho]
-      have := hGu.add (w := w + 32) hT
-      convert this using 1
-      rw [hid, (Nat.even_iff.mpr (by omega : (n + 1) % 2 = 0)).neg_one_pow]
-      ring
-    · rw [ite_eq_right ho]
-      have := hGu.sub (w := w + 32) hT
-      convert this using 1
-      rw [hid, (Nat.odd_iff.mpr (by omega : (n + 1) % 2 = 1)).neg_one_pow]
-      ring
-  · rw [ite_eq_right hsmall, Option.some.injEq] at h
-    subst h
-    have hG₁ := polygammaPosEncl_spec hn hA₁ hw
-    have hG₂ := polygammaPosEncl_spec hn hA₂ hw
-    have hD := hG₁.sub (w := w + 32) hG₂
-    have hid := polygammaR_reflect hn hni m
-    by_cases he : n % 2 = 0
-    · rw [ite_eq_left he]
-      have := hGu.add (w := w + 32) hD
-      convert this using 1
-      rw [hid, (Nat.even_iff.mpr he).neg_one_pow]
-      ring
-    · rw [ite_eq_right he]
-      have := hGu.sub (w := w + 32) hD
-      convert this using 1
-      rw [hid, (Nat.odd_iff.mpr (by omega : n % 2 = 1)).neg_one_pow]
-      ring
-
-/-- **`polygammaRatEncl` encloses `ψ⁽ⁿ⁾(q)`**, for `q > 0` (`pos`) or `q < 0` not an integer. -/
-theorem polygammaRatEncl_spec {n : ℕ} (hn : 1 ≤ n) (q : AzRat) {pos : Bool}
-    (hpos : pos = true → 0 < ((AzRat.toRat q : ℚ) : ℝ))
-    (hneg : pos = false → ((AzRat.toRat q : ℚ) : ℝ) < 0 ∧
-      ∀ k : ℤ, ((AzRat.toRat q : ℚ) : ℝ) ≠ k) {w : ℕ} (hw : 64 ≤ w) {E : Encl}
-    (h : polygammaRatEncl n q pos w = some E) :
-    IsEncl E (polygammaR n ((AzRat.toRat q : ℚ) : ℝ)) := by
-  unfold polygammaRatEncl at h
-  obtain ⟨H, hH, rfl⟩ := Option.map_eq_some_iff.mp h
-  have hHv : IsEncl H ((-1) ^ (n + 1) * polygammaR n ((AzRat.toRat q : ℚ) : ℝ)) := by
-    cases pos with
-    | true =>
-      rw [ite_eq_left rfl, Option.some.injEq] at hH
-      subst hH
-      exact polygammaPosEncl_spec hn (lnGammaRatEncl_spec q (hpos rfl) _) hw
-    | false =>
-      rw [ite_eq_right (by simp)] at hH
-      exact polygammaRatNegEncl_spec hn q (hneg rfl).1 (hneg rfl).2 hw hH
-  by_cases ho : n % 2 = 1
-  · rw [ite_eq_left ho]
-    rwa [(Nat.even_iff.mpr (by omega : (n + 1) % 2 = 0)).neg_one_pow, one_mul] at hHv
-  · rw [ite_eq_right ho]
-    have := hHv.neg
-    rwa [(Nat.odd_iff.mpr (by omega : (n + 1) % 2 = 1)).neg_one_pow, neg_one_mul, neg_neg]
-      at this
 
 /-- A tiny rational is at most `1/4` in absolute value. -/
 theorem abs_le_quarter_of_polygammaRatIsTiny {n : ℕ} {q : AzRat} {e : AzInt} {p : ℕ}
@@ -178,54 +71,178 @@ theorem polygammaRatTiny?_eq {n : ℕ} (hn : 1 ≤ n) (q : AzRat) (h0 : q.num �
       exact lnGammaRatEncl_spec (-q) (by rw [hv]; linarith [hneg hs]) _
   exact polygammaTinyOf_eq hn hx0 hXa (abs_le_quarter_of_polygammaRatIsTiny hc) hpos hneg p mode h
 
-/-- **`ψ⁽ⁿ⁾` of a rational is correctly rounded unless the fuel runs out.** -/
-theorem polygammaRatPrecRound_eq_or (n : ℕ) (q : AzRat) (p : ℕ) [NeZero p]
+/-- The bracket of `ψ⁽ⁿ⁾(q)` is valid, or rejected. -/
+theorem polygammaRatApprox_valid_or_none {n : ℕ} (hn1 : 1 ≤ n) (q : AzRat) (h0 : q.num ≠ 0)
+    (hpole : ¬ (q.den = 1 ∧ q.sign = false)) {w : ℕ} (hw : 64 ≤ w) (p : ℕ) [NeZero p]
     (mode : RoundingMode) :
-    polygammaRatPrecRound n q p mode
+    (∃ lv hv : ℝ, Rounds (polygammaRatApprox n q q.sign p w).1 lv ∧
+        Rounds (polygammaRatApprox n q q.sign p w).2 hv ∧
+        lv ≤ polygammaR n ((AzRat.toRat q : ℚ) : ℝ) ∧
+        polygammaR n ((AzRat.toRat q : ℚ) : ℝ) ≤ hv ∧
+        (lv = polygammaR n ((AzRat.toRat q : ℚ) : ℝ) →
+          hv = polygammaR n ((AzRat.toRat q : ℚ) : ℝ))) ∨
+      roundingPossible (polygammaRatApprox n q q.sign p w).1
+        (polygammaRatApprox n q q.sign p w).2 p mode = none := by
+  have hnp := gammaRat_not_pole h0 hpole
+  exact lnAbsGammaApproxOf_valid_or_none
+    (fun _ hc => enclRefine_spec (fun _ hw' _ hE =>
+      polygammaRatEncl_spec hn1 q (fun hs => (toRat_sign_iff q h0).mp hs)
+        (fun hs => ⟨toRat_neg_of_sign_false q h0 hs,
+          fun k hk => hnp ⟨toRat_neg_of_sign_false q h0 hs, k, hk⟩⟩) hw' hE) p hw hc)
+    w p mode
+
+/-- **`ψ⁽ⁿ⁾` of a rational, `n ≥ 1`, is correctly rounded, or it is the loop with fuel** at an
+argument that is not `0` or a pole, off the arguments with a known irrational value. -/
+theorem polygammaRatPrecRoundFuel_eq_or_loop (fuel : ℕ) {n : ℕ} (hn : n ≠ 0) (q : AzRat)
+    (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    polygammaRatPrecRoundFuel fuel n q p mode
         = roundVal p mode (Spec.polygamma n (((AzRat.toRat q : ℚ) : ℝ) : EReal)) ∨
-      polygammaRatPrecRound n q p mode = (nan, .eq) := by
+      (q.num ≠ 0 ∧ ¬ (q.den = 1 ∧ q.sign = false) ∧ polygammaRatSpecial n q = false ∧
+        polygammaRatPrecRoundFuel fuel n q p mode
+          = zivLoop (polygammaRatApprox n q q.sign p) p mode fuel
+            (polygammaStart n (gammaRatExp q) p)) := by
   have hp := NeZero.ne p
-  unfold polygammaRatPrecRound
-  by_cases hn : n = 0
-  · subst hn
-    rw [ite_eq_left rfl, Spec.polygamma_zero]
-    exact digammaRatPrecRound_eq_or q p mode
+  unfold polygammaRatPrecRoundFuel
   have hn1 : 1 ≤ n := Nat.one_le_iff_ne_zero.mpr hn
   rw [ite_eq_right hn]
   by_cases h0 : q.num = 0
   · left
-    rw [ite_eq_left h0, coe_toRat_eq_zero_of_num_eq_zero q h0, Spec.polygamma_coe_zero hn]
+    rw [dite_eq_left h0, coe_toRat_eq_zero_of_num_eq_zero q h0, Spec.polygamma_coe_zero hn]
     by_cases ho : n % 2 = 1
     · rw [ite_eq_left ho, roundVal_top]; simp [ho]
     · rw [ite_eq_right ho, roundVal_bot]; simp [ho]
-  rw [ite_eq_right h0]
+  rw [dite_eq_right h0]
   have hx0 : ((AzRat.toRat q : ℚ) : ℝ) ≠ 0 := fun h' =>
     h0 ((AzRat.toRat_eq_zero_iff q).mp (by exact_mod_cast h'))
   by_cases hpole : q.den = 1 ∧ q.sign = false
   · left
     obtain ⟨hneg, hk⟩ := gammaRat_pole h0 hpole
-    rw [ite_eq_left hpole, Spec.polygamma_coe_of_pole hn hneg hk]
+    rw [dite_eq_left hpole, Spec.polygamma_coe_of_pole hn hneg hk]
     by_cases ho : n % 2 = 1
     · rw [ite_eq_left ho, ite_eq_left ho, roundVal_top]
     · rw [ite_eq_right ho, ite_eq_right ho, roundVal_none]
   have hnp := gammaRat_not_pole h0 hpole
-  rw [ite_eq_right hpole, ite_eq_right hp, Spec.polygamma_coe hn hx0 hnp]
-  dsimp only
+  rw [dite_eq_right hpole, dite_eq_right hp, Spec.polygamma_coe hn hx0 hnp]
   split
   · rename_i r hr
     left
     exact polygammaRatTiny?_eq hn1 q h0 _ p mode hr
-  · rcases eq_or_ne (zivLoop (polygammaRatApprox n q q.sign p) p mode (lnGammaFuel p)
-      (polygammaStart n (gammaRatExp q) p)) (nan, .eq) with hz | hz
-    · right; exact hz
+  · by_cases hc : polygammaRatSpecial n q = true
     · left
+      rw [dite_eq_left hc]
+      exact zivLoopBacked_eq p mode _
+        (not_mem_floatSet_of_irrational p (irrational_polygamma_of_ratSpecial h0 hpole hc)) 64
+        (fun w hw => (polygammaRatApprox_valid_or_none hn1 q h0 hpole hw p mode).imp_left
+          fun ⟨lv, hv', h1, h2, h3, h4, _⟩ => ⟨lv, hv', h1, h2, h3, h4⟩)
+        fuel _ (le_max_left _ _) (Nat.lt_of_lt_of_le (by norm_num) (le_max_left 64 _)) _
+    · right
+      rw [dite_eq_right hc]
+      exact ⟨h0, hpole, by simpa using hc, rfl⟩
+
+/-- **`ψ⁽ⁿ⁾` of a rational is correctly rounded, or the fuel ran out**, at every fuel. -/
+theorem polygammaRatPrecRoundFuel_eq_or (fuel : ℕ) (n : ℕ) (q : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    polygammaRatPrecRoundFuel fuel n q p mode
+        = roundVal p mode (Spec.polygamma n (((AzRat.toRat q : ℚ) : ℝ) : EReal)) ∨
+      polygammaRatPrecRoundFuel fuel n q p mode = (nan, .eq) := by
+  by_cases hn : n = 0
+  · subst hn
+    unfold polygammaRatPrecRoundFuel
+    rw [ite_eq_left rfl, Spec.polygamma_zero]
+    exact digammaRatPrecRoundFuel_eq_or fuel q p mode
+  rcases polygammaRatPrecRoundFuel_eq_or_loop fuel hn q p mode with h | ⟨h0, hpole, -, h⟩
+  · exact Or.inl h
+  · rcases eq_or_ne (polygammaRatPrecRoundFuel fuel n q p mode) (nan, .eq) with hz | hz
+    · exact Or.inr hz
+    · left
+      have hx0 : ((AzRat.toRat q : ℚ) : ℝ) ≠ 0 := fun h' =>
+        h0 ((AzRat.toRat_eq_zero_iff q).mp (by exact_mod_cast h'))
+      rw [h] at hz ⊢
+      rw [Spec.polygamma_coe hn hx0 (gammaRat_not_pole h0 hpole)]
       exact zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
-        (fun w hw => lnAbsGammaApproxOf_valid_or_none
-          (fun _ hc => enclRefine_spec (fun _ hw' _ hE =>
-            polygammaRatEncl_spec hn1 q (fun hs => (toRat_sign_iff q h0).mp hs)
-              (fun hs => ⟨toRat_neg_of_sign_false q h0 hs,
-                fun k hk => hnp ⟨toRat_neg_of_sign_false q h0 hs, k, hk⟩⟩) hw' hE) p hw hc)
-          w p mode)
-        _ _ (le_max_left _ _) hz
+        (fun w hw => polygammaRatApprox_valid_or_none (Nat.one_le_iff_ne_zero.mpr hn) q h0
+          hpole hw p mode) _ _ (le_max_left _ _) hz
+
+/-- **`ψ⁽ⁿ⁾` of a rational is correctly rounded unless the fuel runs out.** -/
+theorem polygammaRatPrecRound_eq_or (n : ℕ) (q : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    polygammaRatPrecRound n q p mode
+        = roundVal p mode (Spec.polygamma n (((AzRat.toRat q : ℚ) : ℝ) : EReal)) ∨
+      polygammaRatPrecRound n q p mode = (nan, .eq) :=
+  polygammaRatPrecRoundFuel_eq_or (lnGammaFuel p) n q p mode
+
+/-- **The specification of `ψ⁽ⁿ⁾` for rationals, `n ≥ 1`** (`ZivSpec`): sound at every fuel;
+complete in the limit of the fuel wherever the value is no rounding boundary; and correct at
+every fuel at `0` and the poles and, for an odd `n`, at the positive integers and the
+rationals of denominator `2`, where the value is irrational. -/
+theorem polygammaRatPrecRoundFuel_zivSpec {n : ℕ} (hn : n ≠ 0) :
+    ZivSpec (fun q : AzRat => Spec.polygamma n (((AzRat.toRat q : ℚ) : ℝ) : EReal))
+      (fun fuel q p mode => polygammaRatPrecRoundFuel fuel n q p mode)
+      {q | q.num = 0 ∨ (q.den = 1 ∧ q.sign = false)}
+      {q | q.num ≠ 0 ∧ ¬ (q.den = 1 ∧ q.sign = false) ∧ polygammaRatSpecial n q = true} where
+  sound := fun fuel q p _ mode => polygammaRatPrecRoundFuel_eq_or fuel n q p mode
+  complete := fun q p _ mode hB => by
+    by_cases hgen : q.num ≠ 0 ∧ ¬ (q.den = 1 ∧ q.sign = false)
+    · obtain ⟨h0, hpole⟩ := hgen
+      have hx0 : ((AzRat.toRat q : ℚ) : ℝ) ≠ 0 := fun h' =>
+        h0 ((AzRat.toRat_eq_zero_iff q).mp (by exact_mod_cast h'))
+      have hnp := gammaRat_not_pole h0 hpole
+      have hval := Spec.polygamma_coe hn hx0 hnp
+      have hB' := hB _ hval
+      have hn1 : 1 ≤ n := Nat.one_le_iff_ne_zero.mpr hn
+      obtain ⟨F, hF⟩ := zivLoop_eventually_eq p mode (polygammaRatApprox n q q.sign p)
+        (polygammaRatApprox_bracketConv hn1 q (fun hs => (toRat_sign_iff q h0).mp hs)
+          (fun hs => ⟨toRat_neg_of_sign_false q h0 hs,
+            fun k hk => hnp ⟨toRat_neg_of_sign_false q h0 hs, k, hk⟩⟩) p)
+        (ne_zero_of_not_mem_floatSet hB') hB' (polygammaStart n (gammaRatExp q) p)
+        (Nat.lt_of_lt_of_le (by norm_num) (le_max_left 64 _))
+        (fun w hw => (polygammaRatApprox_valid_or_none hn1 q h0 hpole
+          (le_trans (le_max_left _ _) hw) p mode).imp_left
+            fun ⟨lv, hv', h1, h2, h3, h4, _⟩ => ⟨lv, hv', h1, h2, h3, h4⟩)
+      refine ⟨F, fun fuel hfuel => ?_⟩
+      rcases polygammaRatPrecRoundFuel_eq_or_loop fuel hn q p mode with h | ⟨-, -, -, h⟩
+      · exact h
+      · show polygammaRatPrecRoundFuel fuel n q p mode = _
+        rw [h, hval]
+        exact hF fuel hfuel
+    · refine ⟨0, fun fuel _ => ?_⟩
+      rcases polygammaRatPrecRoundFuel_eq_or_loop fuel hn q p mode with h | ⟨h0, hpole, -, -⟩
+      · exact h
+      · exact absurd ⟨h0, hpole⟩ hgen
+  dyadic := fun q hq v hv => by
+    exfalso
+    rcases hq with h0 | hpole
+    · rw [coe_toRat_eq_zero_of_num_eq_zero q h0, Spec.polygamma_coe_zero hn,
+        Option.some.injEq] at hv
+      split_ifs at hv
+      · exact EReal.coe_ne_top v hv.symm
+      · exact EReal.coe_ne_bot v hv.symm
+    · by_cases h0 : q.num = 0
+      · rw [coe_toRat_eq_zero_of_num_eq_zero q h0, Spec.polygamma_coe_zero hn,
+          Option.some.injEq] at hv
+        split_ifs at hv
+        · exact EReal.coe_ne_top v hv.symm
+        · exact EReal.coe_ne_bot v hv.symm
+      · obtain ⟨hneg, hk⟩ := gammaRat_pole h0 hpole
+        rw [Spec.polygamma_coe_of_pole hn hneg hk] at hv
+        split_ifs at hv
+        · rw [Option.some.injEq] at hv
+          exact EReal.coe_ne_top v hv.symm
+  nondyadic := fun q hq => by
+    obtain ⟨h0, hpole, hc⟩ := hq
+    have hx0 : ((AzRat.toRat q : ℚ) : ℝ) ≠ 0 := fun h' =>
+      h0 ((AzRat.toRat_eq_zero_iff q).mp (by exact_mod_cast h'))
+    exact ⟨_, Spec.polygamma_coe hn hx0 (gammaRat_not_pole h0 hpole),
+      not_isDyadic_of_irrational (irrational_polygamma_of_ratSpecial h0 hpole hc)⟩
+  correct := fun q hq fuel p _ mode => by
+    rcases polygammaRatPrecRoundFuel_eq_or_loop fuel hn q p mode with h | ⟨h0, hpole, hc, -⟩
+    · exact h
+    · exfalso
+      rcases hq with hD | hN
+      · rcases hD with h | h
+        · exact h0 h
+        · exact hpole h
+      · rw [hN.2.2] at hc
+        exact Bool.noConfusion hc
 
 end Azurite.AzFloat

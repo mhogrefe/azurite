@@ -54,6 +54,8 @@ import Azurite.AzFloat.Gd
 import Azurite.AzFloat.GdRat
 import Azurite.AzFloat.GdInv
 import Azurite.AzFloat.GdInvRat
+import Azurite.AzFloat.Gamma
+import Azurite.AzFloat.GammaRat
 import Azurite.AzFloat.WrightOmega
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.LnP1
@@ -2253,6 +2255,30 @@ where Azurite, with no signed zero, gives `+∞`; `negZero` marks such an argume
 Azurite's infinity. -/
 def negativeZeroPole (negZero : Bool) (r : AzFloat × Ordering) : AzFloat × Ordering :=
   if negZero && r.1 matches .infinity _ then (-r.1, r.2) else r
+
+/-- `Float`'s `gamma` family, against `AzFloat.gammaPrecRound`.  Malachite, following MPFR, gives
+`Γ(-0.0) = -∞`, where Azurite, with no signed zero, gives `+∞`; a `-0.0` argument negates
+Azurite's infinity. -/
+def checkFloatGamma (line : String) : Verdict :=
+  checkFloatUnaryWith "gamma"
+    (fun x p m =>
+      if negativeZeroArgument line then (-(AzFloat.gammaPrecRound x p m).1, .eq)
+      else AzFloat.gammaPrecRound x p m) line
+
+/-- `Float::gamma_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.gammaRatPrecRound`. -/
+def checkFloatGammaRational : String → Verdict :=
+  checkFloatOfRational "gamma_rational" AzFloat.gammaRatPrecRound
+
+/-- `Float`'s `reciprocal_gamma` family, against `AzFloat.reciprocalGammaPrecRound`; the sign of a
+zero result is not compared. -/
+def checkFloatReciprocalGamma : String → Verdict :=
+  checkFloatUnaryWith "reciprocal_gamma" AzFloat.reciprocalGammaPrecRound
+
+/-- `Float::reciprocal_gamma_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.reciprocalGammaRatPrecRound`. -/
+def checkFloatReciprocalGammaRational : String → Verdict :=
+  checkFloatOfRational "reciprocal_gamma_rational" AzFloat.reciprocalGammaRatPrecRound
 
 /-- `Float`'s `csc` family, against `AzFloat.cscPrecRound` (through `negativeZeroPole`). -/
 def checkFloatCsc (line : String) : Verdict :=

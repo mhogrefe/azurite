@@ -122,18 +122,22 @@ def pochCore (x : AzFloat) (n w : Nat) : Option (Bool × Encl) :=
 def pochApprox (x : AzFloat) (n w : Nat) : Roundable × Roundable :=
   gammaApproxOf (pochCore x n w) w
 
-/-- `(x)ₙ` for a finite `x` (zero included) and `n ≥ 1`. -/
-def pochReal (x : AzFloat) (n p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- `(x)ₙ` for a finite `x` (zero included) and `n ≥ 1`, with the fuel of the Ziv loop
+explicit. -/
+def pochRealFuel (fuel : Nat) (x : AzFloat) (n p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   if pochHasZero x n then (zero, .eq)
   else if p = 0 then (nan, .eq)
   else
     match pochExact? x n p mode with
     | some r => r
-    | none => zivLoop (pochApprox x n) p mode (gammaFuel p) (max 64 (p + 32))
+    | none => zivLoop (pochApprox x n) p mode fuel (max 64 (p + 32))
 
 /-- `(x)ₙ` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` for `p = 0` unless the value is `0` or infinite, or if the fuel runs out). -/
-def pochhammerPrecRound (x : AzFloat) (n p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+(`(nan, .eq)` for `p = 0` unless the value is `0` or infinite, or if the fuel runs out), with
+the fuel of the Ziv loop explicit. -/
+def pochhammerPrecRoundFuel (fuel : Nat) (x : AzFloat) (n p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   match x with
   | nan => (nan, .eq)
   | x =>
@@ -141,7 +145,13 @@ def pochhammerPrecRound (x : AzFloat) (n p : Nat) (mode : RoundingMode) : AzFloa
     else
       match x with
       | infinity s => (infinity (s || n % 2 == 0), .eq)
-      | x => pochReal x n p mode
+      | x => pochRealFuel fuel x n p mode
+
+/-- `(x)ₙ` rounded to precision `p` with `mode`, and the comparison with the exact value:
+`pochhammerPrecRoundFuel` at the fuel `gammaFuel p`.  The specification is
+`pochhammerPrecRoundFuel_zivSpec` (`Equiv/PochhammerWidth.lean`). -/
+def pochhammerPrecRound (x : AzFloat) (n p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  pochhammerPrecRoundFuel (gammaFuel p) x n p mode
 
 /-- `(x)ₙ` rounded to nearest at the precision of `x`. -/
 def pochhammer (x : AzFloat) (n : Nat) : AzFloat :=

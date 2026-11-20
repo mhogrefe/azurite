@@ -9014,7 +9014,8 @@ User request.  `fallingFactorialPrecRound x n p mode`, `fallingFactorial x n` fo
   and the loop are those of 5c/5d.
 * Specification: Mathlib's `(descPochhammer ℝ n).eval x` (`Spec.fallingFactorial n`); `1` for
   `n = 0`, `+∞` at `+∞`, `(−1)ⁿ ∞` at `−∞`.  `fallingFactorialPrecRound_eq_or`,
-  `fallingFactorialRatPrecRound_eq_or`, both through `falling_of_rising`.
+  `fallingFactorialRatPrecRound_eq_or` (originally through `falling_of_rising`; since
+  2026-11-19 through `ZivSpec.reflect`, item 15 of the second round below).
 * Tests: against exact rational products for even and odd `n` in the directed modes, the
   reflection `= (x − n + 1)ₙ`, agreement of the float and rational functions.
 * Cost: that of Pochhammer's symbol (benchmark rows `fallingFactorial…` in `family:misc`).
@@ -9033,7 +9034,7 @@ User request.  `genPochhammerPrecRound x y p mode`, `genPochhammer x y` for floa
   Infinite arguments: `NaN`.  The pole `x + y = 0` is `NaN` (the sign of the infinity
   depends on `Γ(x)`), unlike `Γ(0) = +∞` and `B(0, b) = +∞`.  Both conventions **confirmed
   by the user** (2026-11-18).
-* **Integer `y ≥ 0`**: `pochReal` (5c).  **Integer `y < 0`**: `genPochNegInt` — the exact
+* **Integer `y ≥ 0`**: `pochRealFuel` (5c).  **Integer `y < 0`**: `genPochNegIntFuel` — the exact
   quotient `Dⁿ/∏ (N − nD + jD)` under the conditions of `pochExact?`, else the reciprocal of
   the `pochCoreOf` enclosure of `(x − n)ₙ` (`recipPochCore`).
 * **Other `y`**: Ziv's loop with fuel on `genPochCore` = `gammaQuotEnclOf`, generic over
@@ -9434,16 +9435,256 @@ The kernel evaluates the first (structural recursion) and never looks at the sec
 `zivLoopBacked_eq` is the unconditional specification.  The seven constants above use it.
 `nanOrElse` moved to `AzFloat/Ziv.lean`.
 
+**8. Euler's `γ`: the width of the bracket** (2026-11-19, user request).
+`eulerGammaBracket_width`: at most `1000 · 2^(−w)` for `w ≥ 64`; `eulerGammaApprox_bracketConv`;
+`eulerGammaPrecRoundFuel` (explicit fuel) and `eulerGammaPrecRoundFuel_zivSpec`, a `ZivSpec`
+over `Unit` with empty sets of known values — sound, and complete in the limit of the fuel at
+every precision at which `γ` is no rounding boundary; nothing more can be said while the
+irrationality of `γ` is open.
+* *The truncated recurrence* (`AzInt/Equiv/SweeneyHornerWidth.lean`).  The radius was carried
+  exactly and never bounded.  Weight the relative radius `rn/dn` of a state standing for the
+  range `[l, N)` by `n^l/l!`, the factor by which the remaining blocks multiply it
+  (`SweeneyState.Rad`): a block leaves the weighted radius unchanged
+  (`SweeneyState.Rad.apply`), and a truncation multiplies it by at most `1 + 17 · 2^(1−V)` and
+  adds at most `11 e^n · 2^(1−V)` (`sweeneyTrim_rad`: the denominator keeps `V` bits, and
+  `n^l/l!` and `n^l/l!` times the value of the range are both at most `e^n`).  At most `N + 1`
+  truncations: `sweeneyHorner_radius`, `sweeneyHornerEncl_width`, with the bound `sweeneyU`.
+  At the working size `V = w + 16 + ⌊13n/9⌋ + 2⌊lg n⌋` it is at most `204 · 2^(−w)`
+  (`sweeneyU_eulerGamma_le`; `e^n ≤ 2^(12 + ⌊13n/9⌋)` from `e^9 ≤ 2^13`, which is why the
+  constant `13/9` of the implementation works).
+* *The logarithm* (`Equiv/LnSmoothWidth.lean`).  `lnSmoothBracket_width`: width `2^(−k)`
+  whatever the exponents, by the absolute-width calculus (`AEncl.add`, `AEncl.sub`,
+  `AEncl.natMul`) on `atanhInvBracket_width`.  And the argument of the series really is smooth:
+  `divOut_spec`, `smoothExps_spec`, `isSmooth_spec`, `isSmooth_two_pow`,
+  `isSmooth_nextSmooth` (a power of two lies within the fuel of the search), so only the
+  four-series branch of `lnNatBracket` occurs.
+* Lean: with `set n := eulerGammaArg w` the tactics `nlinarith`/`linarith` ran out of
+  heartbeats in `whnf` — they unfold the let-bound value, a computation; `obtain ⟨n, hn⟩ : ∃ n,
+  n = …` makes it opaque.
+
+**9. The factorial as a float is unconditional** (2026-11-19).  `factorialPrecRound_eq`: beyond
+the exact bound it is `Γ(n + 1)` at an integer float, where the loop is certified
+(`gammaPrecRound_eq_of_isInteger`), so nothing but the proof changed.  The falling factorial
+is Pochhammer's symbol reflected and waits for that family.
+
+**10. The Beta function, floats and rationals (2026-11-19).**  User: the full set of
+arguments where irrationality is reachable by Chudnovsky's theorem, not only the `π` cases.
+
+* *Irrational values* (`Azurite/Chudnovsky/BetaValues.lean`,
+  `irrational_beta_of_den`): for rational `a`, `b` that are not integers, `B(a, b)` is
+  irrational when `a + b` is a positive integer (`irrational_beta_of_add_eq_nat`: a rational
+  multiple of `π / sin (π a)`; Niven's algebraicity of the sine from Mathlib and the
+  transcendence of `π`), and when `a + b` is not an integer and the denominators of `a`, `b`
+  both divide `4` or both divide `6` (`irrational_beta_div_four`, `irrational_beta_div_six`).
+  The second uses a degree: `GDeg ϖ g x d` says `x` is `g^d` times a nonzero number algebraic
+  over `ℤ[ϖ]`; `Γ(N/4)` has degree `1, 0, −1` in `g = Γ(1/4)` for `N ≡ 1, 2, 3 (mod 4)`, and
+  `Γ(N/6)` degree `2, 1, 0, −1, −2` in `g = Γ(1/3)` (`gamma_third_sq`: the duplication
+  formula at `1/6`); the degree of `B(a, b)` is `±2`, resp. `±3`, whenever `a + b` is not an
+  integer, and a number of nonzero degree is irrational (`GDeg.irrational`).  Denominators
+  `4` and `3` mixed (`Γ(7/12)`) are not reachable.
+* *Convergence* (`Equiv/BetaWidth.lean`): the width of `lnAbsBetaEncl` tends to `0`
+  (`lnAbsBetaEncl_conv`) at arguments that converge (`ArgConv`: enclosures of width
+  `O(2^(−V))` and, for a negative argument, a convergent sine).  Per piece:
+  `stirlingShifted_width` (Stirling's series on a number of terms that is the largest of the
+  three, `pcEps`), `lnGammaPiece_pos_width`, `lnGammaPiece_neg_width`; then
+  `betaCombine_width` for the two additions and the one logarithm, and
+  `betaEnclOf_coreConv`.  Float arguments: `argConv_float`, `argConv_sum`
+  (`betaSumSin_conv`), `betaApprox_bracketConv`; rationals: `argConv_rat`,
+  `betaRatApprox_bracketConv` (`Equiv/BetaRatCertificate.lean`).
+* **A bug found by the completeness proof**: `betaSumFrac` took the integer next to `a + b`
+  from the sum rounded at 64 bits.  For a negative sum beyond `2^64` in size that integer can
+  be many units away, the sine `sin (π |s − k|)` comes out with the wrong sign at every
+  level, and `B` was `NaN` after the whole fuel (`B(−2^70 − 1/2, −31.25)`).  The sum is now
+  rounded at `betaSumPrec a b` bits (66 beyond the binary point); `betaSumNear_spec` proves
+  `|s − k| < 1` for a negative sum (`gammaNearInt_spec_nonpos`: within `3/4` for `x ≤ 0`).
+  Two guards in `Tests/Beta.lean`.
+* *Functions*: `betaPrecRoundFuel`, `betaRatPrecRoundFuel` (explicit fuel; the public
+  functions are these at `gammaFuel p`).  At the arguments recognized by `betaSpecial`
+  (floats: not integers, and `a + b` a positive integer — `sumIsPosInt` — or both
+  quarter-integers) and `betaRatSpecial` (rationals: not integers, and `a + b` an integer or
+  denominators both in `{2, 4}` or both in `{2, 3, 6}`), off the zeros of `B`, the loop is
+  `zivLoopBacked` with the certificates `betaApprox_cert` (`Equiv/BetaCertificate.lean`) and
+  `betaRatApprox_cert`.
+* *Specifications*: `betaPrecRoundFuel_zivSpec`, `betaRatPrecRoundFuel_zivSpec` — sound;
+  complete at every pair of arguments; correct at every fuel on the special values (`NaN`,
+  `+∞`, the zeros) and on the arguments above.  `…_eq_or_loop`, `…_eq_or`; the old
+  `betaPrecRound_eq_or`, `betaRatPrecRound_eq_or` are corollaries.
+* *Layout*: the bracket definitions a certificate needs sit below the functions —
+  `betaApprox`, `sumIsNonposInt`, `sumIsPosInt`, `betaSpecial` in `AzFloat/BetaBracket.lean`;
+  `gammaRatFrac`, `betaRatApprox`, `betaRatSpecial` in the new `AzFloat/BetaRatBracket.lean`;
+  `sumIsNonposInt_iff`, `gammaRatFrac_spec`, `nonpos_int_iff` in the certificate files.
+
+**11. `ln |B|` and `ln B`, floats and rationals (2026-11-19).**  Their loop carries a sign
+(`lnAbsLoop`); its value component is Ziv's loop on the brackets of the enclosures
+(`lnAbsLoop_fst`: `(lnAbsLoop core …).1 = zivLoop (lnAbsGammaApproxOf ((core w).map snd))`),
+so a convergent core gives the correct rounding for every large enough fuel
+(`lnAbsLoop_eventually`), and the convergence is `lnAbsBetaEncl_conv_log`
+(`Equiv/BetaWidth.lean`).  Functions with explicit fuel: `lnAbsBetaPrecRoundFuel`,
+`lnBetaPrecRoundFuel`, `lnAbsBetaRatPrecRoundFuel`, `lnBetaRatPrecRoundFuel` (the public
+ones are these at `gammaFuel p`; every existing theorem is now stated at any fuel,
+`…Fuel_eq_or`, `…Fuel_sign`, with the old names as corollaries).  Specifications
+`lnAbsBetaPrecRoundFuel_zivSpec` (the value component), `lnBetaPrecRoundFuel_zivSpec`,
+`lnAbsBetaRatPrecRoundFuel_zivSpec`, `lnBetaRatPrecRoundFuel_zivSpec`: sound and complete;
+the sets of known values are empty (no value of `ln |B|` is known to be irrational — even
+`ln π = ln B(1/2, 1/2)` is open — and the special values are not real numbers).  Where
+`B < 0`, `ln B` is `NaN` at every fuel.  `…_eq_or_gen`: at the special values the result is
+the pair of the exact value and the sign `true`.
+
+**12. The polygamma functions `ψ⁽ⁿ⁾`, `n ≥ 1`, floats and rationals (2026-11-19).**
+
+* *Convergence* (`Equiv/PolygammaWidth.lean`).  The asymptotic series is an instance of a
+  generic loop: `altSumLoop` with its width `altSumLoop_width`
+  (`Equiv/AltSeriesWidth.lean`, the loop of `ln Γ` with the term as a parameter;
+  `polySumLoop_eq`).  New pieces: `LEncl.powBin` (powers by repeated squaring),
+  `AEncl.mulPos` (the signed product), `polyTermEncl_width`, `polyStirlingEncl_width`;
+  the shift sum, computed once rounded down and scaled, by a ratio invariant between its
+  lower and upper sums (`polyShiftLoop_ratio`, `polyShiftSum_width`); the sizes at level `w`
+  as explicit polynomially bounded functions (`pgT`, `pgB`, `pgEpsS`, `pgWS`, `pgE`,
+  `tendsto_pgE`; the closing term by `polyT_le`, `tendsto_polyTail`).
+  `polygammaPosEncl_conv` (uniform in the enclosure of `x > 0`), `polyNegCore_conv` and
+  `polygammaNegEncl_conv` (for a fixed `x < 0` every large level takes the recurrence in
+  positive terms), `polygammaEncl_conv`; `enclRefine_conv` (the second evaluation answers
+  from a higher level: the bound is the supremum of the tail, `exists_tail_bound`);
+  `polygammaApprox_bracketConv`.  Rationals: `polygammaRatNegEncl_conv`,
+  `polygammaRatApprox_bracketConv` (`Equiv/PolygammaRatCertificate.lean`).
+* *Irrational values* (`Azurite/Transcendental/PolygammaValues.lean`): for an odd `n`,
+  `ψ⁽ⁿ⁾(1) = n! ζ(n + 1)` is a nonzero rational multiple of `π^(n+1)` (DLMF 5.15.2 and the
+  even zeta values of Mathlib), `ψ⁽ⁿ⁾(1/2) = (2^(n+1) − 1) ψ⁽ⁿ⁾(1)` (`polygammaR_half`, the
+  series over the odd and the even integers), and the recurrence shifts by rationals:
+  `irrational_polygammaR_nat`, `irrational_polygammaR_half`,
+  `irrational_polygammaR_div_two`.
+* *Functions*: `polygammaPrecRoundFuel`, `polygammaRatPrecRoundFuel` (explicit fuel; the
+  public functions at `lnGammaFuel p`; for `n = 0` they are the digamma functions, which
+  keep their own fuel for now).  At `polygammaSpecial n x` (odd `n`; `x` a positive integer
+  or a half-integer) and `polygammaRatSpecial n q` (odd `n`; denominator `1` or `2`) the
+  loop is `zivLoopBacked` with `polygammaApprox_cert`, `polygammaRatApprox_cert`.
+* *Specifications*: `polygammaPrecRoundFuel_zivSpec`, `polygammaRatPrecRoundFuel_zivSpec`
+  (for a fixed `n ≠ 0`): sound; complete at every argument; correct at every fuel at `0`,
+  the poles and the arguments above.
+* *Layout*: `AzFloat/PolygammaRatBracket.lean` (new) holds `polygammaRatNegEncl`,
+  `polygammaRatEncl`, `polygammaRatApprox`, `polygammaRatSpecial`.
+* A lesson for long width proofs: plain `linarith` times out once the context is large (the
+  error is a `whnf` timeout at the declaration); `linarith only [...]` throughout.
+
+**13. The digamma function `ψ`, floats and rationals (2026-11-19).**
+`Equiv/DigammaWidth.lean`: the series is an `altSumLoop` (`psiSumLoop_eq`,
+`digammaStirlingEncl_width`); the harmonic shift sum, one division for two terms, by the
+ratio of its two sums (`harmonicLoop_ratio`, `harmonicEncl_width`); the sizes `dgEpsS`,
+`dgWS`, `dgE` (`tendsto_dgE`) and `digammaPosEncl_conv`; for the reflection formula the
+signed quotient (`AEncl.divPos`), the cotangent from the sine–cosine bracket
+(`digammaCot_width`, `cotW`) and `digammaReflect_conv`; `digammaEncl_conv`,
+`digammaApprox_bracketConv`; rationals `digammaRatEncl_conv`,
+`digammaRatApprox_bracketConv` (`Equiv/DigammaRat.lean`).  Functions with explicit fuel
+`digammaPrecRoundFuel`, `digammaRatPrecRoundFuel`; specifications
+`digammaPrecRoundFuel_zivSpec`, `digammaRatPrecRoundFuel_zivSpec` (sound, complete; correct at
+every fuel at `0`, the poles and the infinities; no value of `ψ` is known to be
+irrational).  The polygamma functions with `n = 0` now pass their fuel on.
+
+**14. The zeros of `ψ`, with a verified fallback (2026-11-19).**
+The fast enclosure (`psiZeroFast`) sits around a candidate from `Float` arithmetic, about
+which nothing is proved — so nothing was provable about its width.  Now `psiZeroEncl` keeps
+it only when it is narrower than `2^(−⌊w/2⌋)` (`psiZeroNarrow`), and otherwise takes
+`psiZeroFallback`: `w + 8` steps of bisection (`psiZeroBisect`) on the unit interval of the
+zero, by the sign of the enclosure of `ψ` at the exact middle `psiZeroMid`, then the usual
+enclosure around the last middle.  Proofs (`Equiv/PsiZero.lean`): `psiZeroBisect_sound`,
+`psiZeroFallback_spec`; `psiZeroBisect_complete` (the bisection follows the zero and ends
+after all its steps or at an enclosure containing `0`), `psiZeroMid_digamma_unif` (one
+width for `ψ` at all the middles), `psiZeroAround_width`, `psiZeroFallback_conv`,
+`psiZeroEncl_conv`, `exists_width_of_forall_eps`, `psiZeroApprox_bracketConv`;
+`psiZeroPrecRoundFuel`, **`psiZeroPrecRoundFuel_zivSpec`** (sound and complete; no known
+values).  For this the convergence of `ψ`'s bracket was made uniform:
+`digammaPosEncl_conv_unif` on `[α, β]` (`dgEU`, `tendsto_dgEU`), `cotW_anti`,
+`digammaReflect_unif` (`Equiv/DigammaWidth.lean`).  The fast path is unchanged, so the
+values and (expected) timings are; the fallback costs `w + 8` evaluations of `ψ` and is
+UNTIMED.
+
+**15. The Pochhammer family (2026-11-19).**  Seven functions: `pochhammer`,
+`pochhammerRat`, the falling factorial (float, rational), the generalized Pochhammer symbol
+(float, rational; each with three loops).  All have explicit-fuel variants (`…Fuel`, the
+public function at `gammaFuel p`) and a `ZivSpec`.
+* `Equiv/PochhammerWidth.lean`: `pochCoreOf_coreConv`.  The pieces `Γ(u)/Γ(v) = eᵗ q` have
+  no fixed `t`, `q` (both move with the shift), so the widths are relative: `lnGammaDiff_conv`
+  (`stirlingShifted_width` twice; the exponent `expOf U.2` is bounded,
+  `expOf_abs_le_of_lencl`), the exponential (`expOfBracketEps` is `exp v` times a small
+  number), `LEncl.mul`, and the value at the end from `pochCoreOf_spec`
+  (`LEncl.toA_of_isEnclPos`).  The splits are right off the zeros: `pochSplit_facts`,
+  `pochRatSplit_facts`, `recipPochSplit_facts`.
+* `ZivCases` (exact at every fuel, or one loop on a convergent valid bracket of a nonzero
+  value) and `ZivSpec.of_zivCases`: for the functions with several loops.  The known set is
+  "the value is undefined or `0`".
+* Reciprocal `1/(x − n)ₙ`: `CoreConv.recip`.  Quotient `Γ(x + y)/Γ(x)`:
+  `quotCombine_width`, `lnAbsGammaQuotEncl_conv` (on `pieceAt_conv` of the Beta bracket),
+  `gammaQuotEnclOf_coreConv`.
+* Falling factorial: no new analysis — `ZivSpec.reflect` (negated value, result negated in
+  the opposite mode) and `ZivSpec.comap` carry Pochhammer's specification over
+  (`fallingFactorialPrecRoundFuel_eq`, `Spec.fallingFactorial_eq`).
+* Specifications: `pochhammerPrecRoundFuel_zivSpec`, `pochhammerRatPrecRoundFuel_zivSpec`,
+  `fallingFactorialPrecRoundFuel_zivSpec`, `fallingFactorialRatPrecRoundFuel_zivSpec`,
+  `genPochhammerPrecRoundFuel_zivSpec`, `genPochhammerRatPrecRoundFuel_zivSpec`.  All with
+  an empty set of known non-dyadic values.
+
+**16. Timings of the second round (2026-11-19).**  `az_float_families family:misc`, the
+binary of the morning of 2026-11-19 (before any of the work of this section and of the first
+round) against the final one, run alternately three times (old–new, old–new, new–old) on a
+quiet machine; ms per call at 53 / 200 / 1000 bits.
+* **No measurable change.**  Over the 300 timings of at least 0.1 ms of the functions
+  touched (`ψ`, the Beta and
+  `ln` Beta families, the factorial, the Pochhammer family, the polygamma functions, the
+  zeros of `ψ`) the median ratio new/old is 1.015, 1.011, 1.004 in the three runs — and
+  1.011, 1.012, 1.005 over the 196 such timings of functions that were not touched (the Gamma
+  functions, `ln Γ`, the tree function, …), so the shift is one of the run, not of the code.
+  Largest single ratios (minimum of three): 1.07 for `ψ(−201/2)` at 200 bits, 1.085 for
+  `psiZero 1000` at 53 bits; the latter did not reproduce in five more alternating runs
+  (old 0.68–0.73 ms, new 0.69–0.70 ms).
+* Examples (old → new): `ψ(1/3)` 0.279 / 0.841 / 9.56 → 0.284 / 0.873 / 9.58; `B(1/3, 5/2)`
+  1.009 / 2.384 / 22.04 → 1.021 / 2.416 / 22.44; `(1/3)₂₀₀` 0.191 / 1.024 / 12.89 → 0.193 /
+  1.031 / 12.94; `Γ(1/3 + 5/2)/Γ(1/3)` 0.784 / 1.841 / 16.78 → 0.795 / 1.870 / 16.98;
+  `ψ′(1/3)` 0.338 / 1.040 / 12.45 → 0.344 / 1.049 / 12.60; `x₀` 0.716 / 3.554 / 32.92 →
+  0.727 / 3.574 / 33.12.
+* **New rows.**  `eulerGamma` 0.092 / 0.234 / 1.483.  Beta at the arguments of the certified
+  loop: `B(1/4, 1/4)` 0.967 / 2.384 / 22.29, `B(3/4, 1/4)` 0.981 / 2.345 / 22.14 (floats),
+  `B(1/3, 1/3)` 1.008 / 2.451 / 23.51, `B(2/3, 1/3)` 1.009 / 2.419 / 23.29, `B(1/6, 1/3)`
+  1.010 / 2.415 / 23.49 (rationals) — the cost of the general case: the fuel loop answers,
+  the certificate is not run.
+* **The verified fallback of the zeros of `ψ`** (`psiZeroFallback` at the first Ziv level,
+  against `psiZeroFast` there): `n = 0`: 33.2 / 243.7 / 10296 against 0.72 / 3.58 / 33.6;
+  `n = 1`: 56.2 / 339.9 / 11617; `n = 1000`: 33.0 / 153.5 / 4950 against 0.69 / 2.63 /
+  16.5.  A factor 45–300: `w + 8` evaluations of `ψ` at full precision.  It never runs in
+  the tests or the benchmark (the fast enclosure is narrow); the narrowness test itself
+  costs nothing measurable (`psiZero 1000` 0.691 against `psiZeroFast 1000` 0.688 at 53
+  bits).  If the fallback ever matters, the bisection could run at increasing precision —
+  the first steps need only a few bits of `ψ`.
+
+**17. No fuel for the rational Pochhammer functions at non-dyadic values (2026-11-19).**
+* `Equiv/PochhammerDyadic.lean` (number theory, on `ℚ`): for `q = a/d` in lowest terms with
+  `d` not a power of two, `not_isDyadic_prod_rat` — `(q)ₙ = ∏ (a + j d)/dⁿ` has a negative
+  valuation at an odd prime of `d` (`n ≥ 1`) — and `not_isDyadic_inv_prod_rat` — `1/(q)ₙ`
+  is not dyadic for `n ≥ 4`: one of `a, a + d, a + 2d, a + 3d` has an odd prime factor
+  (`exists_odd_prime_dvd_num_add`; two of them of the same index parity are odd, and two odd
+  `±` powers of two differ by at most `2 < 2d`), which gives a negative valuation of the
+  reciprocal.  `n = 3` is not enough: `(−2/3)(1/3)(4/3) = −8/27`.
+* Tests on the arguments: `pochRatSpecial q` (the denominator is not a power of two),
+  `recipPochRatSpecial x n` (and `n ≥ 4`).  Certificates `pochRatApprox_cert`
+  (`Equiv/PochhammerRatCertificate.lean`), `recipPochRatApprox_cert`
+  (`Equiv/GenPochhammerRatCertificate.lean`); the bracket definitions moved to
+  `AzFloat/PochhammerRatBracket.lean`, `AzFloat/GenPochhammerRatBracket.lean` so that the
+  certificates do not import the functions.
+* `pochhammerRatPrecRoundFuel` and the reciprocal branch `genPochRatNegIntFuel` run
+  `zivLoopBacked` there: the same fuel loop first, the certified loop if it gives up.  The
+  falling factorial of a rational and `genPochhammerRat` with an integer `y ≥ 0` inherit it.
+* Specifications, now with a set of known non-dyadic values (`ZivSpec.withN`):
+  `pochhammerRatPrecRoundFuel_zivSpec` and `fallingFactorialRatPrecRoundFuel_zivSpec`
+  (`n ≠ 0 ∧ pochRatSpecial q`), `genPochhammerRatPrecRoundFuel_zivSpec`
+  (`genPochRatSpecial x y`: an integer `y ≠ 0`, `y ≤ −4` when negative).  Unconditional
+  statements: `pochhammerRatPrecRoundFuel_eq_of_special`,
+  `genPochRatNegIntFuel_eq_of_special`, `genPochhammerRat_of_special`.
+* UNTIMED.  The only new work on the loop path is one `isPowerOfTwo` of the denominator.
+
 **Not done.**
-* Euler's `γ`: no width is proven for the truncated recurrence of the partial sum
-  (`AzInt.sweeneyHornerEncl`: the radius is carried exactly and its size was never needed) nor
-  for the four-series logarithm (`lnSmoothBracket`); both are needed for `BracketConv`, and the
-  result could only be `complete` — the irrationality of `γ` is open.
-* The other functions on the brackets of `ln Γ` and `ψ` (`ψ`, the zeros of `ψ`, polygamma, `B`,
-  `ln |B|`, Pochhammer and its generalizations, the falling factorial) still have the
-  specification "correctly rounded or `NaN`" only.
-* Nothing was timed after this round.  The seven constants run the same fuel loop first, so
-  their timings should be unchanged; that is untested.
+* `Γ(x + y)/Γ(x)` for a `y` that is not an integer keeps its fuel: irrationality is known
+  only at the arguments of Chudnovsky's theorem (as for `B`), and nothing was done there.
+* With a power of two for a denominator (and for all floats) the values of the family are
+  dyadic, so a rounding boundary is possible and the fuel stays.
 
 ### File layout of the logarithms of `Γ` and `B` (2026-11-18)
 

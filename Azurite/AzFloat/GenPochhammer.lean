@@ -16,7 +16,7 @@ import Azurite.AzFloat.Pochhammer
 precision `p` in `mode`, with the comparison against the exact value; `genPochhammer x y`
 rounds to nearest at the larger of the precisions of `x` and `y`.
 
-* **An integer `y ≥ 0`**: Pochhammer's symbol `(x)ₙ`, `n = y` (`pochReal`) — a polynomial in
+* **An integer `y ≥ 0`**: Pochhammer's symbol `(x)ₙ`, `n = y` (`pochRealFuel`) — a polynomial in
   `x`, also where `Γ(x)` has a pole (the limit of the quotient).
 * **An integer `y < 0`**, `n = −y`: `1 / ((x − 1)(x − 2) ⋯ (x − n))`, again the limit at the
   poles of `Γ(x)`; a pole of its own, `NaN`, at `x = 1, …, n` (`genPochPole`).  An exact
@@ -77,16 +77,17 @@ def recipPochCore (x : AzFloat) (n w : Nat) : Option (Bool × Encl) :=
   recipPochCoreOf (fun V => Encl.sub V (Encl.exact x) (Encl.nat n)) (recipPochSplit x n) n
     (gammaLnBits (expOf (addPrecRound x.abs (ofAzNat (AzNat.ofNat n)) 64 .Ceiling).1)) w
 
-/-- `Γ(x − n)/Γ(x) = 1 / ((x − 1) ⋯ (x − n))` for a finite `x`. -/
-def genPochNegInt (x : AzFloat) (n p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- `Γ(x − n)/Γ(x) = 1 / ((x − 1) ⋯ (x − n))` for a finite `x`, with the fuel of the Ziv loop
+explicit. -/
+def genPochNegIntFuel (fuel : Nat) (x : AzFloat) (n p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   if genPochPole x n then (nan, .eq)
   else if p = 0 then (nan, .eq)
   else
     match recipPochExact? x n p mode with
     | some r => r
     | none =>
-      zivLoop (fun w => gammaApproxOf (recipPochCore x n w) w) p mode (gammaFuel p)
-        (max 64 (p + 32))
+      zivLoop (fun w => gammaApproxOf (recipPochCore x n w) w) p mode fuel (max 64 (p + 32))
 
 /-! ### A `y` that is not an integer -/
 
@@ -126,28 +127,37 @@ def genPochCore (x y : AzFloat) (w : Nat) : Option (Bool × Encl) :=
 
 /-! ### The driver -/
 
-/-- `Γ(x + y)/Γ(x)` for finite `x`, `y` (zero included). -/
-def genPochReal (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- `Γ(x + y)/Γ(x)` for finite `x`, `y` (zero included), with the fuel of the Ziv loops
+explicit. -/
+def genPochRealFuel (fuel : Nat) (x y : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   if isInteger y then
-    if le zero y then pochReal x (truncToAzInt y).abs.toNat p mode
-    else genPochNegInt x (truncToAzInt y).abs.toNat p mode
+    if le zero y then pochRealFuel fuel x (truncToAzInt y).abs.toNat p mode
+    else genPochNegIntFuel fuel x (truncToAzInt y).abs.toNat p mode
   else if isInteger x && le x zero then (zero, .eq)
   else if sumIsNonposInt x y then (nan, .eq)
   else if p = 0 then (nan, .eq)
   else
-    zivLoop (fun w => gammaApproxOf (genPochCore x y w) w) p mode (gammaFuel p) (max 64 (p + 32))
+    zivLoop (fun w => gammaApproxOf (genPochCore x y w) w) p mode fuel (max 64 (p + 32))
 
 /-- `Γ(x + y)/Γ(x)` rounded to precision `p` with `mode`, and the comparison with the exact
 value (`(nan, .eq)` at a pole, for an infinite argument, for `p = 0` unless the value is `0`,
-or if the fuel runs out). -/
-def genPochhammerPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) :
+or if the fuel runs out), with the fuel of the Ziv loops explicit. -/
+def genPochhammerPrecRoundFuel (fuel : Nat) (x y : AzFloat) (p : Nat) (mode : RoundingMode) :
     AzFloat × Ordering :=
   match x, y with
   | nan, _ => (nan, .eq)
   | _, nan => (nan, .eq)
   | infinity _, _ => (nan, .eq)
   | _, infinity _ => (nan, .eq)
-  | x, y => genPochReal x y p mode
+  | x, y => genPochRealFuel fuel x y p mode
+
+/-- `Γ(x + y)/Γ(x)` rounded to precision `p` with `mode`, and the comparison with the exact
+value: `genPochhammerPrecRoundFuel` at the fuel `gammaFuel p`.  The specification is
+`genPochhammerPrecRoundFuel_zivSpec` (`Equiv/GenPochhammer.lean`). -/
+def genPochhammerPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  genPochhammerPrecRoundFuel (gammaFuel p) x y p mode
 
 /-- `Γ(x + y)/Γ(x)` rounded to nearest at the larger of the precisions of `x` and `y`. -/
 def genPochhammer (x y : AzFloat) : AzFloat :=

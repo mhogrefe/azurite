@@ -84,3 +84,7 @@ private def narrowAt (w : Nat) : Bool :=
 #guard (setPrecRound (eulerGamma 700) 200 .Nearest).1 == eulerGamma 200
 #guard (eulerGammaPrecRound 1000 .Floor).2 == .lt
 #guard (eulerGammaPrecRound 1000 .Ceiling).2 == .gt
+
+-- explicit fuel: the public function is the variant at `eulerGammaFuel p`
+#guard eulerGammaPrecRound 53 .Nearest == eulerGammaPrecRoundFuel (eulerGammaFuel 53) 53 .Nearest
+#guard eulerGammaPrecRoundFuel 0 53 .Nearest == eulerGammaPrecRound 53 .Nearest

@@ -69,8 +69,9 @@ theorem betaSumFrac_spec {a b : AzFloat} {av bv : ℝ} (ha : a.toVal = some (av 
   obtain ⟨rfl, rfl, rfl⟩ := heq
   have hA : IsEncl (Encl.exact a) av := ⟨av, av, ha, ha, le_rfl, le_rfl⟩
   have hB : IsEncl (Encl.exact b) bv := ⟨bv, bv, hb, hb, le_rfl, le_rfl⟩
-  have hK : IsEncl (Encl.exact (ofAzInt (gammaNearInt (addPrecRound a b 64 .Nearest).1)))
-      (((gammaNearInt (addPrecRound a b 64 .Nearest).1).toInt : ℤ) : ℝ) :=
+  have hK : IsEncl
+      (Encl.exact (ofAzInt (gammaNearInt (addPrecRound a b (betaSumPrec a b) .Nearest).1)))
+      (((gammaNearInt (addPrecRound a b (betaSumPrec a b) .Nearest).1).toInt : ℤ) : ℝ) :=
     ⟨_, _, toVal_ofAzInt _, toVal_ofAzInt _, le_rfl, le_rfl⟩
   have hD := (hA.sub (w := W) hK).add (w := W) hB
   have := fracOfEncl_spec hD ht

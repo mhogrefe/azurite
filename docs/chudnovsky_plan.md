@@ -516,3 +516,11 @@ Gauss's constant `1/AGM(1, √2) = Γ(1/4)²/(2π √(2π))` and the lemniscate 
 irrational (`irrational_gauss`, `irrational_lemniscate`), and their rounded functions are free
 of fuel too.  M7 is complete.
 
+**Beta values (2026-11-19).**  `Azurite/Chudnovsky/BetaValues.lean`: for rational `a`, `b`
+that are not integers, `B(a, b)` is irrational when `a + b` is a positive integer (`π` over
+an algebraic sine) and when `a + b` is not an integer and the denominators both divide `4` or
+both divide `6` (`irrational_beta_of_den`).  Each `Γ(N/4)` is `Γ(1/4)^d` and each `Γ(N/6)` is
+`Γ(1/3)^d` up to a nonzero number algebraic over `ℤ[π]` (`GDeg`, `gdeg_gamma_div_four`,
+`gdeg_gamma_div_six`), and the degree of the Beta value is `±2`, resp. `±3`.  `betaPrecRound`
+and `betaRatPrecRound` run certified loops there.  See `docs/azfloat_plan.md`, item 10 of the
+second round.

@@ -123,3 +123,13 @@ private def same (a b : AzFloat) : Bool := le a b && le b a
 #guard trigammaPrecRound (X "0.5" 53) 53 .Up == polygammaPrecRound 1 (X "0.5" 53) 53 .Up
 #guard toString (trigamma (X "1" 53)) == "1.6449340668482264"
 #guard toString (polygamma 2 (X "1" 53)) == "-2.4041138063191885"
+
+-- the fuel as an argument; for an odd `n` no fuel is needed at the positive integers and the
+-- half-integers, where the value is irrational (`ψ′(1) = π²/6`, `ψ′(1/2) = π²/2`)
+#guard D (polygammaPrecRoundFuel 0 1 (X "1" 53) 53 .Nearest) == ("1.6449340668482264", .lt)
+#guard D (polygammaPrecRoundFuel 0 1 (X "0.5" 53) 53 .Nearest) == ("4.934802200544679", .lt)
+#guard D (polygammaPrecRoundFuel 0 3 (X "-2.5" 53) 53 .Nearest) == ("194.74787621918762", .lt)
+#guard D (polygammaPrecRoundFuel 0 1 (X "7" 53) 53 .Nearest) == ("0.15354517795933756", .gt)
+#guard D (polygammaPrecRoundFuel 3 2 (X "1" 53) 53 .Nearest) == ("-2.4041138063191885", .gt)
+#guard D (polygammaPrecRoundFuel 3 1 (X "0.3" 53) 53 .Nearest) == ("12.245364546107732", .gt)
+#guard polygammaPrecRoundFuel (lnGammaFuel 53) 2 (X "0.3" 53) 53 .Nearest == P 2 "0.3" 53

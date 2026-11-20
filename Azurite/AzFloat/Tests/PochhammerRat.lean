@@ -113,3 +113,16 @@ private def exact (q : String) (n p : Nat) (m : RoundingMode) : AzFloat × Order
 -- `pochhammerRat`
 #guard toString (pochhammerRat (Q "1/2") 3 53) == "1.875"
 #guard toString (pochhammerRat (Q "1/3") 3 53) == "1.037037037037037"
+
+-- the fuel as an argument
+#guard D (pochhammerRatPrecRoundFuel 3 (Q "1/3") 200 53 .Nearest)
+  == ("8.603289796878314e372", .lt)
+#guard pochhammerRatPrecRoundFuel (gammaFuel 53) (Q "1/3") 200 53 .Nearest == P "1/3" 200 53
+
+-- no fuel when the denominator is not a power of two: the value is not dyadic
+#guard pochRatSpecial (Q "1/3") && pochRatSpecial (Q "5/6")
+#guard !pochRatSpecial (Q "-7/8") && !pochRatSpecial (Q "5")
+#guard D (pochhammerRatPrecRoundFuel 0 (Q "1/3") 200 53 .Nearest)
+  == ("8.603289796878314e372", .lt)
+#guard D (pochhammerRatPrecRoundFuel 0 (Q "1/4") 200 53 .Nearest)
+  == ("4.088193167323894e372", .gt)

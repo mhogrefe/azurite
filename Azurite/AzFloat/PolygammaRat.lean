@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Polygamma
+import Azurite.AzFloat.Equiv.PolygammaRatCertificate
 import Azurite.AzFloat.DigammaRat
 
 /-!
@@ -31,44 +32,6 @@ rationals: of `q` itself for `q > 0`, and for `q < 0` of the exact rationals `q 
 
 namespace Azurite.AzFloat
 
-/-- An enclosure of `H(q) = (−1)ⁿ⁺¹ ψ⁽ⁿ⁾(q)` at Ziv level `w` for a rational `q < 0` that is not
-an integer, as `polygammaNegEncl`: with `m = −⌊q⌋`, so that `u = q + m` and `1 − u` lie in
-`(0, 1)`, the recurrence in positive terms for `m ≤ 2^L`, and three positive arguments
-beyond.  `u`, `1 − u` and `1 − q` are exact rationals, rounded once.  (`none` only if the
-signs are not those of such a `q`.) -/
-def polygammaRatNegEncl (n : Nat) (q : AzRat) (w : Nat) : Option Encl :=
-  let k := (q.round .Floor).1
-  let m := k.abs.toNat
-  let u := q - k.toAzRat
-  let a₂ := 1 - u
-  if k.sign = false ∧ u.num ≠ 0 ∧ u.sign = true ∧ a₂.num ≠ 0 ∧ a₂.sign = true then
-    let V := polyWork n w
-    let W := w + 32
-    let U := lnGammaRatEncl u V
-    let A₂ := lnGammaRatEncl a₂ V
-    if m ≤ 2 ^ lnGammaShiftExp w then
-      let T := Encl.mul V (Encl.exact (ofAzNat (AzNat.factorial n))) (polyShiftSum V A₂ n m)
-      some (if n % 2 = 1 then Encl.add W (polygammaPosEncl n U w) T
-        else Encl.sub W (polygammaPosEncl n U w) T)
-    else
-      let A₁ := lnGammaRatEncl (1 - q) V
-      let D := Encl.sub W (polygammaPosEncl n A₁ w) (polygammaPosEncl n A₂ w)
-      some (if n % 2 = 0 then Encl.add W (polygammaPosEncl n U w) D
-        else Encl.sub W (polygammaPosEncl n U w) D)
-  else none
-
-/-- An enclosure of `ψ⁽ⁿ⁾(q)` at Ziv level `w` for a rational `q` that is positive (`pos`) or
-negative and not an integer. -/
-def polygammaRatEncl (n : Nat) (q : AzRat) (pos : Bool) (w : Nat) : Option Encl :=
-  (if pos then some (polygammaPosEncl n (lnGammaRatEncl q (polyWork n w)) w)
-    else polygammaRatNegEncl n q w).map fun H => if n % 2 = 1 then H else Encl.neg H
-
-/-- The bracket of `ψ⁽ⁿ⁾(q)` as a pair of `Roundable`s, with the second evaluation of
-`enclRefine` where digits cancel. -/
-def polygammaRatApprox (n : Nat) (q : AzRat) (pos : Bool) (p w : Nat) :
-    Roundable × Roundable :=
-  lnAbsGammaApproxOf (enclRefine (polygammaRatEncl n q pos) p w) w
-
 /-- Is `q` tiny for `ψ⁽ⁿ⁾` at precision `p`: `|q| < 2^e` with
 `(n + 1)(|e| − 2) ≥ p + 72 + lg (n + 1) + 2`, and `|q| ≤ 1/4` by its roundings at 64 bits (the
 latter is what the proofs use). -/
@@ -88,22 +51,38 @@ def polygammaRatTiny? (n : Nat) (q : AzRat) (e : AzInt) (p : Nat) (mode : Roundi
       p mode
   else none
 
-/-- `ψ⁽ⁿ⁾(q)` rounded to precision `p` with `mode`, and the comparison with the exact value
+/-- **`ψ⁽ⁿ⁾(q)` rounded to precision `p` with `mode`, with the fuel of the Ziv loop explicit**
 (`(nan, .eq)` where the function has no value, for `p = 0` unless the value is infinite, or
-if the fuel runs out). -/
-def polygammaRatPrecRound (n : Nat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
-    AzFloat × Ordering :=
-  if n = 0 then digammaRatPrecRound q p mode
-  else if q.num = 0 then (infinity (n % 2 == 1), .eq)
-  else if q.den = 1 ∧ q.sign = false then
+if the fuel runs out; for `n = 0` it is `digammaRatPrecRound`).  For an odd `n` at a positive
+integer or a rational of denominator `2` the value is irrational and the loop is backed by a
+certified one (`polygammaRatApprox_cert`).  The specification is
+`polygammaRatPrecRoundFuel_zivSpec` (`Equiv/PolygammaRat.lean`). -/
+def polygammaRatPrecRoundFuel (fuel : Nat) (n : Nat) (q : AzRat) (p : Nat)
+    (mode : RoundingMode) : AzFloat × Ordering :=
+  if n = 0 then digammaRatPrecRoundFuel fuel q p mode
+  else if h0 : q.num = 0 then (infinity (n % 2 == 1), .eq)
+  else if hpole : q.den = 1 ∧ q.sign = false then
     (if n % 2 = 1 then (infinity true, .eq) else (nan, .eq))
-  else if p = 0 then (nan, .eq)
+  else if hp : p = 0 then (nan, .eq)
   else
-    let e := gammaRatExp q
-    match polygammaRatTiny? n q e p mode with
+    match polygammaRatTiny? n q (gammaRatExp q) p mode with
     | some r => r
     | none =>
-      zivLoop (polygammaRatApprox n q q.sign p) p mode (lnGammaFuel p) (polygammaStart n e p)
+      if hc : polygammaRatSpecial n q = true then
+        haveI : NeZero p := ⟨hp⟩
+        zivLoopBacked (polygammaRatApprox n q q.sign p) p mode fuel
+          (polygammaStart n (gammaRatExp q) p)
+          (polygammaRatApprox_cert h0 hpole hc p mode _
+            (Nat.lt_of_lt_of_le (by norm_num) (le_max_left 64 _)))
+      else
+        zivLoop (polygammaRatApprox n q q.sign p) p mode fuel
+          (polygammaStart n (gammaRatExp q) p)
+
+/-- `ψ⁽ⁿ⁾(q)` rounded to precision `p` with `mode`, and the comparison with the exact value:
+`polygammaRatPrecRoundFuel` at the fuel `lnGammaFuel p`. -/
+def polygammaRatPrecRound (n : Nat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  polygammaRatPrecRoundFuel (lnGammaFuel p) n q p mode
 
 /-- `ψ⁽ⁿ⁾(q)` rounded to nearest at precision `p`. -/
 def polygammaRat (n : Nat) (q : AzRat) (p : Nat) : AzFloat :=

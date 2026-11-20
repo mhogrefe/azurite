@@ -120,3 +120,15 @@ private def exact (q : String) (n p : Nat) (m : RoundingMode) : AzFloat × Order
 -- the wrappers
 #guard toString (fallingFactorial (X "5" 53) 3) == "6.0e1"
 #guard toString (fallingFactorialRat (Q "1/2") 3 53) == "0.375"
+
+-- the fuel as an argument
+#guard D (fallingFactorialPrecRoundFuel 3 (X "0.3" 53) 201 53 .Nearest)
+  == ("3.716890457713751e373", .gt)
+#guard D (fallingFactorialRatPrecRoundFuel 3 (Q "1/3") 201 53 .Nearest)
+  == ("3.3178724600986942e373", .gt)
+#guard fallingFactorialPrecRoundFuel (gammaFuel 53) (X "0.3" 53) 201 53 .Nearest
+  == P "0.3" 201 53
+#guard fallingFactorialRatPrecRoundFuel (gammaFuel 53) (Q "1/3") 201 53 .Nearest
+  == R "1/3" 201 53
+#guard D (fallingFactorialRatPrecRoundFuel 0 (Q "1/3") 201 53 .Nearest)
+  == ("3.3178724600986942e373", .gt)

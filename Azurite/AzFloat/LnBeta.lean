@@ -66,8 +66,9 @@ def negLnAbs (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering
   let r := lnPrecRound x.abs p (-mode)
   (-r.1, r.2.swap)
 
-/-- `ln |B(a, b)|` and the sign of `B(a, b)` for finite `a`, `b` (zero included). -/
-def lnAbsBetaReal (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
+/-- `ln |B(a, b)|` and the sign of `B(a, b)` for finite `a`, `b` (zero included), with the
+fuel of the loop explicit. -/
+def lnAbsBetaRealFuel (fuel : Nat) (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
     (AzFloat × Ordering) × Bool :=
   if isNegInt a || isNegInt b then ((nan, .eq), true)
   else if isZeroVal a || isZeroVal b then ((infinity true, .eq), true)
@@ -79,7 +80,12 @@ def lnAbsBetaReal (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
     let ea := expOf a
     let eb := expOf b
     let bits := betaBits ea eb ((if ea ≤ eb then eb else ea) + 1)
-    lnAbsLoop (fun w => lnAbsBetaCore a b (w + bits) w) p mode (gammaFuel p) (max 64 (p + 32))
+    lnAbsLoop (fun w => lnAbsBetaCore a b (w + bits) w) p mode fuel (max 64 (p + 32))
+
+/-- `lnAbsBetaRealFuel` at the fuel `gammaFuel p`. -/
+def lnAbsBetaReal (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
+    (AzFloat × Ordering) × Bool :=
+  lnAbsBetaRealFuel (gammaFuel p) a b p mode
 
 /-- `ln |B(+∞, y)|`: `−∞` for `y > 0` (where `B = 0`), `NaN` otherwise. -/
 def lnAbsBetaInfinite (y : AzFloat) : AzFloat × Ordering :=
@@ -88,14 +94,21 @@ def lnAbsBetaInfinite (y : AzFloat) : AzFloat × Ordering :=
 /-- `ln |B(a, b)|` rounded to precision `p` with `mode`, the comparison with the exact value,
 and the sign of `B(a, b)` (`true`: positive).  The first component is `(nan, .eq)` where `B` is
 `NaN`, for `p = 0` unless the value is infinite, or if the fuel runs out. -/
-def lnAbsBetaPrecRound (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
+def lnAbsBetaPrecRoundFuel (fuel : Nat) (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
     (AzFloat × Ordering) × Bool :=
   match a, b with
   | nan, _ => ((nan, .eq), true)
   | _, nan => ((nan, .eq), true)
   | infinity s, b => (if s then lnAbsBetaInfinite b else (nan, .eq), true)
   | a, infinity s => (if s then lnAbsBetaInfinite a else (nan, .eq), true)
-  | a, b => lnAbsBetaReal a b p mode
+  | a, b => lnAbsBetaRealFuel fuel a b p mode
+
+/-- `ln |B(a, b)|` rounded to precision `p` with `mode`, the comparison with the exact value,
+and the sign of `B(a, b)`: `lnAbsBetaPrecRoundFuel` at the fuel `gammaFuel p`.  The
+specification of the value is `lnAbsBetaPrecRoundFuel_zivSpec` (`Equiv/LnBeta.lean`). -/
+def lnAbsBetaPrecRound (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
+    (AzFloat × Ordering) × Bool :=
+  lnAbsBetaPrecRoundFuel (gammaFuel p) a b p mode
 
 /-- `ln |B(a, b)|` rounded to nearest at the larger of the precisions of `a` and `b`, and the
 sign of `B(a, b)`. -/
@@ -106,9 +119,15 @@ def lnAbsBeta (a b : AzFloat) : AzFloat × Bool :=
 /-- `ln B(a, b)` rounded to precision `p` with `mode`, and the comparison with the exact
 value: `lnAbsBetaPrecRound` where `B(a, b) ≥ 0`, `(nan, .eq)` where `B(a, b) < 0` (and where
 `B` is `NaN`, for `p = 0` unless the value is infinite, or if the fuel runs out). -/
-def lnBetaPrecRound (a b : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  let r := lnAbsBetaPrecRound a b p mode
+def lnBetaPrecRoundFuel (fuel : Nat) (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  let r := lnAbsBetaPrecRoundFuel fuel a b p mode
   if r.2 then r.1 else (nan, .eq)
+
+/-- `ln B(a, b)` rounded to precision `p` with `mode`: `lnBetaPrecRoundFuel` at the fuel
+`gammaFuel p` (`lnBetaPrecRoundFuel_zivSpec`, `Equiv/LnBeta.lean`). -/
+def lnBetaPrecRound (a b : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  lnBetaPrecRoundFuel (gammaFuel p) a b p mode
 
 /-- `ln B(a, b)` rounded to nearest at the larger of the precisions of `a` and `b`. -/
 def lnBeta (a b : AzFloat) : AzFloat :=

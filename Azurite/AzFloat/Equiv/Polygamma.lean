@@ -188,20 +188,21 @@ theorem polygammaTiny?_eq {n : ℕ} (hn : 1 ≤ n) {s : Bool} {e : AzInt} {q : �
     (fun hs' => by subst hs'; exact finiteVal_true_pos e hv)
     (fun hs' => by subst hs'; exact finiteVal_false_neg e hv) p mode h
 
-/-- **`ψ⁽ⁿ⁾` is correctly rounded, or the fuel ran out.** -/
-theorem polygammaPrecRound_eq_or (n : ℕ) (x : AzFloat) (p : ℕ) [NeZero p]
-    (mode : RoundingMode) :
-    polygammaPrecRound n x p mode = liftVal (Spec.polygamma n) x p mode ∨
-      polygammaPrecRound n x p mode = (nan, .eq) := by
+/-- **`ψ⁽ⁿ⁾`, `n ≥ 1`, is correctly rounded, or it is the loop with fuel** at a finite argument
+that is not a pole, off the arguments with a known irrational value. -/
+theorem polygammaPrecRoundFuel_eq_or_loop (fuel : ℕ) {n : ℕ} (hn : n ≠ 0) (x : AzFloat)
+    (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    polygammaPrecRoundFuel fuel n x p mode = liftVal (Spec.polygamma n) x p mode ∨
+      ∃ (s : Bool) (e : AzInt) (q : ℕ) (m : AzNat) (hv : FiniteValid q m),
+        x = finite s e q m hv ∧ (s = true → 0 < finiteVal s e m) ∧
+        (s = false → finiteVal s e m < 0 ∧ ∀ k : ℤ, finiteVal s e m ≠ k) ∧
+        polygammaSpecial n x = false ∧
+        polygammaPrecRoundFuel fuel n x p mode
+          = zivLoop (polygammaApprox n (finite s e q m hv) s p) p mode fuel
+            (polygammaStart n e p) := by
   have hp := NeZero.ne p
-  by_cases hn : n = 0
-  · subst hn
-    have := digammaPrecRound_eq_or x p mode
-    unfold polygammaPrecRound liftVal at *
-    rw [ite_eq_left rfl]
-    simpa only [Spec.polygamma_zero] using this
   have hn1 : 1 ≤ n := Nat.one_le_iff_ne_zero.mpr hn
-  unfold polygammaPrecRound
+  unfold polygammaPrecRoundFuel
   rw [ite_eq_right hn]
   cases x with
   | nan => left; simp [liftVal, toVal_nan]
@@ -234,7 +235,7 @@ theorem polygammaPrecRound_eq_or (n : ℕ) (x : AzFloat) (p : ℕ) [NeZero p]
       by_cases ho : n % 2 = 1
       · rw [ite_eq_left ho, ite_eq_left ho, roundVal_top]
       · rw [ite_eq_right ho, ite_eq_right ho, roundVal_none]
-    · rw [ite_eq_right hpole, ite_eq_right hp]
+    · rw [ite_eq_right hpole, dite_eq_right hp]
       have hpos : s = true → 0 < finiteVal s e m := fun hs => by
         subst hs; exact finiteVal_true_pos e hv
       have hneg : s = false → ∀ k : ℤ, finiteVal s e m ≠ k := fun hs k hk => by
@@ -250,13 +251,163 @@ theorem polygammaPrecRound_eq_or (n : ℕ) (x : AzFloat) (p : ℕ) [NeZero p]
       rw [Spec.polygamma_coe hn hx0 hnp]
       split
       · next r hT => left; exact polygammaTiny?_eq hn1 hv p mode hT
-      · rcases eq_or_ne (zivLoop (polygammaApprox n (finite s e q m hv) s p) p mode (lnGammaFuel p)
-          (polygammaStart n e p)) (nan, .eq) with hz | hz
-        · right; exact hz
+      · by_cases hc : polygammaSpecial n (finite s e q m hv) = true
         · left
-          exact zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
-            (fun w hw => lnAbsGammaApproxOf_valid_or_none
-              (fun _ hc => polygammaEnclFor_spec hn1 hx hpos hneg p hw hc) w p mode)
-            _ _ (le_max_left _ _) hz
+          rw [dite_eq_left hc]
+          exact zivLoopBacked_eq p mode _
+            (not_mem_floatSet_of_irrational p (irrational_polygamma_of_special hx hc)) 64
+            (fun w hw => (lnAbsGammaApproxOf_valid_or_none
+              (fun _ hc' => polygammaEnclFor_spec hn1 hx hpos hneg p hw hc') w p mode).imp_left
+                fun ⟨lv, hv', h1, h2, h3, h4, _⟩ => ⟨lv, hv', h1, h2, h3, h4⟩)
+            fuel _ (le_max_left _ _) (Nat.lt_of_lt_of_le (by norm_num) (le_max_left 64 _)) _
+        · right
+          rw [dite_eq_right hc]
+          exact ⟨s, e, q, m, hv, rfl, hpos,
+            fun hs => ⟨by subst hs; exact finiteVal_false_neg e hv, hneg hs⟩,
+            by simpa using hc, rfl⟩
+
+/-- **`ψ⁽ⁿ⁾` is correctly rounded, or the fuel ran out**, at every fuel. -/
+theorem polygammaPrecRoundFuel_eq_or (fuel : ℕ) (n : ℕ) (x : AzFloat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    polygammaPrecRoundFuel fuel n x p mode = liftVal (Spec.polygamma n) x p mode ∨
+      polygammaPrecRoundFuel fuel n x p mode = (nan, .eq) := by
+  by_cases hn : n = 0
+  · subst hn
+    have := digammaPrecRoundFuel_eq_or fuel x p mode
+    unfold polygammaPrecRoundFuel liftVal at *
+    rw [ite_eq_left rfl]
+    simpa only [Spec.polygamma_zero] using this
+  rcases polygammaPrecRoundFuel_eq_or_loop fuel hn x p mode with
+    h | ⟨s, e, q, m, hv, rfl, hpos, hneg, -, h⟩
+  · exact Or.inl h
+  · rcases eq_or_ne (polygammaPrecRoundFuel fuel n (finite s e q m hv) p mode) (nan, .eq) with
+      hz | hz
+    · exact Or.inr hz
+    · left
+      have hx := toVal_finite s e q m hv
+      have hnp : ¬ (finiteVal s e m < 0 ∧ ∃ k : ℤ, finiteVal s e m = k) := by
+        rintro ⟨hlt, k, hk⟩
+        cases s with
+        | true => exact absurd (hpos rfl) (not_lt.mpr hlt.le)
+        | false => exact (hneg rfl).2 k hk
+      rw [h] at hz ⊢
+      rw [liftVal, hx, Option.bind_some, Spec.polygamma_coe hn (finiteVal_ne_zero s e hv) hnp]
+      exact zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
+        (fun w hw => lnAbsGammaApproxOf_valid_or_none
+          (fun _ hc => polygammaEnclFor_spec (Nat.one_le_iff_ne_zero.mpr hn) hx hpos
+            (fun hs => (hneg hs).2) p hw hc) w p mode)
+        _ _ (le_max_left _ _) hz
+
+/-- **`ψ⁽ⁿ⁾` is correctly rounded, or the fuel ran out.** -/
+theorem polygammaPrecRound_eq_or (n : ℕ) (x : AzFloat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    polygammaPrecRound n x p mode = liftVal (Spec.polygamma n) x p mode ∨
+      polygammaPrecRound n x p mode = (nan, .eq) :=
+  polygammaPrecRoundFuel_eq_or (lnGammaFuel p) n x p mode
+
+/-- **The specification of `ψ⁽ⁿ⁾`, `n ≥ 1`** (`ZivSpec`): sound at every fuel; complete in the
+limit of the fuel wherever the value is no rounding boundary (the bracket converges,
+`polygammaApprox_bracketConv`); and correct at every fuel where the value is not a real number
+(`0`, the negative integers) and, for an odd `n`, at the positive integers and the
+half-integers, where the value is irrational. -/
+theorem polygammaPrecRoundFuel_zivSpec {n : ℕ} (hn : n ≠ 0) :
+    ZivSpec (fun x : AzFloat => x.toVal.bind (Spec.polygamma n))
+      (fun fuel x p mode => polygammaPrecRoundFuel fuel n x p mode)
+      {x | ∀ v : ℝ, x.toVal = some (v : EReal) → v = 0 ∨ (v < 0 ∧ ∃ k : ℤ, v = k)}
+      {x | polygammaSpecial n x = true} where
+  sound := fun fuel x p _ mode => polygammaPrecRoundFuel_eq_or fuel n x p mode
+  complete := fun x p _ mode hB => by
+    by_cases hgen : ∃ (s : Bool) (e : AzInt) (q : ℕ) (m : AzNat) (hv : FiniteValid q m),
+        x = finite s e q m hv ∧ (s = true → 0 < finiteVal s e m) ∧
+        (s = false → finiteVal s e m < 0 ∧ ∀ k : ℤ, finiteVal s e m ≠ k)
+    · obtain ⟨s, e, q, m, hv, rfl, hpos, hneg⟩ := hgen
+      have hx := toVal_finite s e q m hv
+      have hnp : ¬ (finiteVal s e m < 0 ∧ ∃ k : ℤ, finiteVal s e m = k) := by
+        rintro ⟨hlt, k, hk⟩
+        cases s with
+        | true => exact absurd (hpos rfl) (not_lt.mpr hlt.le)
+        | false => exact (hneg rfl).2 k hk
+      have hval : ((finite s e q m hv).toVal.bind (Spec.polygamma n))
+          = some ((polygammaR n (finiteVal s e m) : ℝ) : EReal) := by
+        rw [hx, Option.bind_some, Spec.polygamma_coe hn (finiteVal_ne_zero s e hv) hnp]
+      have hB' := hB _ hval
+      have hn1 : 1 ≤ n := Nat.one_le_iff_ne_zero.mpr hn
+      obtain ⟨F, hF⟩ := zivLoop_eventually_eq p mode
+        (polygammaApprox n (finite s e q m hv) s p)
+        (polygammaApprox_bracketConv hn1 hx hpos hneg p)
+        (ne_zero_of_not_mem_floatSet hB') hB' (polygammaStart n e p)
+        (Nat.lt_of_lt_of_le (by norm_num) (le_max_left 64 _))
+        (fun w hw => (lnAbsGammaApproxOf_valid_or_none
+          (fun _ hc => polygammaEnclFor_spec hn1 hx hpos (fun hs => (hneg hs).2) p
+            (le_trans (le_max_left _ _) hw) hc) w p mode).imp_left
+              fun ⟨lv, hv', h1, h2, h3, h4, _⟩ => ⟨lv, hv', h1, h2, h3, h4⟩)
+      refine ⟨F, fun fuel hfuel => ?_⟩
+      rcases polygammaPrecRoundFuel_eq_or_loop fuel hn (finite s e q m hv) p mode with
+        h | ⟨s', e', q', m', hv', heq, -, -, -, h⟩
+      · exact h
+      · show polygammaPrecRoundFuel fuel n (finite s e q m hv) p mode = _
+        rw [h, hval]
+        cases heq
+        exact hF fuel hfuel
+    · refine ⟨0, fun fuel _ => ?_⟩
+      rcases polygammaPrecRoundFuel_eq_or_loop fuel hn x p mode with
+        h | ⟨s, e, q, m, hv, heq, hpos, hneg, -, -⟩
+      · exact h
+      · exact absurd ⟨s, e, q, m, hv, heq, hpos, hneg⟩ hgen
+  dyadic := fun x hx v hv => by
+    cases hxv : x.toVal with
+    | none => rw [hxv] at hv; exact absurd hv (by simp)
+    | some a =>
+      rw [hxv, Option.bind_some] at hv
+      induction a using EReal.rec with
+      | bot => rw [Spec.polygamma_bot hn] at hv; exact absurd hv (by simp)
+      | top =>
+        rw [Spec.polygamma_top hn, Option.some.injEq] at hv
+        have : v = 0 := by exact_mod_cast hv.symm
+        rw [this]
+        exact isDyadic_zero
+      | coe t =>
+        exfalso
+        rcases hx t hxv with rfl | ⟨h0, hk⟩
+        · rw [Spec.polygamma_coe_zero hn, Option.some.injEq] at hv
+          split_ifs at hv
+          · exact EReal.coe_ne_top v hv.symm
+          · exact EReal.coe_ne_bot v hv.symm
+        · rw [Spec.polygamma_coe_of_pole hn h0 hk] at hv
+          split_ifs at hv
+          · rw [Option.some.injEq] at hv
+            exact EReal.coe_ne_top v hv.symm
+  nondyadic := fun x hx => by
+    have hc : polygammaSpecial n x = true := hx
+    obtain ⟨xv, hxv⟩ := exists_toVal_of_polygammaSpecial hc
+    obtain ⟨-, hsign, N, hN, hNcase⟩ := polygammaSpecial_spec hxv hc
+    have hirr := irrational_polygamma_of_special hxv hc
+    have hx0 : xv ≠ 0 := by
+      rintro rfl
+      rcases hsign with h | h
+      · exact lt_irrefl _ h
+      · exact h ((isInteger_iff_of_toVal hxv).mpr ⟨0, by simp⟩)
+    have hnp : ¬ (xv < 0 ∧ ∃ k : ℤ, xv = k) := by
+      rintro ⟨hlt, hk⟩
+      rcases hsign with h | h
+      · linarith
+      · exact h ((isInteger_iff_of_toVal hxv).mpr hk)
+    refine ⟨_, ?_, not_isDyadic_of_irrational hirr⟩
+    show x.toVal.bind (Spec.polygamma n) = _
+    rw [hxv, Option.bind_some, Spec.polygamma_coe hn hx0 hnp]
+  correct := fun x hx fuel p _ mode => by
+    rcases polygammaPrecRoundFuel_eq_or_loop fuel hn x p mode with
+      h | ⟨s, e, q, m, hv, rfl, hpos, hneg, hc, -⟩
+    · exact h
+    · exfalso
+      rcases hx with hD | hN
+      · rcases hD _ (toVal_finite s e q m hv) with h0 | ⟨hlt, hk⟩
+        · exact finiteVal_ne_zero s e hv h0
+        · cases s with
+          | true => exact absurd (hpos rfl) (not_lt.mpr hlt.le)
+          | false => obtain ⟨k, hk⟩ := hk; exact (hneg rfl).2 k hk
+      · have hN' : polygammaSpecial n (finite s e q m hv) = true := hN
+        rw [hN'] at hc
+        exact Bool.noConfusion hc
 
 end Azurite.AzFloat

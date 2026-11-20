@@ -45,8 +45,9 @@ def digammaStart (e : AzInt) (p : Nat) : Nat :=
 
 /-- `ψ(x)` rounded to precision `p` with `mode`, and the comparison with the exact value
 (`(nan, .eq)` at the negative integers, for `p = 0` unless the value is infinite, or if the
-fuel runs out). -/
-def digammaPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+fuel runs out), with the fuel of the Ziv loop explicit. -/
+def digammaPrecRoundFuel (fuel : Nat) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   match x with
   | nan => (nan, .eq)
   | infinity s => if s then (infinity true, .eq) else (nan, .eq)
@@ -58,7 +59,13 @@ def digammaPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × 
       match digammaTiny? (finite s e q m hv) e p mode with
       | some r => r
       | none =>
-        zivLoop (digammaApprox (finite s e q m hv) e s) p mode (lnGammaFuel p) (digammaStart e p)
+        zivLoop (digammaApprox (finite s e q m hv) e s) p mode fuel (digammaStart e p)
+
+/-- `ψ(x)` rounded to precision `p` with `mode`, and the comparison with the exact value:
+`digammaPrecRoundFuel` at the fuel `lnGammaFuel p`.  The specification is
+`digammaPrecRoundFuel_zivSpec` (`Equiv/Digamma.lean`). -/
+def digammaPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  digammaPrecRoundFuel (lnGammaFuel p) x p mode
 
 /-- `ψ(x)` rounded to nearest at the precision of `x`. -/
 def digamma (x : AzFloat) : AzFloat := (digammaPrecRound x (x.precision?.getD 1) .Nearest).1

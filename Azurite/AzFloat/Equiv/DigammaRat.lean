@@ -137,13 +137,127 @@ theorem digammaRatTiny?_eq (q : AzRat) (h0 : q.num ≠ 0) (e : AzInt) (p : ℕ) 
   rw [neg_neg] at hneg
   exact hneg.symm
 
-/-- **`ψ` of a rational is correctly rounded unless the fuel runs out.** -/
-theorem digammaRatPrecRound_eq_or (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    digammaRatPrecRound q p mode
+/-- The bracket of `ψ(q)` is valid, or rejected. -/
+theorem digammaRatApprox_valid_or_none (q : AzRat) (h0 : q.num ≠ 0)
+    (hpole : ¬ (q.den = 1 ∧ q.sign = false)) (e : AzInt) {w : ℕ} (hw : 64 ≤ w) (p : ℕ)
+    [NeZero p] (mode : RoundingMode) :
+    (∃ lv hv : ℝ, Rounds (digammaRatApprox q e q.sign w).1 lv ∧
+        Rounds (digammaRatApprox q e q.sign w).2 hv ∧ lv ≤ DLMF.psiR ((AzRat.toRat q : ℚ) : ℝ) ∧
+        DLMF.psiR ((AzRat.toRat q : ℚ) : ℝ) ≤ hv ∧
+        (lv = DLMF.psiR ((AzRat.toRat q : ℚ) : ℝ) → hv = DLMF.psiR ((AzRat.toRat q : ℚ) : ℝ))) ∨
+      roundingPossible (digammaRatApprox q e q.sign w).1 (digammaRatApprox q e q.sign w).2 p
+        mode = none := by
+  have hnp := gammaRat_not_pole h0 hpole
+  exact lnAbsGammaApproxOf_valid_or_none
+    (fun _ hc => digammaRatEncl_spec q (fun hs => (toRat_sign_iff q h0).mp hs)
+      (fun hs => ⟨toRat_neg_of_sign_false q h0 hs,
+        fun n hn => hnp ⟨toRat_neg_of_sign_false q h0 hs, n, hn⟩⟩) _ hw hc) w p mode
+
+open Filter Topology in
+/-- **The enclosure of `ψ(q)` converges** at every rational that is positive (`pos`) or
+negative and not an integer. -/
+theorem digammaRatEncl_conv (q : AzRat) {pos : Bool}
+    (hpos : pos = true → 0 < ((AzRat.toRat q : ℚ) : ℝ))
+    (hneg : pos = false → ((AzRat.toRat q : ℚ) : ℝ) < 0 ∧
+      ∀ n : ℤ, ((AzRat.toRat q : ℚ) : ℝ) ≠ n) (e : AzInt) :
+    ∃ E : ℕ → ℝ, Tendsto E atTop (𝓝 0) ∧ ∀ᶠ w in atTop, ∃ b : Encl,
+      digammaRatEncl q e pos w = some b ∧ AEncl b (DLMF.psiR ((AzRat.toRat q : ℚ) : ℝ)) (E w) := by
+  have hmono : ∀ w : ℕ, 6 * (1 / 2 : ℝ) ^ (w + 32 + 32) ≤ 8 * (1 / 2 : ℝ) ^ w := by
+    intro w
+    have : (1 / 2 : ℝ) ^ (w + 32 + 32) ≤ (1 / 2 : ℝ) ^ w :=
+      pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
+    have h0 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ w := by positivity
+    linarith
+  cases pos with
+  | true =>
+    refine ⟨dgE ((AzRat.toRat q : ℚ) : ℝ) e, tendsto_dgE _ e, ?_⟩
+    filter_upwards [digammaPosEncl_conv (hpos rfl) e] with w hw
+    exact ⟨_, rfl, hw _ _ (lnGammaRatEncl_L q (hpos rfl) (w + 32)) (by positivity) (hmono w)⟩
+  | false =>
+    obtain ⟨hlt, hni⟩ := hneg rfl
+    have hv : ((AzRat.toRat (1 - q) : ℚ) : ℝ) = 1 - ((AzRat.toRat q : ℚ) : ℝ) := by
+      rw [AzRat.toRat_sub, AzRat.toRat_one]
+      push_cast
+      rfl
+    have hpos1 : 0 < 1 - ((AzRat.toRat q : ℚ) : ℝ) := by linarith
+    have hk1 := abs_sub_round_lt_one q
+    have hdv : ((AzRat.toRat (q - (q.round .Nearest).1.toAzRat) : ℚ) : ℝ)
+        = ((AzRat.toRat q : ℚ) : ℝ) - (q.round .Nearest).1.toInt := by
+      rw [AzRat.toRat_sub, AzRat.toRat_toAzRat_int]
+      push_cast
+      rfl
+    have hd : ((AzRat.toRat q : ℚ) : ℝ) - (((q.round .Nearest).1.toInt : ℤ) : ℝ) ≠ 0 :=
+      fun h => hni _ (sub_eq_zero.mp h)
+    have h0 : (q - (q.round .Nearest).1.toAzRat).num ≠ 0 := by
+      intro h
+      apply hd
+      rw [← hdv, (AzRat.toRat_eq_zero_iff _).mpr h]
+    obtain ⟨E, hE, hev⟩ := digammaReflect_conv (abs_pos.mpr hd) hk1
+      (P := fun w => digammaPosEncl (lnGammaRatEncl (1 - q) (w + 32))
+        ((if e.sign then e else 0) + 1) w)
+      (F := fun w => digammaRatFrac q (w + 16))
+      (tendsto_dgE (1 - ((AzRat.toRat q : ℚ) : ℝ)) ((if e.sign then e else 0) + 1))
+      (by
+        filter_upwards [digammaPosEncl_conv hpos1 ((if e.sign then e else 0) + 1)] with w hw
+        have hL := lnGammaRatEncl_L (1 - q) (by rw [hv]; exact hpos1) (w + 32)
+        rw [hv] at hL
+        exact hw _ _ hL (by positivity) (hmono w))
+      (by
+        refine Eventually.of_forall fun w => ?_
+        have hm : 6 * (1 / 2 : ℝ) ^ (w + 16 + 32) ≤ 6 * (1 / 2 : ℝ) ^ (w + 16) := by
+          have := pow_le_pow_of_le_one (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num)
+            (by omega : w + 16 ≤ w + 16 + 32)
+          linarith
+        cases hs : (q - (q.round .Nearest).1.toAzRat).sign with
+        | true =>
+          have hp := (toRat_sign_iff _ h0).mp hs
+          have hA := (lnGammaRatEncl_L _ hp (w + 16)).mono hm
+          rw [hdv] at hp hA
+          rw [← abs_of_pos hp] at hA
+          refine ⟨false, _, ?_, hA⟩
+          unfold digammaRatFrac
+          simp only [h0, hs, ↓reduceIte, Bool.not_true]
+        | false =>
+          have hn := toRat_neg_of_sign_false _ h0 hs
+          have hv2 : ((AzRat.toRat (-(q - (q.round .Nearest).1.toAzRat)) : ℚ) : ℝ)
+              = -(((AzRat.toRat q : ℚ) : ℝ) - (q.round .Nearest).1.toInt) := by
+            rw [AzRat.toRat_neg, Rat.cast_neg, hdv]
+          rw [hdv] at hn
+          have hA := (lnGammaRatEncl_L (-(q - (q.round .Nearest).1.toAzRat))
+            (by rw [hv2]; linarith) (w + 16)).mono hm
+          rw [hv2, ← abs_of_neg hn] at hA
+          refine ⟨true, _, ?_, hA⟩
+          unfold digammaRatFrac
+          simp only [h0, hs, ↓reduceIte, Bool.not_false, Bool.false_eq_true])
+    refine ⟨E, hE, ?_⟩
+    filter_upwards [hev, eventually_ge_atTop 64] with w ⟨b, v, hb, hA⟩ hw
+    have hsome : digammaRatEncl q e false w = some b := by
+      unfold digammaRatEncl
+      rw [ite_eq_right (by simp)]
+      exact hb
+    exact ⟨b, hsome, hA.of_isEncl (digammaRatEncl_spec q (pos := false) (fun h => by simp at h)
+      (fun _ => ⟨hlt, hni⟩) e hw hsome)⟩
+
+/-- **The bracket of `ψ(q)` converges.** -/
+theorem digammaRatApprox_bracketConv (q : AzRat) {pos : Bool}
+    (hpos : pos = true → 0 < ((AzRat.toRat q : ℚ) : ℝ))
+    (hneg : pos = false → ((AzRat.toRat q : ℚ) : ℝ) < 0 ∧
+      ∀ n : ℤ, ((AzRat.toRat q : ℚ) : ℝ) ≠ n) (e : AzInt) :
+    BracketConv (digammaRatApprox q e pos) (DLMF.psiR ((AzRat.toRat q : ℚ) : ℝ)) :=
+  lnAbsGammaApproxOf_bracketConv (digammaRatEncl_conv q hpos hneg e)
+
+/-- **`ψ` of a rational is correctly rounded, or it is the loop with fuel** off `0` and the
+poles. -/
+theorem digammaRatPrecRoundFuel_eq_or_loop (fuel : ℕ) (q : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    digammaRatPrecRoundFuel fuel q p mode
         = roundVal p mode (Spec.digamma (((AzRat.toRat q : ℚ) : ℝ) : EReal)) ∨
-      digammaRatPrecRound q p mode = (nan, .eq) := by
+      (q.num ≠ 0 ∧ ¬ (q.den = 1 ∧ q.sign = false) ∧
+        digammaRatPrecRoundFuel fuel q p mode
+          = zivLoop (digammaRatApprox q (gammaRatExp q) q.sign) p mode fuel
+            (digammaRatStart q (gammaRatExp q) p)) := by
   have hp := NeZero.ne p
-  unfold digammaRatPrecRound
+  unfold digammaRatPrecRoundFuel
   by_cases h0 : q.num = 0
   · left
     rw [ite_eq_left h0, coe_toRat_eq_zero_of_num_eq_zero q h0, Spec.digamma_zero, roundVal_bot]
@@ -161,15 +275,88 @@ theorem digammaRatPrecRound_eq_or (q : AzRat) (p : ℕ) [NeZero p] (mode : Round
   · rename_i r hr
     left
     exact digammaRatTiny?_eq q h0 _ p mode hr
-  · rcases eq_or_ne (zivLoop (digammaRatApprox q (gammaRatExp q) q.sign) p mode (lnGammaFuel p)
-      (digammaRatStart q (gammaRatExp q) p)) (nan, .eq) with hz | hz
-    · right; exact hz
+  · exact Or.inr ⟨h0, hpole, rfl⟩
+
+/-- **`ψ` of a rational is correctly rounded, or the fuel ran out**, at every fuel. -/
+theorem digammaRatPrecRoundFuel_eq_or (fuel : ℕ) (q : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    digammaRatPrecRoundFuel fuel q p mode
+        = roundVal p mode (Spec.digamma (((AzRat.toRat q : ℚ) : ℝ) : EReal)) ∨
+      digammaRatPrecRoundFuel fuel q p mode = (nan, .eq) := by
+  rcases digammaRatPrecRoundFuel_eq_or_loop fuel q p mode with h | ⟨h0, hpole, h⟩
+  · exact Or.inl h
+  · rcases eq_or_ne (digammaRatPrecRoundFuel fuel q p mode) (nan, .eq) with hz | hz
+    · exact Or.inr hz
     · left
+      have hx0 : ((AzRat.toRat q : ℚ) : ℝ) ≠ 0 := fun h' =>
+        h0 ((AzRat.toRat_eq_zero_iff q).mp (by exact_mod_cast h'))
+      rw [h] at hz ⊢
+      rw [Spec.digamma_coe hx0 (gammaRat_not_pole h0 hpole)]
       exact zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
-        (fun w hw => lnAbsGammaApproxOf_valid_or_none
-          (fun _ hc => digammaRatEncl_spec q (fun hs => (toRat_sign_iff q h0).mp hs)
-            (fun hs => ⟨toRat_neg_of_sign_false q h0 hs,
-              fun n hn => hnp ⟨toRat_neg_of_sign_false q h0 hs, n, hn⟩⟩) _ hw hc) w p mode)
+        (fun w hw => digammaRatApprox_valid_or_none q h0 hpole _ hw p mode)
         _ _ (le_max_left _ _) hz
+
+/-- **`ψ` of a rational is correctly rounded unless the fuel runs out.** -/
+theorem digammaRatPrecRound_eq_or (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    digammaRatPrecRound q p mode
+        = roundVal p mode (Spec.digamma (((AzRat.toRat q : ℚ) : ℝ) : EReal)) ∨
+      digammaRatPrecRound q p mode = (nan, .eq) :=
+  digammaRatPrecRoundFuel_eq_or (lnGammaFuel p) q p mode
+
+/-- **The specification of `ψ` for rationals** (`ZivSpec`): sound at every fuel; complete in
+the limit of the fuel wherever the value is no rounding boundary; correct at every fuel at
+`0` and the poles.  No value of `ψ` at a rational is known to be irrational. -/
+theorem digammaRatPrecRoundFuel_zivSpec :
+    ZivSpec (fun q : AzRat => Spec.digamma (((AzRat.toRat q : ℚ) : ℝ) : EReal))
+      digammaRatPrecRoundFuel
+      {q | q.num = 0 ∨ (q.den = 1 ∧ q.sign = false)} ∅ where
+  sound := fun fuel q p _ mode => digammaRatPrecRoundFuel_eq_or fuel q p mode
+  complete := fun q p _ mode hB => by
+    by_cases hgen : q.num ≠ 0 ∧ ¬ (q.den = 1 ∧ q.sign = false)
+    · obtain ⟨h0, hpole⟩ := hgen
+      have hx0 : ((AzRat.toRat q : ℚ) : ℝ) ≠ 0 := fun h' =>
+        h0 ((AzRat.toRat_eq_zero_iff q).mp (by exact_mod_cast h'))
+      have hnp := gammaRat_not_pole h0 hpole
+      have hval := Spec.digamma_coe hx0 hnp
+      have hB' := hB _ hval
+      obtain ⟨F, hF⟩ := zivLoop_eventually_eq p mode
+        (digammaRatApprox q (gammaRatExp q) q.sign)
+        (digammaRatApprox_bracketConv q (fun hs => (toRat_sign_iff q h0).mp hs)
+          (fun hs => ⟨toRat_neg_of_sign_false q h0 hs,
+            fun n hn => hnp ⟨toRat_neg_of_sign_false q h0 hs, n, hn⟩⟩) _)
+        (ne_zero_of_not_mem_floatSet hB') hB' (digammaRatStart q (gammaRatExp q) p)
+        (Nat.lt_of_lt_of_le (by norm_num) (le_max_left 64 _))
+        (fun w hw => (digammaRatApprox_valid_or_none q h0 hpole _
+          (le_trans (le_max_left _ _) hw) p mode).imp_left
+            fun ⟨lv, hv', h1, h2, h3, h4, _⟩ => ⟨lv, hv', h1, h2, h3, h4⟩)
+      refine ⟨F, fun fuel hfuel => ?_⟩
+      rcases digammaRatPrecRoundFuel_eq_or_loop fuel q p mode with h | ⟨-, -, h⟩
+      · exact h
+      · rw [h, hval]
+        exact hF fuel hfuel
+    · refine ⟨0, fun fuel _ => ?_⟩
+      rcases digammaRatPrecRoundFuel_eq_or_loop fuel q p mode with h | ⟨h0, hpole, -⟩
+      · exact h
+      · exact absurd ⟨h0, hpole⟩ hgen
+  dyadic := fun q hq v hv => by
+    exfalso
+    by_cases h0 : q.num = 0
+    · rw [coe_toRat_eq_zero_of_num_eq_zero q h0, Spec.digamma_zero, Option.some.injEq] at hv
+      exact EReal.coe_ne_bot v hv.symm
+    · rcases hq with h | hpole
+      · exact h0 h
+      · obtain ⟨hneg, hk⟩ := gammaRat_pole h0 hpole
+        rw [Spec.digamma_coe_of_pole hneg hk] at hv
+        exact absurd hv (by simp)
+  nondyadic := fun q h => absurd h (Set.notMem_empty _)
+  correct := fun q hq fuel p _ mode => by
+    rcases digammaRatPrecRoundFuel_eq_or_loop fuel q p mode with h | ⟨h0, hpole, -⟩
+    · exact h
+    · exfalso
+      rcases hq with hD | hN
+      · rcases hD with h | h
+        · exact h0 h
+        · exact hpole h
+      · exact absurd hN (Set.notMem_empty _)
 
 end Azurite.AzFloat

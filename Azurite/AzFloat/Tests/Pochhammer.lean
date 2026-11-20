@@ -124,3 +124,9 @@ private def ref (m : RoundingMode) : AzFloat :=
 -- `pochhammer`
 #guard toString (pochhammer (X "0.5" 53) 3) == "1.875"
 #guard toString (pochhammer (X "1" 53) 30) == "2.6525285981219107e32"
+
+-- the fuel as an argument
+#guard D (pochhammerPrecRoundFuel 3 (X "0.3" 53) 200 53 .Nearest)
+  == ("6.457145019614471e372", .lt)
+#guard D (pochhammerPrecRoundFuel 0 (X "-2" 53) 5 53 .Nearest) == ("0.0", .eq)
+#guard pochhammerPrecRoundFuel (gammaFuel 53) (X "0.3" 53) 200 53 .Nearest == P "0.3" 200 53

@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.BetaBracket
+import Azurite.AzFloat.Equiv.BetaCertificate
 import Azurite.AzFloat.RoundToInteger
 import Azurite.AzFloat.Conversion
 import Azurite.AzNat.Factorial
@@ -34,10 +35,16 @@ the larger of the two precisions.
   positive integer `n ≤ 64` and a short `a` is the rational number
   `(n − 1)! / (a (a + 1) ⋯ (a + n − 1))`, rounded directly (`betaSmallInt?`).
 * **Rounding.**  Ziv's loop with fuel (`gammaFuel`) on `betaCore`
-  (`AzFloat/BetaBracket.lean`).  The specification `betaPrecRound_eq_or`
-  (`Equiv/Beta.lean`) is "correctly rounded, or `NaN`".  Besides the unknown arithmetic nature
-  of the values: for a tiny `a`, `B(a, b) = 1/a − (ψ(b) + γ) + O(a)` needs about `|e|` bits
-  beyond the precision when `1/a` is a float.
+  (`AzFloat/BetaBracket.lean`); `betaPrecRoundFuel` has the fuel as an argument.  The
+  specification is `betaPrecRoundFuel_zivSpec` (`Equiv/Beta.lean`): correctly rounded or
+  `NaN` at every fuel, and correctly rounded for every large enough fuel wherever the value is
+  no rounding boundary (the bracket converges: `Equiv/BetaWidth.lean`).  Besides the unknown
+  arithmetic nature of the values: for a tiny `a`, `B(a, b) = 1/a − (ψ(b) + γ) + O(a)` needs
+  about `|e|` bits beyond the precision when `1/a` is a float.
+* **No fuel where the value is known to be irrational** (`betaSpecial`): `a`, `b` not integers
+  and `a + b` a positive integer (`B(a, b)` is a rational multiple of `π / sin (π a)`), or `a`
+  and `b` quarter-integers (Chudnovsky's theorem on `Γ(1/4)`).  There the loop is backed by a
+  certified one (`betaApprox_cert`, `Equiv/BetaCertificate.lean`).
 -/
 
 namespace Azurite.AzFloat
@@ -50,18 +57,6 @@ def isOneVal (x : AzFloat) : Bool := le x one && le one x
 
 /-- Is `x` a negative integer? -/
 def isNegInt (x : AzFloat) : Bool := lt x zero && isInteger x
-
-/-- Is `a + b` a non-positive integer?  For finite `a`, `b`.  When both are integers the sign of
-the sum is one comparison.  When neither is, both are below `2` to their precision in absolute
-value, so an integer sum is representable at `qa + qb + 2` bits: the sum is an integer exactly
-when the addition at that precision is exact and gives one.  (The exact sum itself can be
-astronomically long — `2^(−10⁹) + 3/2` — and is never formed.) -/
-def sumIsNonposInt (a b : AzFloat) : Bool :=
-  if isInteger a then isInteger b && le a (-b)
-  else if isInteger b then false
-  else
-    let r := addPrecRound a b (a.precision?.getD 1 + b.precision?.getD 1 + 2) .Nearest
-    if r.2 = .eq then isInteger r.1 && le r.1 zero else false
 
 /-- The integer `∏_{j<n} (N + j D)`: the rising product of `N/D` times `D^n`, by a balanced
 tree of pairwise products (`AzInt.product`). -/
@@ -94,16 +89,14 @@ def betaSmallInt? (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
       betaIntQuot (AzInt.mkNorm q.sign q.num) q.den.toAzInt n p mode
   else none
 
-/-- The bracket of `B(a, b)` as a pair of `Roundable`s, strict on both sides; the dummy bracket
-`[−1, 1]` when `betaCore` gives nothing. -/
-def betaApprox (a b : AzFloat) (w : Nat) : Roundable × Roundable :=
-  gammaApproxOf (betaCore a b w) w
-
-/-- `B(a, b)` for finite `a`, `b` (zero included). -/
-def betaReal (a b : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- `B(a, b)` for finite `a`, `b` (zero included), with the fuel of the Ziv loop explicit.
+At the arguments recognized by `betaSpecial` the value is irrational and the loop is backed by
+a certified one (`betaApprox_cert`): no fuel is involved there. -/
+def betaRealFuel (fuel : Nat) (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   if isNegInt a || isNegInt b then (nan, .eq)
   else if isZeroVal a || isZeroVal b then (infinity true, .eq)
-  else if p = 0 then (nan, .eq)
+  else if hp : p = 0 then (nan, .eq)
   else if isOneVal b then divPrecRound one a p mode
   else if isOneVal a then divPrecRound one b p mode
   else
@@ -113,23 +106,39 @@ def betaReal (a b : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Orderi
       match betaSmallInt? b a p mode with
       | some r => r
       | none =>
-        if sumIsNonposInt a b then (zero, .eq)
-        else zivLoop (betaApprox a b) p mode (gammaFuel p) (max 64 (p + 32))
+        if hs : sumIsNonposInt a b = true then (zero, .eq)
+        else if hc : betaSpecial a b = true then
+          haveI : NeZero p := ⟨hp⟩
+          zivLoopBacked (betaApprox a b) p mode fuel (max 64 (p + 32))
+            (betaApprox_cert hc hs p mode _ (by omega))
+        else zivLoop (betaApprox a b) p mode fuel (max 64 (p + 32))
+
+/-- `B(a, b)` for finite `a`, `b` (zero included). -/
+def betaReal (a b : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  betaRealFuel (gammaFuel p) a b p mode
 
 /-- `B(+∞, y)`: `0` for `y > 0`, `NaN` otherwise. -/
 def betaInfinite (y : AzFloat) : AzFloat × Ordering :=
   if lt zero y then (zero, .eq) else (nan, .eq)
 
-/-- `B(a, b)` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` at a negative integer, for `p = 0` unless the value is `0` or `+∞`, or if the
-fuel runs out). -/
-def betaPrecRound (a b : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- **`B(a, b)` rounded to precision `p` with `mode`, with the fuel of the Ziv loop
+explicit**, and the comparison with the exact value.  The specification is
+`betaPrecRoundFuel_zivSpec` (`Equiv/Beta.lean`). -/
+def betaPrecRoundFuel (fuel : Nat) (a b : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   match a, b with
   | nan, _ => (nan, .eq)
   | _, nan => (nan, .eq)
   | infinity s, b => if s then betaInfinite b else (nan, .eq)
   | a, infinity s => if s then betaInfinite a else (nan, .eq)
-  | a, b => betaReal a b p mode
+  | a, b => betaRealFuel fuel a b p mode
+
+/-- `B(a, b)` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`(nan, .eq)` at a negative integer, for `p = 0` unless the value is `0` or `+∞`, or if the
+fuel runs out): `betaPrecRoundFuel` at the fuel `gammaFuel p`.  No fuel is involved at the
+exact values and at the arguments recognized by `betaSpecial`. -/
+def betaPrecRound (a b : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  betaPrecRoundFuel (gammaFuel p) a b p mode
 
 /-- `B(a, b)` rounded to nearest at the larger of the precisions of `a` and `b`. -/
 def beta (a b : AzFloat) : AzFloat :=

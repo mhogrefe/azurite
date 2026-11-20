@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.PolygammaBracket
+import Azurite.AzFloat.Equiv.PolygammaCertificate
 import Azurite.AzFloat.Digamma
 
 /-!
@@ -78,12 +79,14 @@ def polygammaTiny? (n : Nat) (x : AzFloat) (s : Bool) (e : AzInt) (p : Nat)
 def polygammaStart (n : Nat) (e : AzInt) (p : Nat) : Nat :=
   max 64 (p + 32 + (if e.sign then 0 else (n + 1) * e.abs.toNat))
 
-/-- `ψ⁽ⁿ⁾(x)` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` where the function has no value, for `p = 0` unless the value is `0` or
-infinite, or if the fuel runs out). -/
-def polygammaPrecRound (n : Nat) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
-    AzFloat × Ordering :=
-  if n = 0 then digammaPrecRound x p mode
+/-- **`ψ⁽ⁿ⁾(x)` rounded to precision `p` with `mode`, with the fuel of the Ziv loop
+explicit** (for `n = 0` it is `digammaPrecRound`, which has its own fuel).  For an odd `n` at
+a positive integer or a half-integer the value is irrational and the loop is backed by a
+certified one (`polygammaApprox_cert`).  The specification is `polygammaPrecRoundFuel_zivSpec`
+(`Equiv/Polygamma.lean`). -/
+def polygammaPrecRoundFuel (fuel : Nat) (n : Nat) (x : AzFloat) (p : Nat)
+    (mode : RoundingMode) : AzFloat × Ordering :=
+  if n = 0 then digammaPrecRoundFuel fuel x p mode
   else
     match x with
     | nan => (nan, .eq)
@@ -92,13 +95,28 @@ def polygammaPrecRound (n : Nat) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
     | finite s e q m hv =>
       if !s && isInteger (finite s e q m hv) then
         (if n % 2 = 1 then (infinity true, .eq) else (nan, .eq))
-      else if p = 0 then (nan, .eq)
+      else if hp : p = 0 then (nan, .eq)
       else
         match polygammaTiny? n (finite s e q m hv) s e p mode with
         | some r => r
         | none =>
-          zivLoop (polygammaApprox n (finite s e q m hv) s p) p mode (lnGammaFuel p)
-            (polygammaStart n e p)
+          if hc : polygammaSpecial n (finite s e q m hv) = true then
+            haveI : NeZero p := ⟨hp⟩
+            zivLoopBacked (polygammaApprox n (finite s e q m hv) s p) p mode fuel
+              (polygammaStart n e p)
+              (polygammaApprox_cert hv hc p mode _
+                (Nat.lt_of_lt_of_le (by norm_num) (le_max_left 64 _)))
+          else
+            zivLoop (polygammaApprox n (finite s e q m hv) s p) p mode fuel
+              (polygammaStart n e p)
+
+/-- `ψ⁽ⁿ⁾(x)` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`(nan, .eq)` where the function has no value, for `p = 0` unless the value is `0` or
+infinite, or if the fuel runs out): `polygammaPrecRoundFuel` at the fuel `lnGammaFuel p`.  No
+fuel is involved at the arguments recognized by `polygammaSpecial`. -/
+def polygammaPrecRound (n : Nat) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  polygammaPrecRoundFuel (lnGammaFuel p) n x p mode
 
 /-- `ψ⁽ⁿ⁾(x)` rounded to nearest at the precision of `x`. -/
 def polygamma (n : Nat) (x : AzFloat) : AzFloat :=

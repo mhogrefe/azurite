@@ -20,14 +20,15 @@ with the comparison against the exact value; `factorial n p` rounds to nearest.
 * **Beyond**: `Γ(n + 1)` by `gammaPrecRound` at the exact float `n + 1` (Stirling's series,
   at a cost that does not grow with `n` but for the bits of its size).  There the odd part of
   `n!` has more than `p + 1` bits, so the value is no rounding boundary.
-* **Contract** (`Equiv/Factorial.lean`): `factorialPrecRound_eq_or` — the correct rounding of
-  `n!`, or `(nan, .eq)` when the fuel of the `Γ` loop runs out.
+  The loop of `Γ` at an integer is a certified one, so no fuel is involved.
+* **Contract** (`Equiv/Factorial.lean`): `factorialPrecRound_eq` — the correct rounding of
+  `n!`, unconditionally.
 -/
 
 namespace Azurite.AzFloat
 
 /-- `n!` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` for `p = 0`, or if the fuel runs out). -/
+(`(nan, .eq)` for `p = 0`). -/
 def factorialPrecRound (n : AzNat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   if p = 0 then (nan, .eq)
   else if n ≤ AzNat.ofNat (gammaIntBound p) then

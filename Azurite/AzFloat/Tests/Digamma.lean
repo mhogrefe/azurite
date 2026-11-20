@@ -131,3 +131,9 @@ private def invTinyX : AzFloat := (X "1" 53) <<< AzInt.ofInt (2 ^ 30)
 -- `digamma`
 #guard toString (digamma (X "1" 53)) == "-0.5772156649015329"
 #guard toString (digamma (X "-0.5" 53)) == "0.03648997397857652"
+
+-- the fuel as an argument
+#guard D (digammaPrecRoundFuel 3 (X "1" 53) 53 .Nearest) == ("-0.5772156649015329", .lt)
+#guard D (digammaPrecRoundFuel 3 (X "-2.5" 53) 53 .Nearest) == ("1.103156640645243", .lt)
+#guard D (digammaPrecRoundFuel 0 (X "0" 53) 53 .Nearest) == ("-Infinity", .eq)
+#guard digammaPrecRoundFuel (lnGammaFuel 53) (X "0.3" 53) 53 .Nearest == W "0.3" 53

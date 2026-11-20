@@ -109,3 +109,11 @@ private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r
 -- `genPochhammer`
 #guard toString (genPochhammer (X "2.5" 53) (X "3" 53)) == "39.375"
 #guard toString (genPochhammer (X "0.5" 53) (X "0.5" 53)) == "0.5641895835477563"
+
+-- the fuel as an argument
+#guard D (genPochhammerPrecRoundFuel 3 (X "0.3" 53) (X "2.5" 53) 53 .Nearest)
+  == ("0.5604051902745265", .gt)
+#guard D (genPochhammerPrecRoundFuel 3 (X "300.3" 53) (X "-200" 53) 53 .Nearest)
+  == ("6.574779833933506e-457", .gt)
+#guard genPochhammerPrecRoundFuel (gammaFuel 53) (X "0.3" 53) (X "2.5" 53) 53 .Nearest
+  == P "0.3" "2.5" 53

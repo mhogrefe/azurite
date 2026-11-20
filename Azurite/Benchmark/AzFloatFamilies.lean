@@ -105,6 +105,7 @@ import Azurite.AzFloat.BetaRat
 import Azurite.AzFloat.Pochhammer
 import Azurite.AzFloat.Polygamma
 import Azurite.AzFloat.PolygammaRat
+import Azurite.AzFloat.EulerGamma
 import Azurite.AzFloat.Factorial
 import Azurite.AzFloat.GenPochhammer
 import Azurite.AzFloat.GenPochhammerRat
@@ -346,6 +347,15 @@ private def logExact3 : FloatFn := fun x _ _ =>
   | none => (one, .lt)
 
 private def fifty : AzFloat := ofAzNat (AzNat.ofNat 50)
+private def oneQuarter : AzFloat := ofAzRat (AzRat.parse "1/4").get! 64
+
+/-- An enclosure at the first Ziv level of precision `p` as a timed function (the lower
+end). -/
+private def enclFn (f : Nat → Option Encl) : Nat → RoundingMode → AzFloat × Ordering :=
+  fun p _ =>
+    match f (max 64 (p + 32)) with
+    | some b => (b.1, .lt)
+    | none => (one, .eq)
 private def fiveHalves : AzFloat := ofAzRat (AzRat.parse "5/2").get! 64
 private def sevenThirds : AzFloat := ofAzRat (AzRat.parse "7/3").get! 1100
 
@@ -434,6 +444,15 @@ private def misc : List Entry :=
    F "psiZero 0" (fun _ => psiZeroPrecRound 0) [a "1"],
    F "psiZero 1" (fun _ => psiZeroPrecRound 1) [a "1"],
    F "psiZero 1000" (fun _ => psiZeroPrecRound 1000) [a "1"],
+   F "psiZeroFast 0" (fun _ => enclFn (psiZeroFast 0)) [a "1"],
+   F "psiZeroFast 1000" (fun _ => enclFn (psiZeroFast 1000)) [a "1"],
+   F "psiZeroFallback 0" (fun _ => enclFn (psiZeroFallback 0)) [a "1"],
+   F "psiZeroFallback 1" (fun _ => enclFn (psiZeroFallback 1)) [a "1"],
+   F "psiZeroFallback 1000" (fun _ => enclFn (psiZeroFallback 1000)) [a "1"],
+   F "eulerGamma" (fun _ => eulerGammaPrecRound) [a "1"],
+   F "beta x 1/4" (fun x => betaPrecRound x oneQuarter) [a "1/4", a "3/4", a "-5/4"],
+   R "betaRat q 1/3" (fun q => betaRatPrecRound q (AzRat.parse "1/3").get!)
+     [a "1/3", a "2/3", a "1/6"],
    F "treeT0" treeT0PrecRound tl, R "treeT0Rat" treeT0RatPrecRound tl,
    F "treeTm1" treeTm1PrecRound [a "1/3", a "1/10", tiny],
    R "treeTm1Rat" treeTm1RatPrecRound [a "1/3", a "1/10", tiny],

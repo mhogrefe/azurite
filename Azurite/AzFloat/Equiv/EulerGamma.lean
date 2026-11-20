@@ -19,12 +19,13 @@ import Azurite.AzFloat.Equiv.LnSmooth
 `eulerGammaBracket_spec` (a strict enclosure of `γ`: the partial sum of Sweeney's series
 enclosed by `AzInt.sweeneyHornerEncl_spec`, its two fractions turned into floats by
 `seriesBracket_spec_of`; `ln n` from `lnNatBracket_spec` — `lnSmoothBracket_spec` for the
-integers with no prime factor above `7`, `lnBracket_spec` otherwise; `E₁(n) ≤ e^(−n)/n ≤ 2^(−w−5)` from
-`expIntegralE1_le` and `eulerGammaN w ≤ n` (`exp_neg_div_le_of_eulerGammaN_le`); the tail from
+integers with no prime factor above `7`, `lnBracket_spec` otherwise;
+`E₁(n) ≤ e^(−n)/n ≤ 2^(−w−5)` from `expIntegralE1_le` and `eulerGammaN w ≤ n` (`exp_neg_div_le_of_eulerGammaN_le`); the tail from
 `abs_tsum_sweeneyTerm_sub_sum_le_of_le` (`abs_tail_eulerGamma_le`)), `eulerGammaApprox_spec`,
 and `eulerGammaPrecRound_eq_or`: `eulerGammaPrecRound p mode` is the correctly rounded `γ`
 (`liftVal₀ (some γ)`) unless the fuel runs out (`(nan, .eq)`).  A termination certificate would
-need `Irrational γ`, an open problem.
+need `Irrational γ`, an open problem.  The width of the bracket, its convergence and the
+specification as a fuel-bound function are in `Equiv/EulerGammaWidth.lean`.
 -/
 
 namespace Azurite.AzFloat
@@ -207,13 +208,14 @@ theorem eulerGammaApprox_spec {w : ℕ} (hw : 64 ≤ w) :
     rw [fval_of_toVal_coe hhi] at hR
     exact hR
 
-/-- **Euler's constant is correctly rounded unless the fuel runs out.** -/
-theorem eulerGammaPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    eulerGammaPrecRound p mode = liftVal₀ (some ((eulerMascheroniConstant : ℝ) : EReal)) p mode ∨
-      eulerGammaPrecRound p mode = (nan, .eq) := by
-  unfold eulerGammaPrecRound liftVal₀
+/-- **Euler's constant with explicit fuel is correctly rounded unless the fuel runs out.** -/
+theorem eulerGammaPrecRoundFuel_eq_or (fuel p : ℕ) [NeZero p] (mode : RoundingMode) :
+    eulerGammaPrecRoundFuel fuel p mode
+        = liftVal₀ (some ((eulerMascheroniConstant : ℝ) : EReal)) p mode ∨
+      eulerGammaPrecRoundFuel fuel p mode = (nan, .eq) := by
+  unfold eulerGammaPrecRoundFuel liftVal₀
   rw [ite_eq_right (NeZero.ne p)]
-  rcases eq_or_ne (zivLoop eulerGammaApprox p mode (eulerGammaFuel p) (max (p + 16) 64))
+  rcases eq_or_ne (zivLoop eulerGammaApprox p mode fuel (max (p + 16) 64))
     (nan, .eq) with hz | hz
   · right; exact hz
   · left
@@ -222,5 +224,11 @@ theorem eulerGammaPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :
         obtain ⟨lv, hv, hl, hh, hlo, hhi⟩ := eulerGammaApprox_spec hw
         exact ⟨lv, hv, hl, hh, hlo.le, hhi, fun h => absurd h hlo.ne⟩)
       _ _ (le_max_right _ _) hz
+
+/-- **Euler's constant is correctly rounded unless the fuel runs out.** -/
+theorem eulerGammaPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    eulerGammaPrecRound p mode = liftVal₀ (some ((eulerMascheroniConstant : ℝ) : EReal)) p mode ∨
+      eulerGammaPrecRound p mode = (nan, .eq) :=
+  eulerGammaPrecRoundFuel_eq_or (eulerGammaFuel p) p mode
 
 end Azurite.AzFloat

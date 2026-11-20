@@ -36,15 +36,18 @@ namespace Azurite.AzFloat
 `mode`. -/
 def negRounded (r : AzFloat × Ordering) : AzFloat × Ordering := (-r.1, r.2.swap)
 
-/-- The falling factorial of a finite `x` (zero included) for `n ≥ 1`. -/
-def fallingReal (x : AzFloat) (n p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  if n % 2 = 0 then pochReal (-x) n p mode else negRounded (pochReal (-x) n p (-mode))
+/-- The falling factorial of a finite `x` (zero included) for `n ≥ 1`, with the fuel of the
+Ziv loop explicit. -/
+def fallingRealFuel (fuel : Nat) (x : AzFloat) (n p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  if n % 2 = 0 then pochRealFuel fuel (-x) n p mode
+  else negRounded (pochRealFuel fuel (-x) n p (-mode))
 
 /-- `x (x − 1) ⋯ (x − n + 1)` rounded to precision `p` with `mode`, and the comparison with
 the exact value (`(nan, .eq)` for `p = 0` unless the value is `0` or infinite, or if the fuel
-runs out). -/
-def fallingFactorialPrecRound (x : AzFloat) (n p : Nat) (mode : RoundingMode) :
-    AzFloat × Ordering :=
+runs out), with the fuel of the Ziv loop explicit. -/
+def fallingFactorialPrecRoundFuel (fuel : Nat) (x : AzFloat) (n p : Nat)
+    (mode : RoundingMode) : AzFloat × Ordering :=
   match x with
   | nan => (nan, .eq)
   | x =>
@@ -52,7 +55,14 @@ def fallingFactorialPrecRound (x : AzFloat) (n p : Nat) (mode : RoundingMode) :
     else
       match x with
       | infinity s => (infinity (s || n % 2 == 0), .eq)
-      | x => fallingReal x n p mode
+      | x => fallingRealFuel fuel x n p mode
+
+/-- `x (x − 1) ⋯ (x − n + 1)` rounded to precision `p` with `mode`, and the comparison with
+the exact value: `fallingFactorialPrecRoundFuel` at the fuel `gammaFuel p`.  The
+specification is `fallingFactorialPrecRoundFuel_zivSpec` (`Equiv/FallingFactorial.lean`). -/
+def fallingFactorialPrecRound (x : AzFloat) (n p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  fallingFactorialPrecRoundFuel (gammaFuel p) x n p mode
 
 /-- The falling factorial rounded to nearest at the precision of `x`. -/
 def fallingFactorial (x : AzFloat) (n : Nat) : AzFloat :=
@@ -60,11 +70,19 @@ def fallingFactorial (x : AzFloat) (n : Nat) : AzFloat :=
 
 /-- `q (q − 1) ⋯ (q − n + 1)` for a rational `q`, rounded to precision `p` with `mode`, and
 the comparison with the exact value (`(nan, .eq)` for `p = 0` unless the value is `0`, or if
-the fuel runs out). -/
+the fuel runs out), with the fuel of the Ziv loop explicit. -/
+def fallingFactorialRatPrecRoundFuel (fuel : Nat) (q : AzRat) (n p : Nat)
+    (mode : RoundingMode) : AzFloat × Ordering :=
+  if n % 2 = 0 then pochhammerRatPrecRoundFuel fuel (-q) n p mode
+  else negRounded (pochhammerRatPrecRoundFuel fuel (-q) n p (-mode))
+
+/-- `q (q − 1) ⋯ (q − n + 1)` rounded to precision `p` with `mode`, and the comparison with
+the exact value: `fallingFactorialRatPrecRoundFuel` at the fuel `gammaFuel p`.  The
+specification is `fallingFactorialRatPrecRoundFuel_zivSpec`
+(`Equiv/FallingFactorial.lean`). -/
 def fallingFactorialRatPrecRound (q : AzRat) (n p : Nat) (mode : RoundingMode) :
     AzFloat × Ordering :=
-  if n % 2 = 0 then pochhammerRatPrecRound (-q) n p mode
-  else negRounded (pochhammerRatPrecRound (-q) n p (-mode))
+  fallingFactorialRatPrecRoundFuel (gammaFuel p) q n p mode
 
 /-- The falling factorial of a rational, rounded to nearest at precision `p`. -/
 def fallingFactorialRat (q : AzRat) (n p : Nat) : AzFloat :=

@@ -329,6 +329,22 @@ def checkBigExponentFloatInverseGudermannian : String → Verdict :=
 def checkBigExponentFloatInverseGudermannianRational : String → Verdict :=
   withBigExponentFloatNames checkFloatInverseGudermannianRational
 
+/-- The gamma function has a pole at `0`, where Azurite gives `+∞` (the limit from the right) and
+a `BigExponentFloat`, with no negative zero to tell the two one-sided limits apart, `NaN`. -/
+def checkBigExponentFloatGamma : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryWith "gamma"
+    (fun x p m => if x matches .zero then (.nan, .eq) else AzFloat.gammaPrecRound x p m)
+
+def checkBigExponentFloatGammaRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRational "gamma_rational"
+    (fun q p m => if q.num = 0 then (.nan, .eq) else AzFloat.gammaRatPrecRound q p m)
+
+def checkBigExponentFloatReciprocalGamma : String → Verdict :=
+  withBigExponentFloatNames checkFloatReciprocalGamma
+
+def checkBigExponentFloatReciprocalGammaRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatReciprocalGammaRational
+
 def checkBigExponentFloatWrightOmega : String → Verdict :=
   withBigExponentFloatNames checkFloatWrightOmega
 

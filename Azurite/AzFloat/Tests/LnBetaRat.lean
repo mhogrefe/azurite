@@ -99,3 +99,11 @@ private def LB (a b : String) (p : Nat) (m : RoundingMode := .Nearest) : String 
 #guard LB "1/3" "-1/3" 53 == ("-Infinity", .eq)
 #guard LB "-1" "1/2" 53 == ("NaN", .eq)
 #guard toString (lnBetaRat (Q "1/3") (Q "2/3") 53) == "1.2885709220752906"
+
+-- the fuel as an argument
+#guard D (lnAbsBetaRatPrecRoundFuel 3 (Q "22/7") (Q "1/10") 53 .Nearest)
+  == ("2.1530963223090582", .gt, true)
+#guard lnAbsBetaRatPrecRoundFuel (gammaFuel 53) (Q "100") (Q "200") 53 .Nearest
+  == R "100" "200" 53
+#guard (fun r : AzFloat × Ordering => (toString r.1, r.2))
+  (lnBetaRatPrecRoundFuel 3 (Q "22/7") (Q "1/10") 53 .Nearest) == ("2.1530963223090582", .gt)

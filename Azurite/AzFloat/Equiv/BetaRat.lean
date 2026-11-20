@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.BetaRat
 import Azurite.AzFloat.Equiv.Beta
+import Azurite.AzFloat.Equiv.BetaRatCertificate
 import Azurite.AzFloat.Equiv.GammaRat
 import Azurite.AzFloat.Equiv.PowRat
 
@@ -24,43 +25,6 @@ The steps: `lnGammaRatEncl_isEncl`, `gammaRatFrac_spec`, `betaRatPole_iff`,
 namespace Azurite.AzFloat
 
 open Real
-
-/-- The roundings of a rational enclose it. -/
-theorem lnGammaRatEncl_isEncl (q : AzRat) (w : ℕ) :
-    IsEncl (lnGammaRatEncl q w) ((AzRat.toRat q : ℚ) : ℝ) := by
-  have : NeZero (w + 32) := ⟨by omega⟩
-  obtain ⟨l, hl, hl1, -⟩ := ofAzRatRound_floor_abs q (w + 32)
-  obtain ⟨h, hh, hh1, -⟩ := ofAzRatRound_ceiling_abs q (w + 32)
-  exact ⟨l, h, hl, hh, hl1, hh1⟩
-
-/-- `gammaRatFrac` answers with the sign of `q − k` and a positive enclosure of `|q − k|`. -/
-theorem gammaRatFrac_spec (q : AzRat) {W : ℕ} {σ : Bool} {k : AzInt} {A : Encl}
-    (h : gammaRatFrac q W = some (σ, k, A)) :
-    IsEnclPos A ((if σ then -1 else 1) * (((AzRat.toRat q : ℚ) : ℝ) - k.toInt)) := by
-  unfold gammaRatFrac at h
-  dsimp only at h
-  generalize (q.round .Nearest).1 = k' at h
-  have hdv : ((AzRat.toRat (q - k'.toAzRat) : ℚ) : ℝ)
-      = ((AzRat.toRat q : ℚ) : ℝ) - k'.toInt := by
-    rw [AzRat.toRat_sub, AzRat.toRat_toAzRat_int]
-    push_cast
-    rfl
-  split_ifs at h with h0 hs
-  · rw [Option.some.injEq, Prod.mk.injEq, Prod.mk.injEq] at h
-    obtain ⟨rfl, rfl, rfl⟩ := h
-    have := lnGammaRatEncl_spec _ ((toRat_sign_iff _ h0).mp hs) W
-    rw [hdv] at this
-    simpa [hs] using this
-  · have hs' : (q - k'.toAzRat).sign = false := by simpa using hs
-    rw [Option.some.injEq, Prod.mk.injEq, Prod.mk.injEq] at h
-    obtain ⟨rfl, rfl, rfl⟩ := h
-    have hneg := toRat_neg_of_sign_false _ h0 hs'
-    have hv : ((AzRat.toRat (-(q - k'.toAzRat)) : ℚ) : ℝ)
-        = -(((AzRat.toRat q : ℚ) : ℝ) - k'.toInt) := by
-      rw [AzRat.toRat_neg, Rat.cast_neg, hdv]
-    have := lnGammaRatEncl_spec (-(q - k'.toAzRat)) (by rw [hv]; rw [hdv] at hneg; linarith) W
-    rw [hv] at this
-    simpa [hs'] using this
 
 /-- `betaRatPole` decides whether a rational is a negative integer. -/
 theorem betaRatPole_iff (q : AzRat) :
@@ -80,31 +44,6 @@ theorem betaRatPole_iff (q : AzRat) :
     · intro h
       by_contra hcon
       exact gammaRat_not_pole h0 (fun hp => hcon ⟨⟨h0, hp.1⟩, hp.2⟩) h
-
-/-- A rational is a non-positive integer exactly when its denominator is `1` and it is `0` or
-negative. -/
-theorem nonpos_int_iff (s : AzRat) :
-    (s.den = 1 ∧ (s.num = 0 ∨ s.sign = false)) ↔
-      ((AzRat.toRat s : ℚ) : ℝ) ≤ 0 ∧ ∃ k : ℤ, ((AzRat.toRat s : ℚ) : ℝ) = k := by
-  constructor
-  · rintro ⟨hd, h⟩
-    refine ⟨?_, _, coe_toRat_eq_mkNorm_of_den_one s hd⟩
-    rcases h with h0 | hs
-    · rw [coe_toRat_eq_zero_of_num_eq_zero s h0]
-    · by_cases h0 : s.num = 0
-      · rw [coe_toRat_eq_zero_of_num_eq_zero s h0]
-      · exact (toRat_neg_of_sign_false s h0 hs).le
-  · rintro ⟨hle, hk⟩
-    have hd : s.den = 1 := by
-      by_contra hd
-      exact not_exists_int_of_den_ne_one s hd hk
-    refine ⟨hd, ?_⟩
-    by_cases h0 : s.num = 0
-    · exact Or.inl h0
-    · right
-      by_contra hs
-      have := (toRat_sign_iff s h0).mp (by simpa using hs)
-      linarith
 
 /-- **The exact path answers with the rounding of `B(a, b)`.** -/
 theorem betaRatSmallInt?_eq {a b : AzRat} (ha0 : a.num ≠ 0) (hnp : betaRatPole a ≠ true)
@@ -135,15 +74,49 @@ theorem betaRatSmallInt?_eq {a b : AzRat} (ha0 : a.num ≠ 0) (hnp : betaRatPole
   exact betaIntQuot_eq (by rw [AzRat.toInt_toAzInt']; exact_mod_cast hden) hN
     (ne_neg_nat_of_not_pole hx0 (fun hp => hnp ((betaRatPole_iff a).mpr hp))) hn1 p mode
 
-/-- **`B` of two rationals is correctly rounded, or the fuel ran out.** -/
-theorem betaRatPrecRound_eq_or (a b : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    betaRatPrecRound a b p mode = roundVal p mode (Spec.beta
+/-- The bracket of `B(a, b)` for rationals is valid, or rejected. -/
+theorem betaRatApprox_valid_or_none (a b : AzRat) {w : ℕ} (hw : 64 ≤ w) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    (∃ lv hv : ℝ, Rounds (betaRatApprox a b (a + b) w).1 lv ∧
+        Rounds (betaRatApprox a b (a + b) w).2 hv ∧
+        lv ≤ Real.Gamma ((AzRat.toRat a : ℚ) : ℝ) * Real.Gamma ((AzRat.toRat b : ℚ) : ℝ)
+          / Real.Gamma (((AzRat.toRat a : ℚ) : ℝ) + ((AzRat.toRat b : ℚ) : ℝ)) ∧
+        Real.Gamma ((AzRat.toRat a : ℚ) : ℝ) * Real.Gamma ((AzRat.toRat b : ℚ) : ℝ)
+          / Real.Gamma (((AzRat.toRat a : ℚ) : ℝ) + ((AzRat.toRat b : ℚ) : ℝ)) ≤ hv ∧
+        (lv = Real.Gamma ((AzRat.toRat a : ℚ) : ℝ) * Real.Gamma ((AzRat.toRat b : ℚ) : ℝ)
+            / Real.Gamma (((AzRat.toRat a : ℚ) : ℝ) + ((AzRat.toRat b : ℚ) : ℝ)) →
+          hv = Real.Gamma ((AzRat.toRat a : ℚ) : ℝ) * Real.Gamma ((AzRat.toRat b : ℚ) : ℝ)
+            / Real.Gamma (((AzRat.toRat a : ℚ) : ℝ) + ((AzRat.toRat b : ℚ) : ℝ)))) ∨
+      roundingPossible (betaRatApprox a b (a + b) w).1 (betaRatApprox a b (a + b) w).2 p mode
+        = none := by
+  have hsum : ((AzRat.toRat (a + b) : ℚ) : ℝ)
+      = ((AzRat.toRat a : ℚ) : ℝ) + ((AzRat.toRat b : ℚ) : ℝ) := by
+    rw [AzRat.toRat_add]; push_cast; rfl
+  refine gammaApproxOf_valid_or_none (fun _ _ hc => ?_) w p mode
+  have := betaEnclOf_spec (fun V _ => lnGammaRatEncl_isEncl a V)
+    (fun V _ => lnGammaRatEncl_isEncl b V) (fun V _ => lnGammaRatEncl_isEncl (a + b) V)
+    (fun W σ k E _ hF => gammaRatFrac_spec a hF) (fun W σ k E _ hF => gammaRatFrac_spec b hF)
+    (fun W σ k E _ hF => gammaRatFrac_spec (a + b) hF) hw hc
+  rwa [hsum] at this
+
+/-- **`B` of two rationals is correctly rounded, or it is the loop with fuel** in the general
+case. -/
+theorem betaRatPrecRoundFuel_eq_or_loop (fuel : ℕ) (a b : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    betaRatPrecRoundFuel fuel a b p mode = roundVal p mode (Spec.beta
         (((AzRat.toRat a : ℚ) : ℝ) : EReal) (((AzRat.toRat b : ℚ) : ℝ) : EReal)) ∨
-      betaRatPrecRound a b p mode = (nan, .eq) := by
+      (¬ ((((AzRat.toRat a : ℚ) : ℝ) < 0 ∧ ∃ k : ℤ, ((AzRat.toRat a : ℚ) : ℝ) = k) ∨
+          (((AzRat.toRat b : ℚ) : ℝ) < 0 ∧ ∃ k : ℤ, ((AzRat.toRat b : ℚ) : ℝ) = k)) ∧
+        ((AzRat.toRat a : ℚ) : ℝ) ≠ 0 ∧ ((AzRat.toRat b : ℚ) : ℝ) ≠ 0 ∧
+        ¬ (((AzRat.toRat a : ℚ) : ℝ) + ((AzRat.toRat b : ℚ) : ℝ) ≤ 0 ∧
+          ∃ k : ℤ, ((AzRat.toRat a : ℚ) : ℝ) + ((AzRat.toRat b : ℚ) : ℝ) = k) ∧
+        betaRatSpecial a b (a + b) = false ∧
+        betaRatPrecRoundFuel fuel a b p mode
+          = zivLoop (betaRatApprox a b (a + b)) p mode fuel (max 64 (p + 32))) := by
   have hp := NeZero.ne p
   set av := ((AzRat.toRat a : ℚ) : ℝ) with hav
   set bv := ((AzRat.toRat b : ℚ) : ℝ) with hbv
-  unfold betaRatPrecRound
+  unfold betaRatPrecRoundFuel
   by_cases hpole : (betaRatPole a || betaRatPole b) = true
   · left
     rw [ite_eq_left hpole]
@@ -161,7 +134,7 @@ theorem betaRatPrecRound_eq_or (a b : AzRat) (p : ℕ) [NeZero p] (mode : Roundi
     rw [ite_eq_left hzero]
     rw [hz a, hz b] at hzero
     rw [Spec.beta_coe_of_zero hpole hzero, roundVal_top]
-  rw [ite_eq_right hzero, ite_eq_right hp]
+  rw [ite_eq_right hzero, dite_eq_right hp]
   have ha0 : a.num ≠ 0 := fun h => hzero (Or.inl h)
   have hb0 : b.num ≠ 0 := fun h => hzero (Or.inr h)
   rw [hz a, hz b] at hzero
@@ -177,22 +150,153 @@ theorem betaRatPrecRound_eq_or (a b : AzRat) (p : ℕ) [NeZero p] (mode : Roundi
     rw [AzRat.toRat_add]; push_cast; rfl
   by_cases hs : (a + b).den = 1 ∧ ((a + b).num = 0 ∨ (a + b).sign = false)
   · left
-    rw [ite_eq_left hs]
+    rw [dite_eq_left hs]
     obtain ⟨hle, k, hk⟩ := (nonpos_int_iff (a + b)).mp hs
     rw [hsum] at hle hk
     rw [gamma_eq_zero_of_nonpos_int hle hk, div_zero, EReal.coe_zero, roundVal_zero]
-  rw [ite_eq_right hs]
-  rcases eq_or_ne (zivLoop (betaRatApprox a b (a + b)) p mode (gammaFuel p) (max 64 (p + 32)))
-    (nan, .eq) with hzv | hzv
-  · right; exact hzv
+  rw [dite_eq_right hs]
+  by_cases hc : betaRatSpecial a b (a + b) = true
   · left
-    refine zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
-      (fun w hw => gammaApproxOf_valid_or_none (fun _ _ hc => ?_) w p mode)
-      _ _ (le_max_left _ _) hzv
-    have := betaEnclOf_spec (fun V _ => lnGammaRatEncl_isEncl a V)
-      (fun V _ => lnGammaRatEncl_isEncl b V) (fun V _ => lnGammaRatEncl_isEncl (a + b) V)
-      (fun W σ k E _ hF => gammaRatFrac_spec a hF) (fun W σ k E _ hF => gammaRatFrac_spec b hF)
-      (fun W σ k E _ hF => gammaRatFrac_spec (a + b) hF) hw hc
-    rwa [hsum] at this
+    rw [dite_eq_left hc]
+    exact zivLoopBacked_eq p mode (betaRatApprox a b (a + b))
+      (not_mem_floatSet_of_irrational p (irrational_beta_of_ratSpecial hc hs)) 64
+      (fun w hw => (betaRatApprox_valid_or_none a b hw p mode).imp_left
+        fun ⟨lv, hv, h1, h2, h3, h4, _⟩ => ⟨lv, hv, h1, h2, h3, h4⟩)
+      fuel _ (le_max_left _ _) (by omega) _
+  · right
+    rw [dite_eq_right hc]
+    push Not at hzero
+    refine ⟨hpole, hzero.1, hzero.2, fun h => hs ((nonpos_int_iff (a + b)).mpr ?_),
+      by simpa using hc, rfl⟩
+    rw [hsum]
+    exact h
+
+/-- **`B` of two rationals is correctly rounded, or the fuel ran out**, at every fuel. -/
+theorem betaRatPrecRoundFuel_eq_or (fuel : ℕ) (a b : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    betaRatPrecRoundFuel fuel a b p mode = roundVal p mode (Spec.beta
+        (((AzRat.toRat a : ℚ) : ℝ) : EReal) (((AzRat.toRat b : ℚ) : ℝ) : EReal)) ∨
+      betaRatPrecRoundFuel fuel a b p mode = (nan, .eq) := by
+  rcases betaRatPrecRoundFuel_eq_or_loop fuel a b p mode with h | ⟨hpole, ha0, hb0, -, -, h⟩
+  · exact Or.inl h
+  · rcases eq_or_ne (betaRatPrecRoundFuel fuel a b p mode) (nan, .eq) with hz | hz
+    · exact Or.inr hz
+    · left
+      rw [h] at hz ⊢
+      rw [Spec.beta_coe hpole (by push Not; exact ⟨ha0, hb0⟩)]
+      exact zivLoop_eq_of_ne_nan_or_none p mode _ _ 64
+        (fun w hw => betaRatApprox_valid_or_none a b hw p mode) _ _ (le_max_left _ _) hz
+
+/-- **`B` of two rationals is correctly rounded, or the fuel ran out.** -/
+theorem betaRatPrecRound_eq_or (a b : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    betaRatPrecRound a b p mode = roundVal p mode (Spec.beta
+        (((AzRat.toRat a : ℚ) : ℝ) : EReal) (((AzRat.toRat b : ℚ) : ℝ) : EReal)) ∨
+      betaRatPrecRound a b p mode = (nan, .eq) :=
+  betaRatPrecRoundFuel_eq_or (gammaFuel p) a b p mode
+
+/-- The completeness of `betaRatPrecRoundFuel` in the general case. -/
+theorem betaRat_complete_aux (ab : AzRat × AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (hB : ∀ v : ℝ, Spec.beta (((AzRat.toRat ab.1 : ℚ) : ℝ) : EReal)
+        (((AzRat.toRat ab.2 : ℚ) : ℝ) : EReal) = some (v : EReal) →
+      ((v : ℝ) : EReal) ∉ floatSet (p + 1))
+    (hgen : ¬ ((((AzRat.toRat ab.1 : ℚ) : ℝ) < 0 ∧
+          ∃ k : ℤ, ((AzRat.toRat ab.1 : ℚ) : ℝ) = k) ∨
+        (((AzRat.toRat ab.2 : ℚ) : ℝ) < 0 ∧ ∃ k : ℤ, ((AzRat.toRat ab.2 : ℚ) : ℝ) = k)) ∧
+        ((AzRat.toRat ab.1 : ℚ) : ℝ) ≠ 0 ∧ ((AzRat.toRat ab.2 : ℚ) : ℝ) ≠ 0 ∧
+        ¬ (((AzRat.toRat ab.1 : ℚ) : ℝ) + ((AzRat.toRat ab.2 : ℚ) : ℝ) ≤ 0 ∧
+          ∃ k : ℤ, ((AzRat.toRat ab.1 : ℚ) : ℝ) + ((AzRat.toRat ab.2 : ℚ) : ℝ) = k)) :
+    ∃ F : ℕ, ∀ fuel, F ≤ fuel → betaRatPrecRoundFuel fuel ab.1 ab.2 p mode
+      = roundVal p mode (Spec.beta (((AzRat.toRat ab.1 : ℚ) : ℝ) : EReal)
+        (((AzRat.toRat ab.2 : ℚ) : ℝ) : EReal)) := by
+  obtain ⟨hpole, ha0, hb0, hs⟩ := hgen
+  have hval := Spec.beta_coe hpole (by push Not; exact ⟨ha0, hb0⟩)
+  have hB' := hB _ hval
+  obtain ⟨F, hF⟩ := zivLoop_eventually_eq p mode (betaRatApprox ab.1 ab.2 (ab.1 + ab.2))
+    (betaRatApprox_bracketConv ab.1 ab.2 (beta_arg_cases ha0 fun h => hpole (Or.inl h))
+      (beta_arg_cases hb0 fun h => hpole (Or.inr h)) (beta_sum_cases hs))
+    (ne_zero_of_not_mem_floatSet hB') hB' (max 64 (p + 32)) (by omega)
+    (fun w hw =>
+      (betaRatApprox_valid_or_none ab.1 ab.2 (le_trans (le_max_left _ _) hw) p mode).imp_left
+        fun ⟨lv, hv, h1, h2, h3, h4, _⟩ => ⟨lv, hv, h1, h2, h3, h4⟩)
+  refine ⟨F, fun fuel hfuel => ?_⟩
+  rcases betaRatPrecRoundFuel_eq_or_loop fuel ab.1 ab.2 p mode with h | ⟨-, -, -, -, -, h⟩
+  · exact h
+  · rw [h, hval]
+    exact hF fuel hfuel
+
+/-- **The specification of `B` for rationals** (`ZivSpec`): sound at every fuel; complete in
+the limit of the fuel wherever the value is no rounding boundary; and correct at every fuel
+on the special values (`NaN`, `+∞`, the zeros) and on the arguments recognized by
+`betaRatSpecial`, where the value is irrational: `a + b` a positive integer, or the
+denominators of `a` and `b` both in `{2, 4}` or both in `{2, 3, 6}`. -/
+theorem betaRatPrecRoundFuel_zivSpec :
+    ZivSpec
+      (fun ab : AzRat × AzRat => Spec.beta (((AzRat.toRat ab.1 : ℚ) : ℝ) : EReal)
+        (((AzRat.toRat ab.2 : ℚ) : ℝ) : EReal))
+      (fun fuel ab p mode => betaRatPrecRoundFuel fuel ab.1 ab.2 p mode)
+      {ab | (((AzRat.toRat ab.1 : ℚ) : ℝ) < 0 ∧ ∃ k : ℤ, ((AzRat.toRat ab.1 : ℚ) : ℝ) = k) ∨
+        (((AzRat.toRat ab.2 : ℚ) : ℝ) < 0 ∧ ∃ k : ℤ, ((AzRat.toRat ab.2 : ℚ) : ℝ) = k) ∨
+        ((AzRat.toRat ab.1 : ℚ) : ℝ) = 0 ∨ ((AzRat.toRat ab.2 : ℚ) : ℝ) = 0 ∨
+        (((AzRat.toRat ab.1 : ℚ) : ℝ) + ((AzRat.toRat ab.2 : ℚ) : ℝ) ≤ 0 ∧
+          ∃ k : ℤ, ((AzRat.toRat ab.1 : ℚ) : ℝ) + ((AzRat.toRat ab.2 : ℚ) : ℝ) = k)}
+      {ab | betaRatSpecial ab.1 ab.2 (ab.1 + ab.2) = true ∧
+        ¬ ((ab.1 + ab.2).den = 1 ∧ ((ab.1 + ab.2).num = 0 ∨ (ab.1 + ab.2).sign = false))} where
+  sound := fun fuel ab p _ mode => betaRatPrecRoundFuel_eq_or fuel ab.1 ab.2 p mode
+  complete := fun ab p _ mode hB => by
+    by_cases hgen : ¬ ((((AzRat.toRat ab.1 : ℚ) : ℝ) < 0 ∧
+          ∃ k : ℤ, ((AzRat.toRat ab.1 : ℚ) : ℝ) = k) ∨
+        (((AzRat.toRat ab.2 : ℚ) : ℝ) < 0 ∧ ∃ k : ℤ, ((AzRat.toRat ab.2 : ℚ) : ℝ) = k)) ∧
+        ((AzRat.toRat ab.1 : ℚ) : ℝ) ≠ 0 ∧ ((AzRat.toRat ab.2 : ℚ) : ℝ) ≠ 0 ∧
+        ¬ (((AzRat.toRat ab.1 : ℚ) : ℝ) + ((AzRat.toRat ab.2 : ℚ) : ℝ) ≤ 0 ∧
+          ∃ k : ℤ, ((AzRat.toRat ab.1 : ℚ) : ℝ) + ((AzRat.toRat ab.2 : ℚ) : ℝ) = k)
+    · exact betaRat_complete_aux ab p mode hB hgen
+    · refine ⟨0, fun fuel _ => ?_⟩
+      rcases betaRatPrecRoundFuel_eq_or_loop fuel ab.1 ab.2 p mode with
+        h' | ⟨h1, h2, h3, h4, -, -⟩
+      · exact h'
+      · exact absurd ⟨h1, h2, h3, h4⟩ hgen
+  dyadic := fun ab hab v hv => by
+    rcases Spec.beta_eq_coe_cases hv with rfl | ⟨av, bv, ha, hb, hpole, hzero, rfl⟩
+    · exact isDyadic_zero
+    · rw [EReal.coe_eq_coe_iff] at ha hb
+      rw [← ha, ← hb] at hpole hzero ⊢
+      rcases hab with h | h | h | h | ⟨hle, k, hk⟩
+      · exact absurd (Or.inl h) hpole
+      · exact absurd (Or.inr h) hpole
+      · exact absurd (Or.inl h) hzero
+      · exact absurd (Or.inr h) hzero
+      · rw [gamma_eq_zero_of_nonpos_int hle hk, div_zero]
+        exact isDyadic_zero
+  nondyadic := fun ab h => by
+    obtain ⟨hc, hs⟩ := h
+    obtain ⟨hda, hdb, -⟩ := betaRatSpecial_spec hc
+    have hirr := irrational_beta_of_ratSpecial hc hs
+    have hna := not_exists_int_of_den_ne_one ab.1 hda
+    have hnb := not_exists_int_of_den_ne_one ab.2 hdb
+    have hpole : ¬ ((((AzRat.toRat ab.1 : ℚ) : ℝ) < 0 ∧
+          ∃ k : ℤ, ((AzRat.toRat ab.1 : ℚ) : ℝ) = k) ∨
+        (((AzRat.toRat ab.2 : ℚ) : ℝ) < 0 ∧ ∃ k : ℤ, ((AzRat.toRat ab.2 : ℚ) : ℝ) = k)) := by
+      rintro (h | h)
+      · exact hna h.2
+      · exact hnb h.2
+    have hzero : ¬ (((AzRat.toRat ab.1 : ℚ) : ℝ) = 0 ∨ ((AzRat.toRat ab.2 : ℚ) : ℝ) = 0) := by
+      rintro (h | h)
+      · exact hna ⟨0, by simpa using h⟩
+      · exact hnb ⟨0, by simpa using h⟩
+    exact ⟨_, Spec.beta_coe hpole hzero, not_isDyadic_of_irrational hirr⟩
+  correct := fun ab hab fuel p _ mode => by
+    rcases betaRatPrecRoundFuel_eq_or_loop fuel ab.1 ab.2 p mode with
+      h | ⟨hpole, ha0, hb0, hs, hc, -⟩
+    · exact h
+    · exfalso
+      rcases hab with hD | hN
+      · rcases hD with h | h | h | h | h
+        · exact hpole (Or.inl h)
+        · exact hpole (Or.inr h)
+        · exact ha0 h
+        · exact hb0 h
+        · exact hs h
+      · rw [hN.1] at hc
+        exact Bool.noConfusion hc
 
 end Azurite.AzFloat

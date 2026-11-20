@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Beta
+import Azurite.AzFloat.Equiv.BetaRatCertificate
 import Azurite.AzFloat.GammaRat
 
 /-!
@@ -26,19 +27,14 @@ arguments entering by enclosures: the roundings of `a`, of `b` and of the exact 
 * **Exact values**: for a positive integer `b ≤ 64` (`b = 1` included) and an `a` of moderate
   size, `B(a, b)` is the rational `(b − 1)! Dᵇ / ∏ (N + j D)` for `a = N/D`, rounded by one
   division (`betaIntQuot`).
-* **Fuel**, as for floats: `betaRatPrecRound_eq_or` (`Equiv/BetaRat.lean`) is "correctly
-  rounded, or `NaN`".
+* **Fuel**, as for floats: `betaRatPrecRoundFuel` has the fuel as an argument, and the
+  specification is `betaRatPrecRoundFuel_zivSpec` (`Equiv/BetaRat.lean`).  **No fuel where
+  the value is known to be irrational** (`betaRatSpecial`, `AzFloat/BetaRatBracket.lean`):
+  `a`, `b` not integers and `a + b` a positive integer, or the denominators of `a` and `b`
+  both in `{2, 4}` or both in `{2, 3, 6}` (Chudnovsky's theorem on `Γ(1/4)` and `Γ(1/3)`).
 -/
 
 namespace Azurite.AzFloat
-
-/-- The integer `k` nearest to `q`, the sign of `q − k` (`true`: negative) and a positive
-enclosure of `|q − k|`; `none` when `q` is an integer. -/
-def gammaRatFrac (q : AzRat) (W : Nat) : Option (Bool × AzInt × Encl) :=
-  let k := (q.round .Nearest).1
-  let d := q - k.toAzRat
-  if d.num = 0 then none
-  else some (!d.sign, k, lnGammaRatEncl (if d.sign then d else -d) W)
 
 /-- Is `q` a negative integer? -/
 def betaRatPole (q : AzRat) : Bool :=
@@ -53,20 +49,16 @@ def betaRatSmallInt? (a b : AzRat) (p : Nat) (mode : RoundingMode) :
     some (betaIntQuot (AzInt.mkNorm a.sign a.num) a.den.toAzInt b.num.toNat p mode)
   else none
 
-/-- The bracket of `B(a, b)` as a pair of `Roundable`s (`s = a + b`), strict on both sides; the
-dummy bracket `[−1, 1]` when the pieces give nothing. -/
-def betaRatApprox (a b s : AzRat) (w : Nat) : Roundable × Roundable :=
-  gammaApproxOf
-    (betaEnclOf (lnGammaRatEncl a) (lnGammaRatEncl b) (lnGammaRatEncl s) (gammaRatExp a)
-      (gammaRatExp b) (gammaRatExp s) (gammaRatFrac a) (gammaRatFrac b) (gammaRatFrac s) w) w
-
-/-- `B(a, b)` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` at a negative integer, for `p = 0` unless the value is `+∞`, or if the fuel runs
-out). -/
-def betaRatPrecRound (a b : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- **`B(a, b)` rounded to precision `p` with `mode`, with the fuel of the Ziv loop
+explicit**, and the comparison with the exact value.  At the arguments recognized by
+`betaRatSpecial` the value is irrational and the loop is backed by a certified one
+(`betaRatApprox_cert`): no fuel is involved there.  The specification is
+`betaRatPrecRoundFuel_zivSpec` (`Equiv/BetaRat.lean`). -/
+def betaRatPrecRoundFuel (fuel : Nat) (a b : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   if betaRatPole a || betaRatPole b then (nan, .eq)
   else if a.num = 0 ∨ b.num = 0 then (infinity true, .eq)
-  else if p = 0 then (nan, .eq)
+  else if hp : p = 0 then (nan, .eq)
   else
     match betaRatSmallInt? a b p mode with
     | some r => r
@@ -74,8 +66,18 @@ def betaRatPrecRound (a b : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × 
       match betaRatSmallInt? b a p mode with
       | some r => r
       | none =>
-        if (a + b).den = 1 ∧ ((a + b).num = 0 ∨ (a + b).sign = false) then (zero, .eq)
-        else zivLoop (betaRatApprox a b (a + b)) p mode (gammaFuel p) (max 64 (p + 32))
+        if hs : (a + b).den = 1 ∧ ((a + b).num = 0 ∨ (a + b).sign = false) then (zero, .eq)
+        else if hc : betaRatSpecial a b (a + b) = true then
+          haveI : NeZero p := ⟨hp⟩
+          zivLoopBacked (betaRatApprox a b (a + b)) p mode fuel (max 64 (p + 32))
+            (betaRatApprox_cert hc hs p mode _ (by omega))
+        else zivLoop (betaRatApprox a b (a + b)) p mode fuel (max 64 (p + 32))
+
+/-- `B(a, b)` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`(nan, .eq)` at a negative integer, for `p = 0` unless the value is `+∞`, or if the fuel runs
+out): `betaRatPrecRoundFuel` at the fuel `gammaFuel p`. -/
+def betaRatPrecRound (a b : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  betaRatPrecRoundFuel (gammaFuel p) a b p mode
 
 /-- `B(a, b)` rounded to nearest at precision `p`. -/
 def betaRat (a b : AzRat) (p : Nat) : AzFloat := (betaRatPrecRound a b p .Nearest).1

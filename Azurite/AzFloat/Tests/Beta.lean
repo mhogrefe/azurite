@@ -147,3 +147,24 @@ private def tinyA : AzFloat := (X "3" 53) <<< AzInt.ofInt (-(2 ^ 30))
 -- `beta`
 #guard toString (beta (X "0.5" 53) (X "0.5" 53)) == "3.141592653589793"
 #guard toString (beta (X "0.5" 24) (X "0.5" 53)) == "3.141592653589793"
+
+-- the fuel as an argument; no fuel is needed where the value is known to be irrational
+-- (`a + b` a positive integer, or quarter-integers)
+#guard D (betaPrecRoundFuel 0 (X "0.25" 53) (X "0.75" 53) 53 .Nearest)
+  == ("4.442882938158366", .lt)
+#guard D (betaPrecRoundFuel 0 (X "0.25" 53) (X "0.25" 53) 53 .Nearest)
+  == ("7.4162987092054875", .lt)
+#guard D (betaPrecRoundFuel 0 (X "0.125" 53) (X "2.875" 53) 53 .Nearest)
+  == ("6.734254753911765", .lt)
+#guard D (betaPrecRoundFuel 0 (X "-0.75" 53) (X "0.5" 53) 53 .Nearest)
+  == ("1.74803836952808", .gt)
+#guard D (betaPrecRoundFuel 3 (X "0.3" 53) (X "0.7" 53) 53 .Nearest)
+  == ("3.883222077450933", .lt)
+#guard betaPrecRoundFuel (gammaFuel 53) (X "0.3" 53) (X "2.75" 53) 53 .Nearest
+  == B "0.3" "2.75" 53
+
+-- a huge negative sum: the integer next to it is found at enough bits
+#guard D (betaPrecRound (X "-1180591620717411303424.5" 100) (X "-31.25" 53) 20 .Nearest)
+  == ("-5.13135e624", .gt)
+#guard D (betaPrecRound (X "-1180591620717411303424.5" 100) (X "-32.25" 53) 20 .Nearest)
+  == ("-1.878458e644", .gt)

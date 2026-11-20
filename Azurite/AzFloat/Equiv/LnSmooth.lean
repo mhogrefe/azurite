@@ -20,8 +20,8 @@ import Azurite.AzFloat.Equiv.Interval
 * `two_mul_atanhInv_251`, `…_449`, `…_4801`, `…_8749`: the four values in terms of `ln 2`,
   `ln 3`, `ln 5`, `ln 7`, and `smooth_log_eq`: the combination for `a ln 2 + b ln 3 + c ln 5 +
   d ln 7` (linear algebra on the four).
-* `lnSmoothBracket_spec`: the bracket encloses that number.  Only validity is proven; the
-  width is not (the caller, Euler's constant, runs a loop with fuel).
+* `lnSmoothBracket_spec`: the bracket encloses that number.  (Its width, and the fact that
+  `nextSmooth n` is smooth, are in `Equiv/LnSmoothWidth.lean`.)
 * `le_nextSmooth`.
 -/
 

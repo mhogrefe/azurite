@@ -48,10 +48,12 @@ the lower end covering `E₁(n) + tail ≤ 2^(−w−5) + 2^(−w−8)`, the upp
 alternative of Brent and McMillan (1980; a quarter of the terms, no cancellation) would need
 the theory of the modified Bessel functions `I₀`, `K₀` (DLMF Chapter 10), not yet available.
 
-The Ziv loop (`zivLoop`) starts at `max (p + 16) 64` bits, has fuel `eulerGammaFuel p`, and the
-specification is "correctly rounded or `NaN`" (`Equiv/EulerGamma.lean`): the termination
-certificate would need the irrationality of `γ`, an open problem.  The fuel is exhausted only
-if `γ` lies within about `2^(−16p)` of a rounding boundary.
+The Ziv loop (`zivLoop`) starts at `max (p + 16) 64` bits and has fuel (`eulerGammaFuel p`;
+`eulerGammaPrecRoundFuel` takes it as an argument): a termination certificate would need the
+irrationality of `γ`, an open problem.  The specification (`Equiv/EulerGamma.lean`,
+`Equiv/EulerGammaWidth.lean`) is that of a fuel-bound function: correctly rounded or `NaN`,
+and — the bracket has width at most `1000 · 2^(−w)` — correctly rounded for every large enough
+fuel if `γ` is no rounding boundary of the precision.
 -/
 
 namespace Azurite.AzFloat
@@ -128,13 +130,21 @@ def eulerGammaApprox (w : Nat) : Roundable × Roundable :=
 /-- The fuel of the Ziv loop for `γ`: enough doublings to reach `16 (p + 64)` bits. -/
 def eulerGammaFuel (p : Nat) : Nat := zivDefaultFuel p
 
-/-- `γ` rounded to precision `p` with `mode`, and the comparison with the exact value (`NaN` at
-precision `0` or if the fuel runs out).  The loop starts at `max (p + 16) 64` bits: the
-enclosure is a few bits narrower than `2^(−w)`, so sixteen guard bits fail about once in
-`2^19` precisions, and a failure only doubles the working precision. -/
-def eulerGammaPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- **`γ` with the fuel of its Ziv loop as an argument**: rounded to precision `p` with `mode`,
+and the comparison with the exact value (`NaN` at precision `0` or if the fuel runs out).  The
+loop starts at `max (p + 16) 64` bits: the enclosure is a few bits narrower than `2^(−w)`, so
+sixteen guard bits fail about once in `2^19` precisions, and a failure only doubles the
+working precision.  The specification is `eulerGammaPrecRoundFuel_zivSpec`
+(`Equiv/EulerGammaWidth.lean`). -/
+def eulerGammaPrecRoundFuel (fuel p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   if p = 0 then (nan, .eq)
-  else zivLoop eulerGammaApprox p mode (eulerGammaFuel p) (max (p + 16) 64)
+  else zivLoop eulerGammaApprox p mode fuel (max (p + 16) 64)
+
+/-- `γ` rounded to precision `p` with `mode`, and the comparison with the exact value (`NaN` at
+precision `0` or if the fuel runs out): `eulerGammaPrecRoundFuel` at the fuel
+`eulerGammaFuel p`. -/
+def eulerGammaPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  eulerGammaPrecRoundFuel (eulerGammaFuel p) p mode
 
 /-- Euler's constant `γ` rounded to nearest at precision `p`. -/
 def eulerGamma (p : Nat) : AzFloat := (eulerGammaPrecRound p .Nearest).1

@@ -112,3 +112,19 @@ private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r
 
 -- `betaRat`
 #guard toString (betaRat (Q "1/3") (Q "2/3") 53) == "3.6275987284684357"
+
+-- the fuel as an argument; no fuel is needed where the value is known to be irrational
+-- (`a + b` a positive integer, or denominators in `{2, 4}` or in `{2, 3, 6}`)
+#guard D (betaRatPrecRoundFuel 0 (Q "1/3") (Q "1/3") 53 .Nearest)
+  == ("5.2999162508563495", .lt)
+#guard D (betaRatPrecRoundFuel 0 (Q "1/6") (Q "2/3") 53 .Nearest)
+  == ("6.677476047133832", .gt)
+#guard D (betaRatPrecRoundFuel 0 (Q "1/4") (Q "1/2") 53 .Nearest)
+  == ("5.244115108584239", .lt)
+#guard D (betaRatPrecRoundFuel 0 (Q "1/5") (Q "4/5") 53 .Nearest)
+  == ("5.344796660577976", .gt)
+#guard D (betaRatPrecRoundFuel 0 (Q "-1/3") (Q "5/6") 53 .Nearest)
+  == ("-2.5871095592297904", .gt)
+#guard D (betaRatPrecRoundFuel 2 (Q "1/5") (Q "1/5") 53 .Nearest)
+  == ("9.501501389884368", .gt)
+#guard betaRatPrecRoundFuel (gammaFuel 53) (Q "1/5") (Q "1/5") 53 .Nearest == B "1/5" "1/5" 53

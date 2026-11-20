@@ -88,3 +88,8 @@ private def D (r : AzFloat × Ordering) : String × Ordering := (toString r.1, r
 
 -- `digammaRat`
 #guard toString (digammaRat (Q "1/3") 53) == "-3.1320337800208065"
+
+-- the fuel as an argument
+#guard D (digammaRatPrecRoundFuel 3 (Q "1/3") 53 .Nearest) == ("-3.1320337800208065", .lt)
+#guard D (digammaRatPrecRoundFuel 3 (Q "-7/2") 53 .Nearest) == ("1.388870926359529", .gt)
+#guard digammaRatPrecRoundFuel (lnGammaFuel 53) (Q "22/7") 53 .Nearest == W "22/7" 53

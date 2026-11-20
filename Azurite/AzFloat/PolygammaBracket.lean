@@ -226,4 +226,11 @@ poles, next to which the terms cancel. -/
 def polygammaEnclFor (n : Nat) (x : AzFloat) (pos : Bool) (p w : Nat) : Option Encl :=
   enclRefine (polygammaEncl n x pos) p w
 
+/-- Arguments where `ψ⁽ⁿ⁾(x)` is known to be irrational, so that Ziv's loop needs no fuel
+(`polygammaApprox_cert`, `Equiv/PolygammaCertificate.lean`): `n` odd, and `x` a positive
+integer or a half-integer (not an integer).  There `ψ⁽ⁿ⁾(x)` is a rational number plus a
+nonzero rational multiple of `π^(n+1)` (`Azurite.irrational_polygammaR_div_two`). -/
+def polygammaSpecial (n : Nat) (x : AzFloat) : Bool :=
+  n % 2 == 1 && x.isFinite && isInteger (x <<< AzInt.ofInt 1) && (lt zero x || !isInteger x)
+
 end Azurite.AzFloat

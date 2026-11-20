@@ -77,8 +77,9 @@ def digammaRatStart (q : AzRat) (e : AzInt) (p : Nat) : Nat :=
 
 /-- `ψ(q)` rounded to precision `p` with `mode`, and the comparison with the exact value
 (`(nan, .eq)` at the negative integers, for `p = 0` unless the value is `−∞`, or if the fuel
-runs out). -/
-def digammaRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+runs out), with the fuel of the Ziv loop explicit. -/
+def digammaRatPrecRoundFuel (fuel : Nat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
   if q.num = 0 then (infinity false, .eq)
   else if q.den = 1 ∧ q.sign = false then (nan, .eq)
   else if p = 0 then (nan, .eq)
@@ -86,7 +87,13 @@ def digammaRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat ×
     let e := gammaRatExp q
     match digammaRatTiny? q e p mode with
     | some r => r
-    | none => zivLoop (digammaRatApprox q e q.sign) p mode (lnGammaFuel p) (digammaRatStart q e p)
+    | none => zivLoop (digammaRatApprox q e q.sign) p mode fuel (digammaRatStart q e p)
+
+/-- `ψ(q)` rounded to precision `p` with `mode`, and the comparison with the exact value:
+`digammaRatPrecRoundFuel` at the fuel `lnGammaFuel p`.  The specification is
+`digammaRatPrecRoundFuel_zivSpec` (`Equiv/DigammaRat.lean`). -/
+def digammaRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  digammaRatPrecRoundFuel (lnGammaFuel p) q p mode
 
 /-- `ψ(q)` rounded to nearest at precision `p`. -/
 def digammaRat (q : AzRat) (p : Nat) : AzFloat := (digammaRatPrecRound q p .Nearest).1

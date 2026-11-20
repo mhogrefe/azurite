@@ -101,3 +101,11 @@ private def tiny (n : Nat) (s : String) : Bool :=
   == polygammaPrecRound 5 (X "0.25" 53) 100 .Floor
 #guard polygammaRatPrecRound 1 (Q "-201/2") 53 .Nearest
   == polygammaPrecRound 1 (X "-100.5" 53) 53 .Nearest
+
+-- the fuel as an argument; for an odd `n` no fuel is needed at the positive integers and at
+-- the denominator `2`
+#guard D (polygammaRatPrecRoundFuel 0 1 (Q "1/2") 53 .Nearest) == ("4.934802200544679", .lt)
+#guard D (polygammaRatPrecRoundFuel 0 3 (Q "5") 53 .Nearest) == ("0.021427828192755075", .gt)
+#guard D (polygammaRatPrecRoundFuel 0 1 (Q "-7/2") 53 .Nearest) == ("9.620879298050347", .lt)
+#guard D (polygammaRatPrecRoundFuel 3 1 (Q "1/3") 53 .Nearest) == ("10.095597125427094", .gt)
+#guard polygammaRatPrecRoundFuel (lnGammaFuel 53) 2 (Q "1/3") 53 .Nearest == P 2 "1/3" 53
