@@ -345,6 +345,18 @@ def checkBigExponentFloatReciprocalGamma : String → Verdict :=
 def checkBigExponentFloatReciprocalGammaRational : String → Verdict :=
   withBigExponentFloatNames checkFloatReciprocalGammaRational
 
+def checkBigExponentFloatLnGamma : String → Verdict :=
+  withBigExponentFloatNames checkFloatLnGamma
+
+def checkBigExponentFloatLnGammaRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatLnGammaRational
+
+def checkBigExponentFloatLnAbsGamma : String → Verdict :=
+  withBigExponentFloatNames checkFloatLnAbsGamma
+
+def checkBigExponentFloatLnAbsGammaRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatLnAbsGammaRational
+
 def checkBigExponentFloatWrightOmega : String → Verdict :=
   withBigExponentFloatNames checkFloatWrightOmega
 

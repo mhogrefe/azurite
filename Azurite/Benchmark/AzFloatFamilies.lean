@@ -107,6 +107,8 @@ import Azurite.AzFloat.Polygamma
 import Azurite.AzFloat.PolygammaRat
 import Azurite.AzFloat.EulerGamma
 import Azurite.AzFloat.GammaExtremum
+import Azurite.AzFloat.GlaisherKinkelin
+import Azurite.AzFloat.OmegaConstant
 import Azurite.AzFloat.Factorial
 import Azurite.AzFloat.GenPochhammer
 import Azurite.AzFloat.GenPochhammerRat
@@ -357,6 +359,33 @@ private def enclFn (f : Nat → Option Encl) : Nat → RoundingMode → AzFloat 
     match f (max 64 (p + 32)) with
     | some b => (b.1, .lt)
     | none => (one, .eq)
+
+/-- The logarithm of the hyperfactorial in `glaisherKinkelinLnEncl`, alone. -/
+private def gkProducts (w : Nat) : Option Encl :=
+  let n := glaisherArg w
+  let V := w + 2 * n.log2 + 64
+  let FW := glaisherProd V n
+  some (lnOfEncl (Encl.div V (Encl.powBin V FW.1 n) FW.2) V)
+
+/-- The table of tangent numbers in `glaisherKinkelinLnEncl`, alone (its last entry is
+converted, to force the table). -/
+private def gkTable (w : Nat) : Option Encl :=
+  let j := glaisherTerms w
+  let T := AzNat.tangentNumbers (j + 1)
+  let x := (ofAzNat (T.getD j 0) <<< AzInt.ofInt 0)
+  some (x, x)
+
+/-- The table and the terms of the expansion in `glaisherKinkelinLnEncl`. -/
+private def gkTerms (w : Nat) : Option Encl :=
+  let j := glaisherTerms w
+  let n := glaisherArg w
+  let V := w + 2 * n.log2 + 64
+  let n2 := Encl.nat (n * n)
+  let inv2 := Encl.div V (Encl.exact one) n2
+  let p₁ := Encl.div V (Encl.exact one) (Encl.nat (n * n * (n * n)))
+  let tol := powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)
+  some (altSumLoop V (glaisherTermEncl V (AzNat.tangentNumbers (j + 1)) n2) inv2 tol (j - 1)
+    1 p₁ (Encl.exact zero))
 private def fiveHalves : AzFloat := ofAzRat (AzRat.parse "5/2").get! 64
 private def sevenThirds : AzFloat := ofAzRat (AzRat.parse "7/3").get! 1100
 
@@ -448,6 +477,12 @@ private def misc : List Entry :=
    F "gammaExtremum 0" (fun _ => gammaExtremumPrecRound 0) [a "1"],
    F "gammaExtremum 1" (fun _ => gammaExtremumPrecRound 1) [a "1"],
    F "gammaExtremum 1000" (fun _ => gammaExtremumPrecRound 1000) [a "1"],
+   F "omegaConstant" (fun _ => omegaConstantPrecRound) [a "1"],
+   F "omegaConstant: lambertW0 1" lambertW0PrecRound [a "1"],
+   F "glaisherKinkelin" (fun _ => glaisherKinkelinPrecRound) [a "1"],
+   F "glaisherKinkelin: products" (fun _ => enclFn gkProducts) [a "1"],
+   F "glaisherKinkelin: table" (fun _ => enclFn gkTable) [a "1"],
+   F "glaisherKinkelin: terms" (fun _ => enclFn gkTerms) [a "1"],
    F "psiZeroFast 0" (fun _ => enclFn (psiZeroFast 0)) [a "1"],
    F "psiZeroFast 1000" (fun _ => enclFn (psiZeroFast 1000)) [a "1"],
    F "psiZeroFallback 0" (fun _ => enclFn (psiZeroFallback 0)) [a "1"],
@@ -480,6 +515,7 @@ def run (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt64) : IO U
       IO.println (bitsList.foldl (fun s P => s ++ padL s!"@{P}" 11)
         (padR "function" 31 ++ padR "argument" 18))
       for e in entries do
+        if (cfg["only"]?).all (fun t => (e.name.splitOn t).length > 1) then
         for arg in e.args do
           let mut line := padR e.name 31 ++ padR (arg.show.take 17).toString 18
           for P in bitsList do

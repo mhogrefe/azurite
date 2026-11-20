@@ -7,8 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzNat.MulNat
-import Azurite.AzNat.Add
+import Azurite.AzNat.LinComb
 import Azurite.AzNat.Factorial
 
 /-!
@@ -26,7 +25,8 @@ for k from 2 to m do
     T_j ← (j − k) T_{j−1} + (j − k + 2) T_j
 ```
 
-Only additions and multiplications of non-negative integers by small numbers: `m²/2` steps on
+Only additions and multiplications of non-negative integers by small numbers — each step one
+fused pass over the limbs (`linComb`) —: `m²/2` steps on
 integers of up to about `2m lg m` bits, `O(m³ log m)` bit operations for the whole table.  The
 tangent numbers are the stable route to the Bernoulli numbers (`AzRat/Bernoulli.lean`):
 `B_{2j} = (−1)^(j−1) 2j T_j / (4^(2j) − 2^(2j))`.
@@ -45,7 +45,7 @@ def tangentPassArr (k : Nat) (T : Array AzNat) : Nat → Array AzNat
   | s + 1 =>
     let T' := tangentPassArr k T s
     T'.setIfInBounds (k + s - 1)
-      ((T'.getD (k + s - 2) 0).mulNat s + (T'.getD (k + s - 1) 0).mulNat (s + 2))
+      (linComb (T'.getD (k + s - 2) 0) (T'.getD (k + s - 1) 0) s (s + 2))
 
 /-- The outer loop after `r` passes (`k = 2, …, r + 1`) on an array of length `m`. -/
 def tangentOuterArr (m : Nat) (T : Array AzNat) : Nat → Array AzNat

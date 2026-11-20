@@ -8,8 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzNat.TangentNumbers
-import Azurite.AzNat.Equiv.MulNat
-import Azurite.AzNat.Equiv.Add
+import Azurite.AzNat.Equiv.LinComb
 import Azurite.AzNat.Equiv.Factorial
 import Azurite.BrentZimmermann.Chapter4.TangentAlgorithm
 
@@ -42,7 +41,7 @@ theorem tangentPassArr_repr {k m : ℕ} (hk : 2 ≤ k) {T : Array AzNat} {a : �
     by_cases hjk : j = k + s
     · subst hjk
       rw [Function.update_self, Array.getD_eq_getD_getElem?, Array.getElem?_setIfInBounds_self_of_lt
-        (by omega), Option.getD_some, toNat_add, toNat_mulNat, toNat_mulNat,
+        (by omega), Option.getD_some, toNat_linComb,
         show k + s - 2 = (k + s - 1) - 1 by omega, hval (k + s - 1) (by omega) (by omega),
         hval (k + s) (by omega) (by omega), Nat.add_sub_cancel_left]
       ring

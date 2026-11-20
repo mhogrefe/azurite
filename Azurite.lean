@@ -312,6 +312,7 @@ import Azurite.AzFloat.Equiv.GelfondSchneider
 import Azurite.AzFloat.Equiv.GenPochhammer
 import Azurite.AzFloat.Equiv.GenPochhammerRat
 import Azurite.AzFloat.Equiv.GenPochhammerRatCertificate
+import Azurite.AzFloat.Equiv.GlaisherKinkelin
 import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Interval
 import Azurite.AzFloat.Equiv.LambertW
@@ -363,6 +364,7 @@ import Azurite.AzFloat.Equiv.MulAddMulRat
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.NegRound
 import Azurite.AzFloat.Equiv.OfString
+import Azurite.AzFloat.Equiv.OmegaConstant
 import Azurite.AzFloat.Equiv.OneDivPiBracket
 import Azurite.AzFloat.Equiv.Phi
 import Azurite.AzFloat.Equiv.Pi
@@ -497,6 +499,7 @@ import Azurite.AzFloat.GelfondSchneider
 import Azurite.AzFloat.GenPochhammer
 import Azurite.AzFloat.GenPochhammerRat
 import Azurite.AzFloat.GenPochhammerRatBracket
+import Azurite.AzFloat.GlaisherKinkelin
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Interval
 import Azurite.AzFloat.LambertW
@@ -543,6 +546,7 @@ import Azurite.AzFloat.MulAddMul
 import Azurite.AzFloat.MulAddMulRat
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
+import Azurite.AzFloat.OmegaConstant
 import Azurite.AzFloat.OneDivPiBracket
 import Azurite.AzFloat.Phi
 import Azurite.AzFloat.Pi
@@ -947,6 +951,7 @@ import Azurite.AzNat.Equiv.Landau
 import Azurite.AzNat.Equiv.LenstraDivisors
 import Azurite.AzNat.Equiv.LimbDigits
 import Azurite.AzNat.Equiv.LimbDigitsPow2
+import Azurite.AzNat.Equiv.LinComb
 import Azurite.AzNat.Equiv.LogBase
 import Azurite.AzNat.Equiv.LogBase2
 import Azurite.AzNat.Equiv.LowMask
@@ -1028,6 +1033,7 @@ import Azurite.AzNat.Landau
 import Azurite.AzNat.LenstraDivisors
 import Azurite.AzNat.LimbDigits
 import Azurite.AzNat.LimbDigitsPow2
+import Azurite.AzNat.LinComb
 import Azurite.AzNat.LogBase
 import Azurite.AzNat.LogBase2
 import Azurite.AzNat.LowMask
@@ -3083,6 +3089,7 @@ import Azurite.DLMF.Chapter5.Section16
 import Azurite.DLMF.Chapter5.Section17
 import Azurite.DLMF.Chapter5.Section17Asymp
 import Azurite.DLMF.Chapter5.Section17Log
+import Azurite.DLMF.Chapter5.Section17Numerics
 import Azurite.DLMF.Chapter5.Section17Zeta
 import Azurite.DLMF.Chapter5.Section18
 import Azurite.DLMF.Chapter5.Section18Beta
@@ -3247,6 +3254,7 @@ import Azurite.Transcendental.Exp
 import Azurite.Transcendental.GammaAGM
 import Azurite.Transcendental.GammaNearZero
 import Azurite.Transcendental.GelfondSchneider
+import Azurite.Transcendental.GlaisherKinkelin
 import Azurite.Transcendental.Gudermannian
 import Azurite.Transcendental.LambertW
 import Azurite.Transcendental.LogGammaStirling

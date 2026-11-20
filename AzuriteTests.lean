@@ -108,6 +108,7 @@ import Azurite.AzFloat.Tests.Gelfond
 import Azurite.AzFloat.Tests.GelfondSchneider
 import Azurite.AzFloat.Tests.GenPochhammer
 import Azurite.AzFloat.Tests.GenPochhammerRat
+import Azurite.AzFloat.Tests.GlaisherKinkelin
 import Azurite.AzFloat.Tests.HexString
 import Azurite.AzFloat.Tests.LambertW
 import Azurite.AzFloat.Tests.LambertWRat
@@ -143,6 +144,7 @@ import Azurite.AzFloat.Tests.MulAddMul
 import Azurite.AzFloat.Tests.MulAddMulRat
 import Azurite.AzFloat.Tests.MulRat
 import Azurite.AzFloat.Tests.OfString
+import Azurite.AzFloat.Tests.OmegaConstant
 import Azurite.AzFloat.Tests.Pi
 import Azurite.AzFloat.Tests.PiConstants
 import Azurite.AzFloat.Tests.Pochhammer
@@ -218,6 +220,7 @@ import Azurite.AzNat.Tests.GetBits
 import Azurite.AzNat.Tests.HypSplit
 import Azurite.AzNat.Tests.IsMultipleOfPow2
 import Azurite.AzNat.Tests.JacobiSym
+import Azurite.AzNat.Tests.LinComb
 import Azurite.AzNat.Tests.LogBase
 import Azurite.AzNat.Tests.LogBase2
 import Azurite.AzNat.Tests.ModPow2

@@ -56,6 +56,8 @@ import Azurite.AzFloat.GdInv
 import Azurite.AzFloat.GdInvRat
 import Azurite.AzFloat.Gamma
 import Azurite.AzFloat.GammaRat
+import Azurite.AzFloat.LnGamma
+import Azurite.AzFloat.LnGammaRat
 import Azurite.AzFloat.WrightOmega
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.LnP1
@@ -2279,6 +2281,65 @@ def checkFloatReciprocalGamma : String → Verdict :=
 `AzFloat.reciprocalGammaRatPrecRound`. -/
 def checkFloatReciprocalGammaRational : String → Verdict :=
   checkFloatOfRational "reciprocal_gamma_rational" AzFloat.reciprocalGammaRatPrecRound
+
+/-- `Float`'s `ln_gamma` family, against `AzFloat.lnGammaPrecRound`. -/
+def checkFloatLnGamma : String → Verdict :=
+  checkFloatUnaryWith "ln_gamma" AzFloat.lnGammaPrecRound
+
+/-- `Float::ln_gamma_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.lnGammaRatPrecRound`. -/
+def checkFloatLnGammaRational : String → Verdict :=
+  checkFloatOfRational "ln_gamma_rational" AzFloat.lnGammaRatPrecRound
+
+/-- A result printed with the sign of the gamma function, `(r, sign, o)` or `(r, sign)`: the
+result without the sign, `(r, o)` or `r`, and the sign. -/
+def splitSignedResult (what res : String) : Except Failure (String × Bool) := do
+  let res := trim res
+  if !isWrapped res '(' ')' then fail s!"{what}: the result is not a tuple"
+  let sign (s : String) : Except Failure Bool :=
+    if s == "true" then pure true
+    else if s == "false" then pure false
+    else fail s!"{what}: unreadable sign"
+  match (splitTopLevel (dropRightChars (dropChars res 1) 1) ',').map trim with
+  | [r, s, o] => pure (s!"({r}, {o})", ← sign s)
+  | [r, s] => pure (r, ← sign s)
+  | _ => fail s!"{what}: unexpected result"
+
+/-- Compares a result that `splitSignedResult` read, and its sign, with Azurite's. -/
+def expectSignedResult (method : String) (computed : AzFloat × Ordering) (sign : Bool)
+    (res : String) : Verdict := do
+  let (res, printedSign) ← splitSignedResult method res
+  if printedSign != sign then
+    disagree s!"{method}: Azurite computed the sign {sign}, Malachite printed {printedSign}"
+  if isWrapped res '(' ')' then expectFloatPair method computed (← parseFloatPair res)
+  else expectFloat method computed.1 (← expect "r" (parseFloat res))
+
+/-- `Float`'s `ln_abs_gamma` family, `(x).ln_abs_gamma[…](…) = (r, sign, o)` (or `(r, sign)`),
+against `AzFloat.lnAbsGammaPrecRound`, and its assignments
+`x := x; x.ln_abs_gamma[…]_assign(…) = sign; x = r` (or with `= (sign, o)`).  The sign is `true`
+where the gamma function has none, except that Malachite, following MPFR, takes `Γ(-0.0) = -∞`,
+and so gives `false` at `-0.0`. -/
+def checkFloatLnAbsGamma (line : String) : Verdict := do
+  let (method, x, _, p, rm, res, _) ←
+    readFloatUnaryLine "ln_abs_gamma" 0 (fun _ => some ()) line
+  let computed ← roundedResult method (fun m => (AzFloat.lnAbsGammaPrecRound x.1 p m).1) rm
+  let sign := !negativeZeroArgument line && (AzFloat.isInteger x.1 || AzFloat.gammaSign x.1)
+  if line.startsWith "x := " then
+    let some returned := assignOrdering line | fail s!"{method}: the sign is not printed"
+    let returned := if isWrapped returned '(' ')' then returned else s!"({returned})"
+    match (splitTopLevel (dropRightChars (dropChars returned 1) 1) ',').map trim with
+    | [s, o] => expectSignedResult method computed sign s!"({res}, {s}, {o})"
+    | [s] => expectSignedResult method computed sign s!"({res}, {s})"
+    | _ => fail s!"{method}: unexpected result"
+  else expectSignedResult method computed sign res
+
+/-- `Float::ln_abs_gamma_rational_prec[_round][_ref](q, p[, rm]) = (r, sign, o)`, against
+`AzFloat.lnAbsGammaRatPrecRound`. -/
+def checkFloatLnAbsGammaRational (line : String) : Verdict := do
+  let (method, q, _, p, rm, res) ←
+    readFloatOfRationalLine "ln_abs_gamma_rational" 0 (fun _ => some ()) line
+  let computed ← roundedResult method (fun m => (AzFloat.lnAbsGammaRatPrecRound q p m).1) rm
+  expectSignedResult method computed (AzFloat.gammaRatSign q) res
 
 /-- `Float`'s `csc` family, against `AzFloat.cscPrecRound` (through `negativeZeroPole`). -/
 def checkFloatCsc (line : String) : Verdict :=

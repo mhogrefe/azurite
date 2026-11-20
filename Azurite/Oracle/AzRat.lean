@@ -30,6 +30,7 @@ import Azurite.AzRat.SumProduct
 import Azurite.AzRat.CompareProduct
 import Azurite.AzRat.CompareProducts
 import Azurite.AzRat.Pow2
+import Azurite.AzRat.Bernoulli
 
 /-!
 # Checks for Malachite's `Rational` against `AzRat`
@@ -655,5 +656,48 @@ def checkRatIsPowerOf2 (line : String) : Verdict := do
     else fail s!"not an `x{pos}` or `x{neg}` line"
   let x ← expect "x" (parseAzRat x)
   expectEq "is a power of 2" x.isPowerOfTwo expected
+
+
+/-! ### Bernoulli numbers -/
+
+/-- The single argument `n` of a `name(n) = …` line, and its result text. -/
+def indexedCall (name : String) (line : String) : Except Failure (Nat × String) := do
+  let (args, res) ← expect s!"a `{name}(n) = …` line" (functionCall line name)
+  let n ← match args with
+    | [n] => pure n
+    | _ => fail s!"{name} takes one argument"
+  let n ← expect "n" (parseNat n)
+  pure (n, res)
+
+/-- A list of rationals as Malachite prints a `Vec<Rational>`: `[a, b, …]`. -/
+def parseAzRats (s : String) : Option (List AzRat) :=
+  parseList s >>= fun xs => xs.mapM parseAzRat
+
+/-- `bernoulli_number(n) = b`, for Malachite's `Rational::bernoulli_number(n)`. -/
+def checkRatBernoulliNumber (line : String) : Verdict := do
+  let (n, res) ← indexedCall "bernoulli_number" line
+  let b ← expect "result" (parseAzRat res)
+  expectEq "bernoulli_number" (AzRat.bernoulli n) b
+
+/-- `even_bernoulli_numbers_prefix(m) = [B_2, …, B_{2m}]`, for Malachite's
+`even_bernoulli_numbers_prefix(m)`. -/
+def checkRatEvenBernoulliNumbersPrefix (line : String) : Verdict := do
+  let (m, res) ← indexedCall "even_bernoulli_numbers_prefix" line
+  let xs ← expect "list" (parseAzRats res)
+  expectEq "even_bernoulli_numbers_prefix" (AzRat.bernoulliEvens m).toList xs
+
+/-- `bernoulli_numbers_prefix(n) = [B_0, …, B_{n-1}]`, for Malachite's
+`bernoulli_numbers_prefix(n)`: `B_0 = 1`, `B_1 = −1/2`, the other odd ones 0, and the even ones
+from `bernoulliEvens`. -/
+def checkRatBernoulliNumbersPrefix (line : String) : Verdict := do
+  let (n, res) ← indexedCall "bernoulli_numbers_prefix" line
+  let xs ← expect "list" (parseAzRats res)
+  let evens := AzRat.bernoulliEvens (n / 2)
+  let computed := (List.range n).map fun k =>
+    if k = 0 then 1
+    else if k = 1 then AzRat.bernoulli 1
+    else if k % 2 = 1 then 0
+    else evens.getD (k / 2 - 1) 0
+  expectEq "bernoulli_numbers_prefix" computed xs
 
 end Azurite.Oracle

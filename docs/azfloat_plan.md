@@ -9729,6 +9729,144 @@ fifteen digits for `n = 0, …, 10`).
   bound on `Γ″` near `xₙ` (or on `ψ′`, as `Γ″ = Γ ψ′` there).  (c) DLMF Table 5.4.1 as
   kernel-checked numerics (the BACKFILL noted in `dlmf_plan` §5.4).
 
+### 9. The Glaisher–Kinkelin constant (DONE 2026-11-20, fuel-based, TIMED)
+
+User request: "implement Glaisher's constant, but call it the Glaisher–Kinkelin constant to
+match Wikipedia".  `glaisherKinkelinPrecRound p mode`, `glaisherKinkelin p`
+(`AzFloat/GlaisherKinkelin.lean`): `A = 1.2824271291006226368753…`, `ln A = 1/12 − ζ′(−1)`;
+the specification is against `DLMF.glaisherA` (§5.17, where it is Glaisher's constant).
+
+* **Mathematics** (`Transcendental/GlaisherKinkelin.lean`): `abs_glaisherC_sub_le` — for
+  `n ≥ 1`, `j ≥ 1`, `|C − (glaisherSeq n + ∑_{k=1}^{j} t_k)| ≤ |t_j|`,
+  `t_k = B_{2k+2}/(2k(2k+1)(2k+2) n^{2k})` — from the expansion 5.17.5 with its integral
+  remainder (`glaisherR_sub_sum`) and `|B̃_{2m}| ≤ |B_{2m}|`; `abs_glaisherTerm_le`
+  (`|t_j| ≤ 16(j+1)²/4^j` for `n ≥ 4j + 4`, from `|B_{2k}| ≤ 4(2k)^{2k}`);
+  `sum_mul_log_eq_log_hyper`; `glaisherA_eq_exp_zeta`.
+* **Algorithm.**  At level `w`: `j = ⌊w/12⌋ + 3` terms at `n = 8j` (twelve bits a term).
+  `∑_{k≤n} k ln k = ln ((n!)ⁿ/∏_{k<n} k!)`: one loop of `2n` enclosure multiplications
+  (`glaisherProd`), one `Encl.powBin`, one division, one logarithm; `(6n²+6n+1)/12 · ln n`
+  with `Encl.mulPos`; the terms `t_k` on enclosures (first version: exact rationals, see
+  Perf 1); then `gammaExpEncl` and Ziv's loop with fuel.
+* **Proofs** (`Equiv/GlaisherKinkelin.lean`): one theorem for soundness and completeness,
+  `glaisherKinkelinLnEncl_aencl` — at every `w ≥ 64` the enclosure contains `C` with width
+  at most `glaisherDelta w = 2|t_j| + (polynomial in w)·2^(−w)` — and
+  `tendsto_glaisherDelta`; then `glaisherKinkelinCore_coreConv`,
+  `glaisherKinkelinPrecRoundFuel_zivSpec`, `glaisherKinkelinPrecRound_eq_or`.
+* **Timings (2026-11-20, `az_float_families family:misc,only:glaisherKinkelin`, ms).**
+
+  | bits | 53 | 200 | 1000 | 4000 | 10000 |
+  |---|---|---|---|---|---|
+  | `glaisherKinkelin` | 0.74 | 1.59 | 14.2 | 350 | 4245 |
+  | the products and their logarithm | 0.34 | 0.73 | 5.7 | 124 | 1204 |
+  | the table of Bernoulli numbers | 0.02 | 0.10 | 2.0 | 74 | 1126 |
+  | table and rational sum | 0.09 | 0.35 | 6.5 | 217 | 2996 |
+
+  For scale: `Γ(1/3)` 0.52 / 1.24 / 10.5 / 384 / 3446, `eulerGamma` 0.09 / 0.23 / 1.46 / 12.0 /
+  55.3.  The cost is that of a `Γ` at an ordinary argument, with the same bottleneck at high
+  precision (the table of tangent numbers, cubic in the number of terms).
+* **The ratio `n/j = 8` stays.**  From the parts at 10000 bits: `n/j = 32` (16 bits a term)
+  would triple the products and save a quarter of the terms, about 5.4 s; `n/j = 4` (10 bits a
+  term) about 4.7 s.  The optimum will move once the rational sum is cheaper.
+* **Perf 1 (2026-11-20, user request, TIMED).**
+  The exact rational sum is gone.  The terms alternate and envelop the remainder — DLMF
+  2.10.4–2.10.5, already formalized (`dlmf_2_10_5_bound`), connected to `C` by
+  `glaisherSeq_sub_eq` — so they are summed by `altSumLoop`, the loop of Stirling's series,
+  with its width theorem `altSumLoop_width` reused as it is.  A term is
+  `glaisherTermEncl`: `psiTermEncl` (the coefficient `c_{k+1} = T_{k+1}/(4^{2k+2} − 2^{2k+2})`
+  of the series of `ψ`, straight from the tangent numbers) times `n²/(2k(2k+1))`
+  (`glaisherTau`, `glaisherTerm_eq_tau`, `glaisherTermEncl_lencl`, `glaisher_alt`).  One
+  division and three multiplications a term; no reduction of Bernoulli numbers, no powers of
+  `n`, no gcd; the loop stops at the first term below `2^(−w−16)`.  Removed:
+  `glaisherTermRat`, `glaisherSumRat`, `aencl_rat_pm`.  `glaisherDelta` has the same shape
+  (`2|t_j|` + polynomial · `2^(−w)`).  Benchmark rows: `glaisherKinkelin`, `: products`,
+  `: table`, `: terms`.
+
+  Timings after Perf 1 (2026-11-20, `az_float_families family:misc,only:glaisherKinkelin`,
+  ms):
+
+  | bits | 53 | 200 | 1000 | 4000 | 10000 |
+  |---|---|---|---|---|---|
+  | `glaisherKinkelin` (before) | 0.74 | 1.59 | 14.2 | 350 | 4245 |
+  | `glaisherKinkelin` (after) | 0.73 | 1.56 | 10.9 | 242 | 2740 |
+  | the products and their logarithm | 0.35 | 0.73 | 5.7 | 125 | 1221 |
+  | the table of tangent numbers | 0.02 | 0.08 | 1.7 | 67 | 1073 |
+  | table and terms | 0.10 | 0.30 | 3.9 | 111 | 1479 |
+
+  −23 % at 1000 bits, −31 % at 4000, −35 % at 10000; nothing at 53 and 200, where the
+  products are half the time.  The sum itself went from about 1.9 s to 0.4 s at 10000 bits.
+  The table was mis-read before: the 1.1 s of "the table of Bernoulli numbers" is the table
+  of tangent numbers itself, not the reductions — it is still there, and it is now 39 % of
+  the time at 10000 bits (the products 45 %).
+* **The ratio `n/j = 8` stays** (re-examined with the new parts): at 10000 bits `n/j = 16`
+  gives about 3.1 s and `n/j = 4` about 3.05 s against 2.74 s; at 1000 bits `n/j = 4` to `6`
+  would gain 5 % at most, at 53 bits perhaps 15 % (and `n/j < 5` breaks the hypothesis
+  `n ≥ 4j + 4` of the bound of the terms).  Estimates from the parts, not runs.
+* **Perf 2 (2026-11-20, TIMED).**  The products.  Before:
+  `2n` enclosure multiplications, each two rounded products.  Now `glaisherProdLo` keeps only
+  lower bounds, every product rounded *down* — `f ← ⌊f · (i + 1)⌋` (a small factor),
+  `w ← ⌊w · f⌋` (the one full multiplication of a step) — and the upper bounds come from the
+  count of the roundings: a rounding down loses a factor of at most `e^(3u)`, so after `K/3`
+  of them the number is below `f · (1 + 2Ku)`, and `glaisherUpper` is
+  `⌈f · ⌈1 + 2K · 2^(−V)⌉⌉` (`K = 3n` for `n!`, `3n²` for `∏_{k<n} k!`).  Proofs: `LLow`
+  (a positive lower bound within `e^lam`), `LLow.mulFloor`, `glaisherProdLo_llow`,
+  `LLow.toEncl`, `glaisherProd_lencl` — the relative widths are the old ones plus `4u`, so the
+  rest of `glaisherKinkelinLnEncl_aencl` stands.  The values at all the tested precisions
+  are unchanged.
+
+  Timings after Perf 2 (2026-11-20, same benchmark, ms):
+
+  | bits | 53 | 200 | 1000 | 4000 | 10000 |
+  |---|---|---|---|---|---|
+  | `glaisherKinkelin` (first version) | 0.74 | 1.59 | 14.2 | 350 | 4245 |
+  | `glaisherKinkelin` (after Perf 1) | 0.73 | 1.56 | 10.9 | 242 | 2740 |
+  | `glaisherKinkelin` (after Perf 2) | 0.63 | 1.27 | 8.8 | 176 | 2076 |
+  | the products and their logarithm | 0.23 | 0.46 | 3.2 | 63 | 605 |
+  | the table of tangent numbers | 0.02 | 0.08 | 1.7 | 65 | 1049 |
+  | table and terms | 0.09 | 0.29 | 3.8 | 106 | 1406 |
+
+  The products row is halved at every precision (0.35 → 0.23, 5.7 → 3.2, 1221 → 605); the
+  constant is 14–27 % faster than after Perf 1 and 15–51 % faster than the first version
+  (−38 % at 1000 bits, −51 % at 10000).  `Γ(1/3)` for scale: 0.52 / 1.24 / 10.5 / 384 / 3446.
+  The ratio `n/j = 8` stays: at 10000 bits `n/j = 16` comes out equal by the parts (2.08 s),
+  at 1000 bits worse.
+* **Perf 3 (2026-11-20, TIMED): the table of tangent numbers.**  The step of the table,
+  `T_j ← (j − k) T_{j−1} + (j − k + 2) T_j`, was two products by a small number and a sum:
+  three passes over the limbs and three arrays.  It is now `AzNat.linComb` (`AzNat/LinComb`):
+  one fused pass, the one the half-binary GCD already had with its proof (`linCombLimbs`,
+  `linCombLimbs_add`).  The table is the same array, so `Γ`, `ψ`, the polygamma functions and
+  the Bernoulli numbers gain too.  The table alone (`az_rat_bernoulli`, ms):
+
+  | `m` | 100 | 200 | 400 | 837 | 1700 |
+  |---|---|---|---|---|---|
+  | before | 2.13 | 13.6 | 104 | 1030 | 10124 |
+  | after | 1.74 | 9.7 | 66.6 | 592 | 5359 |
+
+  and the constant (ms):
+
+  | bits | 53 | 200 | 1000 | 4000 | 10000 |
+  |---|---|---|---|---|---|
+  | `glaisherKinkelin` (after Perf 2) | 0.63 | 1.27 | 8.8 | 176 | 2076 |
+  | `glaisherKinkelin` (after Perf 3) | 0.57 | 1.19 | 8.0 | 157 | 1670 |
+  | the products and their logarithm | 0.25 | 0.48 | 3.2 | 65 | 622 |
+  | the table of tangent numbers | 0.02 | 0.06 | 1.2 | 41 | 602 |
+  | table and terms | 0.09 | 0.30 | 3.3 | 84 | 1008 |
+
+  From the first version: −22 % at 53 bits, −44 % at 1000, −61 % at 10000.
+* **Not done.**  (a) The table is still 36 % at 10000 bits.  The fused pass is at one boxed
+  limb and two wide products a limb, so what is left is less work, not a faster pass: (i) a
+  *truncated* table — the recurrence has non-negative coefficients, so lower bounds rounded
+  down with a counted error (as in Perf 2) are stable, and the term `k` of an asymptotic series
+  needs `T_k` only to about `w (1 − k/j)` bits; by the sizes that is about a third of the limb
+  work at 10000 bits, but the table becomes a table of enclosures, a new interface for every
+  series that reads it; (ii) several passes of the recurrence in one (coefficients below `2^64`
+  for four passes at these `m`): exact, the same interface, perhaps a factor of two, a new
+  proof of the merged recurrence.  (b) Whether `A` is irrational is open, so the fuel stays.
+* **DLMF.**  The decimals of 5.17.6 are backfilled with this function:
+  `dlmf_5_17_6_numerics` (`DLMF/Chapter5/Section17Numerics.lean`), the enclosure at level 72
+  evaluated in the kernel in about a minute.
+* The benchmark `az_float_families` takes `only:<text>` to run the rows whose name contains
+  the text.
+
 ### File layout of the logarithms of `Γ` and `B` (2026-11-18)
 
 User request, for consistency: one file per function family.  `AzFloat/LnBeta.lean` and
@@ -9760,6 +9898,43 @@ below).
   Reordering the step to avoid the overflow would keep the cheap seed there; not done, for
   the sake of the identity with the port.
 * Rows `W0 3*2^k` in `az_float_lambert_extreme`; tests in `Tests/LambertW.lean`.
+
+## The omega constant `Ω = W₀(1)` (DONE 2026-11-20, fuel-free, TIMED)
+
+User request: "add the omega constant, W(1)?  Is there any faster way of evaluating that just
+using the general Lambert W implementation?"
+
+* `omegaConstantPrecRound p mode`, `omegaConstant p` (`AzFloat/OmegaConstant.lean`);
+  `omegaConstantPrecRound_eq`: `= roundVal p mode (W₀ 1)`, every precision and mode, no fuel
+  (`Equiv/OmegaConstant.lean`, with `Ω e^Ω = 1`, `e^(−Ω) = Ω`, `Ω + ln Ω = 0`, `Ω > 0`,
+  `irrational_lambertW0_one`).
+* **The faster way is already in the library**: `Ω = ω(0)`, the Wright function at `0`.
+  `lambertW0PrecRound` runs Halley's iteration on `w e^w = x` and verifies by the mean value
+  theorem — about 3.5 exponentials; `wrightOmegaPrecRound` solves `y + ln y = x` by Newton
+  steps up to half the bits and one enclosure of the residual at full precision, which is
+  also the last Newton step — about two logarithms.  Earlier timings (different days, same
+  machine): `W₀(1)` 0.43 / 1.03 / 3.13 ms at 53 / 200 / 1000 bits, `ω` at an ordinary argument
+  0.32 / 0.53 / 1.52.  So the constant is `wrightOmegaPrecRound zero`, nothing new to prove
+  but `ω(0) = W₀(1)`.
+* **Nothing faster is known.**  `Ω` has no series of the hypergeometric kind (it is not a
+  period; nothing to split binarily), so every method is an iteration on `Ω = e^(−Ω)` whose
+  last step needs one exponential or logarithm at full precision; the present scheme is that
+  step plus the steps below half precision.  A dedicated version could save only constants
+  (the seed is the fixed number, the enclosure of the argument `0` is trivial) — not done.
+* Transcendence (Lindemann: `Ω` algebraic would make `e^Ω = 1/Ω` algebraic) is not formalized:
+  the library has `e^q` transcendental for a rational `q ≠ 0` only.
+* Tests `Tests/OmegaConstant.lean`: decimals to 300 bits, five modes, agreement with
+  `lambertW0PrecRound one` at eight precisions and three modes.
+* **Timings (2026-11-20, compiled, `az_float_families family:misc,only:omegaConstant`, ms per
+  call, median of 3).**
+
+  | bits | 53 | 200 | 1000 | 4000 | 10000 |
+  |---|---|---|---|---|---|
+  | `omegaConstant` | 0.39 | 0.54 | 1.51 | 7.03 | 25.2 |
+  | `lambertW0PrecRound` at `1` | 0.63 | 1.19 | 3.05 | 11.9 | 43.0 |
+
+  So 0.62 / 0.46 / 0.49 / 0.59 / 0.59 of the general `W₀`; the same as `ω` at any ordinary
+  argument (`ω(1/3)`: 0.33 / 0.56 / 1.62 / 7.49 / 25.5 in the same run).
 
 ## Timings of the elementary families (2026-11-17)
 
