@@ -295,6 +295,8 @@ import Azurite.AzFloat.Equiv.GammaBracket
 import Azurite.AzFloat.Equiv.GammaCertificate
 import Azurite.AzFloat.Equiv.GammaConstants
 import Azurite.AzFloat.Equiv.GammaConstantsEncl
+import Azurite.AzFloat.Equiv.GammaExtremum
+import Azurite.AzFloat.Equiv.GammaExtremumCertificate
 import Azurite.AzFloat.Equiv.GammaRat
 import Azurite.AzFloat.Equiv.GammaRatBracket
 import Azurite.AzFloat.Equiv.GammaSpecial
@@ -477,6 +479,8 @@ import Azurite.AzFloat.Float64Emulate
 import Azurite.AzFloat.Gamma
 import Azurite.AzFloat.GammaBracket
 import Azurite.AzFloat.GammaConstants
+import Azurite.AzFloat.GammaExtremum
+import Azurite.AzFloat.GammaExtremumBracket
 import Azurite.AzFloat.GammaRat
 import Azurite.AzFloat.GammaRatBracket
 import Azurite.AzFloat.GammaSpecial

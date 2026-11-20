@@ -9678,13 +9678,56 @@ quiet machine; ms per call at 53 / 200 / 1000 bits.
   (`genPochRatSpecial x y`: an integer `y ≠ 0`, `y ≤ −4` when negative).  Unconditional
   statements: `pochhammerRatPrecRoundFuel_eq_of_special`,
   `genPochRatNegIntFuel_eq_of_special`, `genPochhammerRat_of_special`.
-* UNTIMED.  The only new work on the loop path is one `isPowerOfTwo` of the denominator.
+* Timed 2026-11-20 (`az_float_families family:misc`, the binary of 2026-11-19 against the
+  final one, three alternating runs): no change — median ratio new/old 0.986, 0.978, 0.989
+  over the 33 timings of the rational Pochhammer rows, 0.992, 0.987, 0.988 over the 495
+  others.
 
 **Not done.**
 * `Γ(x + y)/Γ(x)` for a `y` that is not an integer keeps its fuel: irrationality is known
   only at the arguments of Chudnovsky's theorem (as for `B`), and nothing was done there.
 * With a power of two for a denominator (and for all floats) the values of the family are
   dyadic, so a rounding boundary is possible and the fuel stays.
+
+### 8. The local extrema of `Γ` (DONE 2026-11-19, fuel-based, TIMED 2026-11-20)
+
+User request: "a function to get local extrema of the Gamma function, by evaluating gamma at
+psi zeros".  `gammaExtremumPrecRound n p mode`, `gammaExtremum n p`
+(`AzFloat/GammaExtremum.lean`): `Γ(xₙ)` at the `n`-th real zero `xₙ` of `ψ`
+(`psiZeroAt n`) — the minimum `0.8856…` of `Γ` on `(0, ∞)` for `n = 0`, the extremum between
+the poles `−n` and `−n + 1` for `n ≥ 1` (DLMF Table 5.4.1; the test values agree with its
+fifteen digits for `n = 0, …, 10`).
+
+* **The argument is an enclosure, not a float.**  The pieces of `Γ` at a rational already
+  work on enclosures (`coreConv_pos`, `coreConv_reflect`), but they want an enclosure of
+  relative width `6 · 2^(−w−32)` at *every* level, and the convergence of `psiZeroEncl` has
+  no rate (the verified fallback converges by continuity).  So `psiZeroEnclAt n V` *searches*:
+  `psiZeroEncl` at the first of the levels `max 64 V · 2^f` whose enclosure is narrower than
+  `2^(−V)` (`psiZeroTightAt`, the test `psiZeroNarrow`).  The search has a certificate
+  instead of fuel — `searchCertified` (the recursion of `zivLoopCertified` for an arbitrary
+  answer), `psiZeroTightAt_exists` from `psiZeroEncl_conv`.  In practice the first level
+  answers (the fast enclosure at level `w` is `2^(−w−11)` or narrower).
+* **The core** `gammaExtremumCore`: `n = 0`: `exp (lnGammaBracketEncl Z)`; `n ≥ 1`:
+  `gammaReflect` with `ln Γ` on `1 − Z ⊂ (n, n + 1)` and `gammaSinOfFrac` on `Z + n ⊂ (0, 1)`
+  (the integer next to `xₙ` is taken to be `−n`; the sign of `Γ(xₙ)` is `(−1)ⁿ`).
+* **Proofs** (`Equiv/GammaExtremum.lean`): `psiZeroEnclAt_spec`, the widths of the three
+  arguments (`gammaExtremum_lencl_zero`, `gammaExtremum_lencl_one_sub`,
+  `gammaExtremum_aencl_frac`), `gammaExtremumCore_spec`, `gammaExtremumCore_coreConv`,
+  `gammaExtremumPrecRoundFuel_zivSpec` (sound, complete; by `ZivSpec.of_zivCases`),
+  `gammaExtremumPrecRound_eq_or`, `gamma_psiZeroAt_ne_zero`.
+* **Fuel.**  Nothing is known about the arithmetic nature of the extrema.
+* **Timings (2026-11-20, `az_float_families family:misc`, ms at 53 / 200 / 1000 bits,
+  minimum of three runs).**  `Γ(x₀)` 1.87 / 5.27 / 45.2, `Γ(x₁)` 2.86 / 7.30 / 51.2,
+  `Γ(x₁₀₀₀)` 2.20 / 3.99 / 23.6.  For comparison: the zero alone (`psiZero`) 0.72 / 3.56 /
+  32.6, 1.17 / 5.03 / 37.4, 0.68 / 2.60 / 16.1, and `Γ(1/3)` 0.50 / 1.18 / 9.9, `Γ(−7/3)`
+  0.74 / 1.57 / 11.4 — so an extremum costs the zero plus one `Γ`, plus what the zero costs
+  more at the working precision of `Γ` (`w + 32` bits and the bits of `ln Γ`, against `p`);
+  that surplus is most of the time at 53 bits and a few percent at 1000.
+* **Not done.**  (b) The zero is computed to the full working precision.
+  At an extremum the value depends on the argument to second order only, so half the
+  precision would do; interval arithmetic does not see that, and a rigorous version needs a
+  bound on `Γ″` near `xₙ` (or on `ψ′`, as `Γ″ = Γ ψ′` there).  (c) DLMF Table 5.4.1 as
+  kernel-checked numerics (the BACKFILL noted in `dlmf_plan` §5.4).
 
 ### File layout of the logarithms of `Γ` and `B` (2026-11-18)
 

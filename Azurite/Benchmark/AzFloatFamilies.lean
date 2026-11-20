@@ -106,6 +106,7 @@ import Azurite.AzFloat.Pochhammer
 import Azurite.AzFloat.Polygamma
 import Azurite.AzFloat.PolygammaRat
 import Azurite.AzFloat.EulerGamma
+import Azurite.AzFloat.GammaExtremum
 import Azurite.AzFloat.Factorial
 import Azurite.AzFloat.GenPochhammer
 import Azurite.AzFloat.GenPochhammerRat
@@ -444,6 +445,9 @@ private def misc : List Entry :=
    F "psiZero 0" (fun _ => psiZeroPrecRound 0) [a "1"],
    F "psiZero 1" (fun _ => psiZeroPrecRound 1) [a "1"],
    F "psiZero 1000" (fun _ => psiZeroPrecRound 1000) [a "1"],
+   F "gammaExtremum 0" (fun _ => gammaExtremumPrecRound 0) [a "1"],
+   F "gammaExtremum 1" (fun _ => gammaExtremumPrecRound 1) [a "1"],
+   F "gammaExtremum 1000" (fun _ => gammaExtremumPrecRound 1000) [a "1"],
    F "psiZeroFast 0" (fun _ => enclFn (psiZeroFast 0)) [a "1"],
    F "psiZeroFast 1000" (fun _ => enclFn (psiZeroFast 1000)) [a "1"],
    F "psiZeroFallback 0" (fun _ => enclFn (psiZeroFallback 0)) [a "1"],
