@@ -8773,6 +8773,44 @@ User request.  `betaRatPrecRound a b p mode`, `betaRat a b p` (`AzFloat/BetaRat.
 * Tests: closed forms (`B(1/3, 2/3) = 2π/√3`, …), the exact rationals (`B(1/3, 2) = 9/4`,
   `B(−1/2, 2) = −4`), zeros, poles, symmetry, agreement with the float function.
 
+### 5a′. `B`, `ln |B|`, `ln B` of a float and a rational (DONE 2026-11-20, UNTIMED)
+
+User request: "we have … the beta function for two AzFloat arguments and two AzRat arguments,
+but not for one AzFloat and one AzRat.  Could you add those, along with lnBeta and lnAbsBeta
+versions?"
+
+* **Names** (`AzFloat/BetaFloatRat.lean`): `betaFloatRatPrecRound a b p mode`,
+  `betaFloatRat a b p`; `lnAbsBetaFloatRatPrecRound` (value, comparison, sign of `B`),
+  `lnAbsBetaFloatRat`; `lnBetaFloatRatPrecRound`, `lnBetaFloatRat`; each with a `…Fuel`
+  variant.  `a : AzFloat`, `b : AzRat`; `B` is symmetric, so there is one order.
+* **How.**  A finite float is a rational, exactly (`toAzRat?`), so the functions are those of
+  two rationals at that rational, and the three cases not finite are added (`NaN`; `−∞ ↦ NaN`;
+  `B(+∞, b) = 0` for `b > 0`, with `ln |B| = ln B = −∞`).  Everything of the rational
+  functions carries over: the exact zeros (`a + b` is formed exactly), `B(a, n)` and `B(n, b)`
+  by one division, and **no fuel where `betaRatSpecial` holds** — e.g. a half-integer float
+  with a rational of denominator `3` or `6` (Chudnovsky).  Rounding `b` to a float and
+  calling `betaPrecRound` would compute `B` of another number.
+* **Specification** (`Equiv/BetaFloatRat.lean`): `ZivSpec.floatRat` transfers a `ZivSpec` of a
+  function of two rationals to the function of a float and a rational (`hsome`/`hnone` forms,
+  so it serves the `.1` of `ln |B|` too); `ZivSpec.mono`.  `betaFloatRatPrecRoundFuel_zivSpec`
+  (value `a.toVal.bind fun x => Spec.beta x b`; `D`: the special values in terms of the value
+  of `a`; `N`: `betaRatSpecial` at the rational), `lnAbsBetaFloatRatPrecRoundFuel_zivSpec`,
+  `lnAbsBetaFloatRatPrecRoundFuel_sign`, `lnBetaFloatRatPrecRoundFuel_zivSpec`, the `…_eq_or`
+  corollaries.
+* **Limitation, deliberate.**  The rational of `a` has as many bits as the exponent is far
+  from the significand: `2^(−10⁵)` is fine (tested at `2^(−3·10⁶)` in the interpreter), an
+  `a` below `2^(−10⁸)` is slow, where `betaPrecRound` of two floats is not.  (For a large `a`
+  every Beta function needs the bits of the exponent anyway.)  The remedy would be a bracket
+  on mixed enclosures — `betaEnclOf` takes them; what is missing is the fractional part of the
+  sum `a + b` on enclosures with its convergence (`betaSumFrac`/`betaSumSin_conv` for a float
+  and a rational) and the three drivers; not done.
+* Tests `Tests/BetaFloatRat.lean`: special values, exact values, signs, a tiny float,
+  agreement with the float functions at six pairs where `b` is a float (two precisions, three
+  modes, all three functions) and with the rational functions at four pairs.
+* Benchmark rows `betaFloatRat x 5/2` (same values as `beta x 5/2`: the cost of the rational
+  route), `betaFloatRat x 1/3`, `lnAbsBetaFloatRat x 5/2`, `lnBetaFloatRat x 5/2` in
+  `az_float_families family:gamma` — to be timed.
+
 ### Perf 17. Wright `ω`: very negative arguments (DONE 2026-11-18, measured)
 
 Suggestion from the port to Malachite, passed on by the user.  There the fallback

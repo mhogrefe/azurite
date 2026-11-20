@@ -101,6 +101,7 @@ import Azurite.AzFloat.Ln
 import Azurite.AzFloat.LambertW
 import Azurite.AzFloat.LogBaseExact
 import Azurite.AzFloat.Beta
+import Azurite.AzFloat.BetaFloatRat
 import Azurite.AzFloat.BetaRat
 import Azurite.AzFloat.Pochhammer
 import Azurite.AzFloat.Polygamma
@@ -430,6 +431,15 @@ private def misc : List Entry :=
    R "betaRat q -7/3" (fun q => betaRatPrecRound q (AzRat.parse "-7/3").get!)
      [a "1/3", a "-1/3"],
    R "betaRat q 50" (fun q => betaRatPrecRound q (AzRat.parse "50").get!) [a "1/3", a "40"],
+   F "betaFloatRat x 5/2" (fun x => betaFloatRatPrecRound x (AzRat.parse "5/2").get!)
+     [a "1/3", a "150", a "-7/3"],
+   F "betaFloatRat x 1/3" (fun x => betaFloatRatPrecRound x (AzRat.parse "1/3").get!)
+     [a "1/3", a "150", a "-7/3"],
+   F "lnAbsBetaFloatRat x 5/2"
+     (fun x p m => (lnAbsBetaFloatRatPrecRound x (AzRat.parse "5/2").get! p m).1)
+     [a "1/3", a "150", a "-7/3"],
+   F "lnBetaFloatRat x 5/2" (fun x => lnBetaFloatRatPrecRound x (AzRat.parse "5/2").get!)
+     [a "1/3", a "150"],
    F "beta x 3" (fun x => betaPrecRound x three) [a "1/3", a "-7/3"],
    F "beta x 50" (fun x => betaPrecRound x fifty) [a "1/3", a "40"],
    F "pochhammer x 10" (fun x => pochhammerPrecRound x 10) [a "1/3", a "-7/3"],
