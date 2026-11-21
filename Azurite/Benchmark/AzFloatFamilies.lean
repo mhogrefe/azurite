@@ -108,6 +108,7 @@ import Azurite.AzFloat.Polygamma
 import Azurite.AzFloat.PolygammaRat
 import Azurite.AzFloat.EulerGamma
 import Azurite.AzFloat.GammaExtremum
+import Azurite.AzFloat.BarnesG
 import Azurite.AzFloat.GlaisherKinkelin
 import Azurite.AzFloat.OmegaConstant
 import Azurite.AzFloat.Factorial
@@ -489,6 +490,7 @@ private def misc : List Entry :=
    F "gammaExtremum 1000" (fun _ => gammaExtremumPrecRound 1000) [a "1"],
    F "omegaConstant" (fun _ => omegaConstantPrecRound) [a "1"],
    F "omegaConstant: lambertW0 1" lambertW0PrecRound [a "1"],
+   F "barnesG" barnesGPrecRound [a "1/2", a "-5/2", a "201/2", a "-41/2", a "5001/2"],
    F "glaisherKinkelin" (fun _ => glaisherKinkelinPrecRound) [a "1"],
    F "glaisherKinkelin: products" (fun _ => enclFn gkProducts) [a "1"],
    F "glaisherKinkelin: table" (fun _ => enclFn gkTable) [a "1"],

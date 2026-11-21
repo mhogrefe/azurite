@@ -91,8 +91,10 @@ table `T`, an enclosure `p` of `n^(−2k−2)` and the enclosure `n2` of `n²`: 
 def glaisherTermEncl (V : Nat) (T : Array AzNat) (n2 : Encl) (k : Nat) (p : Encl) : Encl :=
   Encl.div V (Encl.mul V (psiTermEncl V T (k + 1) p) n2) (Encl.nat (2 * k * (2 * k + 1)))
 
-/-- An enclosure of `ln A` at Ziv level `w`. -/
-def glaisherKinkelinLnEncl (w : Nat) : Encl :=
+/-- An enclosure of `ln A` at Ziv level `w`, on a given table `T` of tangent numbers
+(`T = tangentNumbers (glaisherTerms w + 1)`, `glaisherKinkelinLnEncl`; the Barnes `G`-function
+shares its table). -/
+def glaisherKinkelinLnEnclWith (w : Nat) (T : Array AzNat) : Encl :=
   let j := glaisherTerms w
   let n := glaisherArg w
   let V := w + 2 * n.log2 + 64
@@ -104,9 +106,12 @@ def glaisherKinkelinLnEncl (w : Nat) : Encl :=
   let inv2 := Encl.div V (Encl.exact one) n2
   let p₁ := Encl.div V (Encl.exact one) (Encl.nat (n * n * (n * n)))
   let tol := powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)
-  let S := altSumLoop V (glaisherTermEncl V (AzNat.tangentNumbers (j + 1)) n2) inv2 tol (j - 1)
-    1 p₁ (Encl.exact zero)
+  let S := altSumLoop V (glaisherTermEncl V T n2) inv2 tol (j - 1) 1 p₁ (Encl.exact zero)
   Encl.sub V (Encl.add V (Encl.sub V lnH (Encl.mulPos V L c)) (Encl.nat (n * n / 4))) S
+
+/-- An enclosure of `ln A` at Ziv level `w`. -/
+def glaisherKinkelinLnEncl (w : Nat) : Encl :=
+  glaisherKinkelinLnEnclWith w (AzNat.tangentNumbers (glaisherTerms w + 1))
 
 /-- The sign (positive) and a positive enclosure of `A` at Ziv level `w`. -/
 def glaisherKinkelinCore (w : Nat) : Option (Bool × Encl) :=

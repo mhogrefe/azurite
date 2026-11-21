@@ -9974,6 +9974,113 @@ using the general Lambert W implementation?"
   So 0.62 / 0.46 / 0.49 / 0.59 / 0.59 of the general `W₀`; the same as `ω` at any ordinary
   argument (`ω(1/3)`: 0.33 / 0.56 / 1.62 / 7.49 / 25.5 in the same run).
 
+## The Barnes `G`-function (DONE 2026-11-20, fuel-based, TIMED)
+
+User request: "implement the Barnes G function".  `barnesGPrecRound x p mode`, `barnesG x`,
+`barnesGPrecRoundFuel` (`AzFloat/BarnesG.lean`); bracket `AzFloat/BarnesGBracket.lean`.
+
+* **Method.**  Shift `x` to `Y = x + N > n + 1` (`n = 8j`, `j = w/12 + 3`: the parameters of
+  the Glaisher–Kinkelin constant) by `G(x) = G(Y) ∏_{j<N} (x + j)^(j+1) / Γ(Y)^N`, and use
+  DLMF 5.17.5 at `y = Y − 1`:
+
+    `ln |G(x)| = y²/4 + (x − 1) ln Γ(Y) − (y (y + 1)/2 + 1/12) ln y − ln A − μ(y) + ln P`.
+
+  The form of 5.17.5 with `z Ln Γ(z + 1)` was chosen because its series is the one of the
+  constant (`glaisherTermEncl`, `altSumLoop`), and `y − N = x − 1` makes the two `ln Γ` one.
+  `ln Γ(Y)`: Stirling (`stirlingEnclWith`) on the same table of tangent numbers; `ln A`:
+  `glaisherKinkelinLnEncl w`; `P`: `barnesProd`, `2N` enclosure products (suffix products),
+  with the parity of the negative factors = the sign of `G(x)`.  `V = w + 3 eb + 64`.
+* **Special values**: `NaN`; `G(+∞) = +∞`; `G(−∞) = NaN`; **zeros at `0, −1, −2, …` exactly**;
+  positive integers `n ≤ max 64 ⌊√(4p + 64)⌋` exactly (`barnesGNat`, `∏_{k ≤ n−2} k!`).
+* **Theory** (`Transcendental/BarnesG.lean`).  `barnesGR x = (barnesG x).re`; `G` is real on the
+  reals (`barnesG_ofReal`), positive for `x > 0`, `0` at `−m` (`tprod` with a zero factor),
+  `barnesGR_add_one`, `barnesGR_eq_shift`, `log_barnesGR_add_one`.  **New: the expansion with
+  its remainder at a real `y > 0`.**  The constant had it at the integers only (through
+  Euler–Maclaurin, DLMF 2.10.5).  Here from `glaisherR_sub_sum`:
+  `ρ_j(y) = −∫₀^∞ B̃_{2j+2}(t)/(y + t)^{2j+1} dt / ((2j+1)(2j+2))`; since the term `t_j` is the
+  same integral with `B_{2j+2}` for `B̃`, `ρ_{j−1} = ∫ (B_{2j+2} − B̃_{2j+2})/(y + t)^{2j+1} /
+  ((2j+1)(2j+2))` has one sign (`periodicBernoulli_sub_sign`): `barnesRho_pred_eq`,
+  `barnesRho_sign`, `barnesRho_enveloping`.
+* **Soundness at every level** (`Equiv/BarnesGBracket.lean`): `barnesGLnEncl_spec`,
+  `barnesGCore_spec`; with `altSumLoop_isEncl` (the alternating loop encloses — generic; the
+  constant had only the width theorem), `barnesProd_spec`, `barnesShift_spec`.
+* **Convergence** (`Equiv/BarnesGWidth.lean`): `barnesGCore_coreConv`.  The intermediate values
+  grow with the level (`Y ~ w`, `P` a product of `~w` factors), and the widths of Stirling's
+  tail `(9/10)^(2M−1)` and of the last term `4^(−j)` are not `poly · 2^(−w)`.  So a **calculus
+  of geometrically small widths** was written once (`Equiv/EnclGeom.lean`): `GS f`
+  (`|f w| ≤ P(w) ρ^w`, `P` polynomially bounded, `ρ < 1`), `AW`/`LW`/`TW` (enclosures of
+  level-dependent values with `GS` absolute / relative widths, or widths only tending to `0`)
+  and their operations at a precision `V w ≥ w + 64` (`AW.add`, `AW.mulPosClamp`, `LW.mul`,
+  `LW.ln`, …).  With it the three pieces with content — `barnesProd_lencl`,
+  `barnesStirling_aw` (from `lnGammaStirlingEncl_width'`), `barnesSum_aw` (from
+  `altSumLoop_width`) — are short, and the assembly `bgL_tw` is a dozen lines.  The value of
+  the enclosure is never matched against `ln |G|` in the width proof: `AEncl.of_isEncl` takes
+  it from the soundness theorem.  (The constant's width proof, done by hand, is 400 lines.)
+* **Specification** (`Equiv/BarnesG.lean`): `Spec.barnesG`, `barnesGPrecRoundFuel_zivSpec`
+  (`D`: the arguments that are not finite and the integers `≤ 64`; `N = ∅`),
+  `barnesGPrecRound_eq_or`.  The arithmetic nature of `G` at non-integers is unknown (even
+  `G(1/2)`, which is `A^(−3/2)` times known numbers), so the fuel stays.
+* **Limits.**  (a) Negative `x`: `N ≈ |x| + n`, cost linear in `|x|`; no reflection formula in
+  elementary functions (it needs the Clausen integral).  (b) Cost: `ln A` is recomputed at
+  every call (its products and series), plus `2N` enclosure products and two series — about
+  2.5 constants by the count of operations; to be measured.  Sharing the products with the
+  constant (anchor at an integer) and one-sided products as in Perf 2 of the constant are the
+  obvious improvements; not done.  (c) No `ln G`, no rational argument yet.
+* Tests `Tests/BarnesG.lean`: special values, zeros, exact integers up to `64`, `65` and `70`
+  through the loop, half-integers with their signs, 200 bits of `G(1/2)`, tiny arguments,
+  `G(201/2)`, `G(−41/2)`.
+* **Timings (2026-11-20, compiled, `az_float_families family:misc,only:barnesG`, ms per call,
+  median of 3).**
+
+  | bits | 53 | 200 | 1000 | 4000 |
+  |---|---|---|---|---|
+  | `G(1/2)` | 1.91 | 3.68 | 25.4 | 526 |
+  | `G(−5/2)` | 1.60 | 3.42 | 25.2 | 527 |
+  | `G(201/2)` | 1.19 | 2.79 | 23.4 | 519 |
+  | `G(−41/2)` | 1.78 | 3.40 | 25.0 | 528 |
+  | `G(5001/2)` | 1.13 | 2.16 | 14.6 | 324 |
+  | `glaisherKinkelin` (same run) | 0.58 | 1.18 | 7.9 | 156 |
+
+  So about 3.2–3.4 constants at 1000 and 4000 bits (estimated 2.5).  `G(5001/2)` needs no
+  shift up to about 4000 bits (`x > n + 1`, `n = 8j`): the difference to `G(1/2)`, about
+  11 ms at 1000 bits and 200 ms at 4000, is the shift — the `2N` enclosure products of
+  `barnesProd` and their logarithm.  The rest is `ln A` (one constant) plus Stirling and the
+  series at `Y`.  The negative arguments cost the same as the positive ones of the same size.
+* **Perf 1 (2026-11-20, user request "try both speedups", TIMED).**  (a) **The shift products
+  rounded down** (`barnesProdLo`): lower bounds of `S ← S |x + j|`, `W ← W S`, each product
+  rounded down, the upper bound of `P` from the count of the roundings (`glaisherUpper` with
+  `K = 14 N²`; proofs `barnesFrac_spec`, `barnesProdLo_llow`, `barnesProdLo_lencl`,
+  `sq_mul_half_pow_le`).  `|x + j|` is the exact sum when it has at most `2V` bits
+  (`barnesFrac`; `exactAdd`), so `S |x + j|` is a short multiplication: one full
+  multiplication a step instead of four.  (b) **Sharing with `ln A`.**  The products of the
+  constant (`n!`, `∏ k!`) and those of the shift (`∏ (x + j)^(j+1)`) are different numbers for a
+  non-integer `x`, so there is nothing to share there (my suggestion was wrong); what the two
+  share is the **table of tangent numbers** (`glaisherKinkelinLnEnclWith w T`: the constant on a
+  given table; `glaisherKinkelinLnEncl w` is it on its own table), now computed once for the
+  three series.  (c) **No level guard, more fuel for a negative argument** (user: "I prefer
+  hanging to a spurious NaN").  The guard `N ≤ 64 w` is gone — it also forced a level of about
+  `|x|/64` bits for a negative `x` (`G(−10⁴)` at 53 bits needed `w ≈ 160`), though the
+  precision `V = w + 3 eb + 64` already covers the products at every level (`bgN_sq_le`) —
+  and `barnesGFuel x p` gives a negative argument `64` more doublings.  A test at `−2001/2`
+  (shift ≈ 1000).
+* **Timings after Perf 1** (same benchmark, ms; before in parentheses):
+
+  | bits | 53 | 200 | 1000 | 4000 |
+  |---|---|---|---|---|
+  | `G(1/2)` | 1.60 (1.91) | 3.05 (3.68) | 19.8 (25.4) | 387 (526) |
+  | `G(−5/2)` | 1.48 (1.60) | 2.98 (3.42) | 20.3 (25.2) | 387 (527) |
+  | `G(201/2)` | 1.20 (1.19) | 2.64 (2.79) | 19.2 (23.4) | 383 (519) |
+  | `G(−41/2)` | 1.53 (1.78) | 3.01 (3.40) | 20.5 (25.0) | 391 (528) |
+  | `G(5001/2)` (no shift) | 1.15 (1.13) | 2.16 (2.16) | 13.7 (14.6) | 282 (324) |
+  | `glaisherKinkelin` (same run) | 0.61 | 1.21 | 8.2 | 161 |
+
+  `G(1/2)`: −22 % at 1000 bits, −26 % at 4000.  The shift (`G(1/2) − G(5001/2)`) went from
+  11 to 6.2 ms at 1000 bits and from 200 to 105 at 4000 — halved, not quartered: the
+  logarithm of `P` and the additions stay, and `W S` is a full product.  The shared table
+  saved 0.9 ms at 1000 bits and 42 ms at 4000 (`G(5001/2)`).  Now about 2.4 constants.
+* Not done: computing the shift products with a product tree (they are a sequential
+  recurrence); a reflection formula (Clausen integral) for very negative `x`.
+
 ## Timings of the elementary families (2026-11-17)
 
 Benchmark `az_float_families` (`Azurite/Benchmark/AzFloatFamilies.lean`): one table per family

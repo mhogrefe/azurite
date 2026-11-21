@@ -606,7 +606,7 @@ theorem glaisherKinkelinLnEncl_aencl {w : ℕ} (hw : 64 ≤ w) :
     unfold glaisherDelta glaisherPrec
     rw [← hβv, ← hn, ← hV, ← hCc, ← hU, hN, hVr]
   rw [hδ]
-  unfold glaisherKinkelinLnEncl
+  unfold glaisherKinkelinLnEncl glaisherKinkelinLnEnclWith
   dsimp only
   rw [← hj, ← hn, ← hV, ← hFW]
   exact hfin'

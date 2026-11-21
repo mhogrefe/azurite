@@ -118,6 +118,8 @@ import Azurite.AzFloat.AtanWithPeriodBracket
 import Azurite.AzFloat.Atanh
 import Azurite.AzFloat.AtanhBracket
 import Azurite.AzFloat.AtanhRat
+import Azurite.AzFloat.BarnesG
+import Azurite.AzFloat.BarnesGBracket
 import Azurite.AzFloat.Basic
 import Azurite.AzFloat.Beta
 import Azurite.AzFloat.BetaBracket
@@ -232,6 +234,9 @@ import Azurite.AzFloat.Equiv.AtanWithPeriod
 import Azurite.AzFloat.Equiv.AtanWithPeriodBracket
 import Azurite.AzFloat.Equiv.Atanh
 import Azurite.AzFloat.Equiv.AtanhBracket
+import Azurite.AzFloat.Equiv.BarnesG
+import Azurite.AzFloat.Equiv.BarnesGBracket
+import Azurite.AzFloat.Equiv.BarnesGWidth
 import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Beta
 import Azurite.AzFloat.Equiv.BetaBracket
@@ -276,6 +281,7 @@ import Azurite.AzFloat.Equiv.DivRat
 import Azurite.AzFloat.Equiv.Dottie
 import Azurite.AzFloat.Equiv.DottieBracket
 import Azurite.AzFloat.Equiv.EnclConv
+import Azurite.AzFloat.Equiv.EnclGeom
 import Azurite.AzFloat.Equiv.EnclWidth
 import Azurite.AzFloat.Equiv.EulerGamma
 import Azurite.AzFloat.Equiv.EulerGammaWidth
@@ -3246,6 +3252,7 @@ import Azurite.Rounding.SciPrecision
 import Azurite.Rounding.Symmetric
 import Azurite.Sci.Number
 import Azurite.Sci.Options
+import Azurite.Transcendental.BarnesG
 import Azurite.Transcendental.Catalan
 import Azurite.Transcendental.CatalanIrrational
 import Azurite.Transcendental.Cos
