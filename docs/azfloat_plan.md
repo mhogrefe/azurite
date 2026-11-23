@@ -10142,6 +10142,74 @@ User request: "implement the Barnes G function".  `barnesGPrecRound x p mode`, `
 * Not done: computing the shift products with a product tree (they are a sequential
   recurrence); a reflection formula (Clausen integral) for very negative `x`.
 
+## The `q`-gamma function (DONE 2026-11-23, fuel-based, UNTIMED)
+
+User request (2026-11-23): `Γ_q(x)`, with the four combinations of a float or a rational for
+the base and for the argument.
+
+* **The function.**  For `0 < q < 1` (DLMF 5.18.4)
+  `Γ_q(x) = (1 − q)^(1−x) ∏_{k ≥ 0} (1 − q^(k+1))/(1 − q^(x+k))`; `Γ_1 = Γ`; for `q > 1`
+  `Γ_q(x) = Γ_{1/q}(x) q^((x−1)(x−2)/2)` — the usual continuation in the base, which keeps
+  `Γ_q(x + 1) = (q^x − 1)/(q − 1) Γ_q(x)` and `Γ_q(n + 1) = ∏_{k ≤ n} (1 + q + ⋯ + q^(k−1))`.
+  The real function is `DLMF.qGammaReal` (`Transcendental/QGamma.lean`), with
+  `qGamma_ofReal_eq` (it is DLMF's `qGamma` at a real argument for `q < 1`),
+  `qGammaR_eq_trunc` (the product of `K` factors and the two tails), `qPochR_bounds`
+  (`1 − a/(1 − p) ≤ (a; p)_∞ ≤ 1`) and `qGammaReal_nat` (the `q`-factorial, every base).
+* **Names** (`AzFloat/QGamma.lean`): `qGammaPrecRound q x p mode`, `qGamma q x` (floats);
+  `qGammaFloatRatPrecRound`, `qGammaFloatRat` (float base, rational argument);
+  `qGammaRatFloatPrecRound`, `qGammaRatFloat` (rational base, float argument);
+  `qGammaRatPrecRound`, `qGammaRat` (rationals); each with a `…Fuel` variant.  One function
+  `qGammaOf` on a `QBase` and a `QArg` (enclosures, the padding of the precision, the class
+  of the argument) carries the four.
+* **Special values.**  `NaN` for a base that is `NaN`, `≤ 0` or `+∞`; at the base `1` the
+  function is `gammaPrecRoundFuel` / `gammaRatPrecRoundFuel`.  Otherwise as for `Γ`:
+  `Γ_q(+∞) = +∞`, `Γ_q(−∞) = NaN`, `Γ_q(0) = +∞`, `NaN` at `−1, −2, …`.
+* **Exact values** (`qGammaExact?`): at a positive integer `n` the value is a rational
+  number, formed (`qFactorialRat`) and rounded (`ofAzRatRound`) for `n ≤ 2` and, for
+  `n ≤ 2^20`, when `(n−1)(n−2)/2 · (bits of the numerator and the denominator of q)` is at
+  most `4p + 2^17` (a float base: exponent at most `2^17` in absolute value).  Above that the
+  value has far more than `p` bits and goes through the loop.  Without this a value such as
+  `Γ_{1/2}(5) = 315/64` would be a rounding boundary the loop cannot leave.
+* **The bracket** (`AzFloat/QGammaBracket.lean`, `qGammaCoreOf` on a `QGammaIn`): with
+  `p = q` or `1/q` below `1`, the loop `qProdLoop` multiplies `K` factors as enclosures (the
+  powers `p^(k+1)`, `p^(x+k)` from `p` and `p^x = exp(x ln p)`, the numerator, the absolute
+  value of the denominator and the parity of its negative factors — the sign); the tails by
+  `1 − a/(1 − p) ≤ (a; p)_∞ ≤ 1`; then
+  `ln |Γ_q(x)| = (x − 1)(−ln(1 − p)) + ln(quotient) [+ ((x−1)(x−2)/2) ln q]` and
+  `gammaExpEncl`, as for `Γ` and `G`.  `K = shift + ⌈(0.7 (w + 64) − ln(1 − p))/ln(1/p)⌉`
+  (`qGammaTerms`), precision `V = w + eb + 2 log₂ w + 64` with `eb` from the bits of `x`, of
+  `1/(1 − p)` (three times: cancellation in `1 − p^k` and the number of factors) and of
+  `ln(1/p)`.
+* **Proofs.**  `Equiv/QGammaBracket.lean`: `qGammaVal`, `QGammaArg`, `qProdLoop_spec`,
+  `qGammaLnEnclOf_spec`, `qGammaCoreOf_spec` (no hypothesis on the poles: there the bracket
+  answers nothing).  `Equiv/QGammaWidth.lean` in the calculus of `Equiv/EnclGeom.lean`
+  (additions `PB.of_eventually_le`, `AW.neg`, `AW.toLW_of_pos`, `LW.congr'`, `AW.of_level`,
+  `GS.congr`): the factors `|1 − p^(x+i)|` are bounded below off the poles
+  (`exists_pos_le_abs_one_sub_rpow`), which controls the cancellation (`qFactor_lencl`,
+  `qProdLoop_lencl`); `K` is polynomially bounded and `p^K ≤ e^(−0.7 w)` (`qgK_bounds`,
+  `gs_pow_qgK`); `qGammaLnEnclOf_conv`, `qGammaCoreOf_coreConv`.  `Equiv/QGamma.lean`:
+  `Spec.qGamma`, `QBaseSpec`, `QArgSpec`, `QExact`, `qGammaOf_eq_or_loop`, `qGammaOf_main`,
+  `qGammaOf_complete`, **`qGammaOf_exact`** (correct at every fuel on the exact class, dyadic
+  value or not), `qGamma_zivSpec_of`, `qGamma_zivSpec_sides` (one proof for the four), and
+  **`qGammaPrecRoundFuel_zivSpec`**, **`qGammaFloatRatPrecRoundFuel_zivSpec`**,
+  **`qGammaRatFloatPrecRoundFuel_zivSpec`**, **`qGammaRatPrecRoundFuel_zivSpec`**: `D` is the
+  trivial class (`QTrivial`) and the exact class at a dyadic base, `N = ∅`.  Also
+  `IsDyadic.add`, `IsDyadic.mul`, `IsDyadic.pow`, `isDyadic_qFactorial`.
+* **Fuel** (`qGammaFuel`): that of `Γ`, and `64` more doublings for a negative argument.
+* **Cost and limits.**  `K ≈ 0.7 w/|ln q|` steps of six interval multiplications: fast away
+  from the base `1`, slow near it (`K ∼ 1/|q − 1|`; a base within `2^(−40)` of `1` does not
+  finish) — an expansion in `1 − q` (Moak's asymptotic series, or Euler–Maclaurin on
+  `∑ ln(1 − q^(x+k))`) would be the way there.  A negative `x` adds `|x|` steps.  Possible
+  speed-up, not done: lower bounds with a counted upper bound (as `barnesProdLo`) in place of
+  enclosures, about half the multiplications.
+* **`ln` forms**: not written.  The bracket is the exponential of an enclosure of
+  `ln |Γ_q(x)|` (`qGammaLnEnclOf`, with `qGammaLnEnclOf_conv`), so by the policy of
+  2026-11-23 `lnAbsQGamma`/`lnQGamma` are natural and cheap to add (as `LnBarnesG`).
+* Tests `Tests/QGamma.lean` (values checked against an independent 60-digit product).
+  Benchmark rows `qGamma 1/2 x`, `qGamma 2 x`, `qGamma 15/16 x`, `qGamma 1/1024 x`,
+  `qGamma 1/3 x`, `qGammaRat 1/3 x`, `qGammaFloatRat 1/2 x`, `qGammaRatFloat 1/3 x` in
+  `az_float_families family:misc` — to be timed.
+
 ## Timings of the elementary families (2026-11-17)
 
 Benchmark `az_float_families` (`Azurite/Benchmark/AzFloatFamilies.lean`): one table per family

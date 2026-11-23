@@ -126,6 +126,7 @@ import Azurite.AzFloat.GammaRat
 import Azurite.AzFloat.Gamma
 import Azurite.AzFloat.DigammaRat
 import Azurite.AzFloat.PsiZero
+import Azurite.AzFloat.QGamma
 import Azurite.AzFloat.WrightOmega
 import Azurite.AzFloat.Conversion
 import Azurite.AzRat.Parse
@@ -391,6 +392,8 @@ private def gkTerms (w : Nat) : Option Encl :=
   some (altSumLoop V (glaisherTermEncl V (AzNat.tangentNumbers (j + 1)) n2) inv2 tol (j - 1)
     1 p₁ (Encl.exact zero))
 private def fiveHalves : AzFloat := ofAzRat (AzRat.parse "5/2").get! 64
+/-- A base of the `q`-gamma function, at 64 bits. -/
+private def qf (q : String) : AzFloat := ofAzRat (AzRat.parse q).get! 64
 private def sevenThirds : AzFloat := ofAzRat (AzRat.parse "7/3").get! 1100
 
 private def misc : List Entry :=
@@ -497,6 +500,14 @@ private def misc : List Entry :=
    F "lnAbsBarnesG" (fun x p m => (lnAbsBarnesGPrecRound x p m).1)
      [a "1/2", a "-5/2", a "201/2", a "5001/2"],
    R "lnAbsBarnesGRat" (fun q p m => (lnAbsBarnesGRatPrecRound q p m).1) [a "1/3", a "301/3"],
+   F "qGamma 1/2 x" (qGammaPrecRound (qf "1/2")) [a "1/3", a "-7/3", a "301/3", a "20"],
+   F "qGamma 2 x" (qGammaPrecRound (qf "2")) [a "1/3", a "-7/3"],
+   F "qGamma 15/16 x" (qGammaPrecRound (qf "15/16")) [a "1/3"],
+   F "qGamma 1/1024 x" (qGammaPrecRound (qf "1/1024")) [a "1/3"],
+   F "qGamma 1/3 x" (qGammaPrecRound (qf "1/3")) [a "1/3"],
+   R "qGammaRat 1/3 x" (qGammaRatPrecRound (AzRat.parse "1/3").get!) [a "1/3", a "-7/3", a "20"],
+   R "qGammaFloatRat 1/2 x" (qGammaFloatRatPrecRound (qf "1/2")) [a "1/3"],
+   F "qGammaRatFloat 1/3 x" (qGammaRatFloatPrecRound (AzRat.parse "1/3").get!) [a "1/3"],
    F "glaisherKinkelin" (fun _ => glaisherKinkelinPrecRound) [a "1"],
    F "glaisherKinkelin: products" (fun _ => enclFn gkProducts) [a "1"],
    F "glaisherKinkelin: table" (fun _ => enclFn gkTable) [a "1"],

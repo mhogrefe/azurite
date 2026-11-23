@@ -3216,6 +3216,8 @@ Reusable tools: vertical-line decay `|Γ(w + it)| ≤ C_ε e^{−(π/2−ε)|t|}
 
 `a`, `q` complex. `qFactorial` is DLMF's defining product `1 (1 + q) ⋯ (1 + q + ⋯ + q^{n−1})`; 5.18.2's `(1 − q)^{−n}` form needs `q ≠ 1` (at `q = 1` the product is `n!`, `qFactorial_one`). 5.18.3 for `|q| < 1`.
 
+Computation (2026-11-23): `Γ_q(x)` for real `x` and every base `q > 0` is in AzFloat (`AzFloat/QGamma.lean`, four float/rational variants; real function `qGammaReal` with `qGamma_ofReal_eq` in `Transcendental/QGamma.lean`); see `docs/azfloat_plan.md`.
+
 | Equation | Lean | Main tools |
 |---|---|---|
 | 5.18.1 | `qPochhammer` (definition), `dlmf_5_18_1`, `qPochhammer_zero`, `qPochhammer_succ` | |

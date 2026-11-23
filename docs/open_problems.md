@@ -23,6 +23,7 @@ the literature before work starts.
 | 1.9 | The zeros `xₙ` of `ψ` are irrational; `Γ(xₙ)` is irrational | `psiZero`, `gammaExtremum` | Nothing known, to my knowledge. |
 | 1.10 | `G(a/q)` (Barnes) is irrational at a non-integer | `barnesG`, `barnesGRat` | `G(1/2) = 2^(1/24) e^(1/8) π^(−1/4) A^(−3/2)`: needs 1.2 and more.  `G(1/4)` also involves Catalan's constant and `Γ(1/4)`. |
 | 1.11 | `ln Γ(a/q)` is irrational | `lnGamma`, `lnGammaRat` | Follows from the transcendence of `Γ(a/q)` only via a statement of Schanuel type. |
+| 1.12 | `Γ_q(x)` is not dyadic for a rational (or dyadic) base `q ≠ 1` and a rational non-integer `x` | `qGamma`, `qGammaRat`, `qGammaFloatRat`, `qGammaRatFloat` | `Γ_q(x) = (1 − q)^(1−x) (q; q)_∞/(q^x; q)_∞`.  For a rational `q = 1/b` the values `(q; q)_∞` are of the kind covered by Nesterenko's theorem on modular functions (`η` at algebraic nome is transcendental), but the quotient with `(q^x; q)_∞` and the algebraic factor is not; irrationality results for `q`-series (Borwein, Bézivin, Bundschuh–Väänänen) treat `q`-logarithms and `q`-exponentials at `q = 1/b`, not this quotient, to my knowledge.  At a positive integer `x` the value is a known rational (exact above a size bound it goes through the loop: there one would want "the `q`-factorial is no `p + 1`-bit number", an elementary statement about its odd part). |
 
 ## 2. Known theorems that are not formalized
 

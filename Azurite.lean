@@ -414,6 +414,9 @@ import Azurite.AzFloat.Equiv.PrimeConstant
 import Azurite.AzFloat.Equiv.Product
 import Azurite.AzFloat.Equiv.ProuhetThueMorse
 import Azurite.AzFloat.Equiv.PsiZero
+import Azurite.AzFloat.Equiv.QGamma
+import Azurite.AzFloat.Equiv.QGammaBracket
+import Azurite.AzFloat.Equiv.QGammaWidth
 import Azurite.AzFloat.Equiv.Ramanujan
 import Azurite.AzFloat.Equiv.RatPow
 import Azurite.AzFloat.Equiv.RatPowBracket
@@ -593,6 +596,8 @@ import Azurite.AzFloat.PrimeConstant
 import Azurite.AzFloat.Product
 import Azurite.AzFloat.ProuhetThueMorse
 import Azurite.AzFloat.PsiZero
+import Azurite.AzFloat.QGamma
+import Azurite.AzFloat.QGammaBracket
 import Azurite.AzFloat.Ramanujan
 import Azurite.AzFloat.RatPow
 import Azurite.AzFloat.RatPowBracket
@@ -3277,6 +3282,7 @@ import Azurite.Transcendental.NivenTan
 import Azurite.Transcendental.PolygammaStirling
 import Azurite.Transcendental.PolygammaValues
 import Azurite.Transcendental.PsiZero
+import Azurite.Transcendental.QGamma
 import Azurite.Transcendental.Ramanujan
 import Azurite.Transcendental.Sinh
 import Azurite.Transcendental.StirlingTermBound
