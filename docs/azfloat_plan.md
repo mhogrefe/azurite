@@ -10142,7 +10142,7 @@ User request: "implement the Barnes G function".  `barnesGPrecRound x p mode`, `
 * Not done: computing the shift products with a product tree (they are a sequential
   recurrence); a reflection formula (Clausen integral) for very negative `x`.
 
-## The `q`-gamma function (DONE 2026-11-23, fuel-based, UNTIMED)
+## The `q`-gamma function (DONE 2026-11-23, fuel-based, TIMED)
 
 User request (2026-11-23): `Γ_q(x)`, with the four combinations of a float or a rational for
 the base and for the argument.
@@ -10208,7 +10208,34 @@ the base and for the argument.
 * Tests `Tests/QGamma.lean` (values checked against an independent 60-digit product).
   Benchmark rows `qGamma 1/2 x`, `qGamma 2 x`, `qGamma 15/16 x`, `qGamma 1/1024 x`,
   `qGamma 1/3 x`, `qGammaRat 1/3 x`, `qGammaFloatRat 1/2 x`, `qGammaRatFloat 1/3 x` in
-  `az_float_families family:misc` — to be timed.
+  `az_float_families family:misc`.
+* **Timings (2026-11-23, `az_float_families family:misc`, compiled, ms at 53 / 200 / 1000 /
+  4000 bits).**
+
+  | function | argument | @53 | @200 | @1000 | @4000 |
+  |---|---|---|---|---|---|
+  | `qGamma 1/2 x` | `1/3` | 1.92 | 3.88 | 24.9 | 428 |
+  | `qGamma 1/2 x` | `−7/3` | 1.92 | 3.88 | 24.8 | 427 |
+  | `qGamma 1/2 x` | `301/3` | 1.87 | 3.79 | 24.8 | 439 |
+  | `qGamma 1/2 x` | `20` (exact) | 0.030 | 0.027 | 0.027 | 0.033 |
+  | `qGamma 2 x` | `1/3` | 2.07 | 4.12 | 31.7 | 731 |
+  | `qGamma 2 x` | `−7/3` | 2.00 | 4.14 | 30.8 | 697 |
+  | `qGamma 15/16 x` | `1/3` | 14.2 | 31.1 | 233 | 4326 |
+  | `qGamma 1/1024 x` | `1/3` | 0.77 | 1.27 | 5.32 | 60.6 |
+  | `qGamma 1/3 x` (64-bit base) | `1/3` | 1.46 | 2.87 | 17.3 | 278 |
+  | `qGammaRat 1/3 x` | `1/3` | 1.54 | 3.09 | 21.5 | 453 |
+  | `qGammaRat 1/3 x` | `−7/3` | 1.59 | 3.13 | 21.7 | 453 |
+  | `qGammaRat 1/3 x` | `20` (exact) | 0.033 | 0.029 | 0.031 | 0.038 |
+  | `qGammaFloatRat 1/2 x` | `1/3` | 1.92 | 3.84 | 24.6 | 425 |
+  | `qGammaRatFloat 1/3 x` | `1/3` | 1.53 | 3.07 | 20.8 | 453 |
+
+  Reading: at base `1/2` about 1.25 Barnes `G` at 1000 bits (19.8 ms).  The cost follows
+  `1/|ln q|` as expected: `15/16` is 9–10 times `1/2`, `1/1024` is 5–7 times faster.  The
+  kind of the argument does not matter (float or rational `x`, positive or negative, large).
+  A base above `1` costs 1.3–1.7 times its reciprocal at 1000–4000 bits.  A rational base
+  with a long binary expansion (`1/3`) costs 1.2–1.6 times the 64-bit float base there: the
+  powers of the base are full-width from the first step.  The exact `q`-factorials take
+  about 0.03 ms.
 
 ## Timings of the elementary families (2026-11-17)
 
