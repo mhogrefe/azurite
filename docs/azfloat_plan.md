@@ -10202,7 +10202,7 @@ the base and for the argument.
   `∑ ln(1 − q^(x+k))`) would be the way there.  A negative `x` adds `|x|` steps.  Possible
   speed-up, not done: lower bounds with a counted upper bound (as `barnesProdLo`) in place of
   enclosures, about half the multiplications.
-* **`ln` forms (DONE 2026-11-23, UNTIMED)**: `AzFloat/LnQGamma.lean`, eight functions —
+* **`ln` forms (DONE 2026-11-23, TIMED)**: `AzFloat/LnQGamma.lean`, eight functions —
   `lnAbsQGamma…` (the rounding of `ln |Γ_q(x)|` and the sign of `Γ_q(x)`) and `lnQGamma…`,
   each for the four float/rational combinations (`…`, `…FloatRat`, `…RatFloat`, `…Rat`), with
   `…PrecRound`, `…PrecRoundFuel` and to-nearest forms.
@@ -10230,7 +10230,24 @@ the base and for the argument.
     `qGammaReal_pos` (`Γ_q(x) > 0` for `x > 0`, every base), `one_lt_qFactorial`.
   * Tests `Tests/LnQGamma.lean` (values checked against an independent 90-digit product).
     Benchmark rows `lnAbsQGamma 1/2 x`, `lnAbsQGamma 2 x`, `lnQGamma 1/2 x`,
-    `lnAbsQGammaRat 1/3 x` in `az_float_families family:misc` — to be timed.
+    `lnAbsQGammaRat 1/3 x` in `az_float_families family:misc`.
+  * **Timings (2026-11-23, ms at 53 / 200 / 1000 / 4000 bits).**
+
+    | function | argument | @53 | @200 | @1000 | @4000 |
+    |---|---|---|---|---|---|
+    | `lnAbsQGamma 1/2 x` | `1/3` | 1.68 | 3.57 | 24.0 | 428 |
+    | `lnAbsQGamma 1/2 x` | `−7/3` | 1.78 | 3.64 | 24.1 | 425 |
+    | `lnAbsQGamma 1/2 x` | `301/3` | 1.75 | 3.57 | 24.0 | 427 |
+    | `lnAbsQGamma 1/2 x` | `20` (exact) | 0.115 | 0.173 | 0.582 | 3.66 |
+    | `lnAbsQGamma 2 x` | `1/3` | 1.83 | 3.89 | 30.3 | 701 |
+    | `lnQGamma 1/2 x` | `1/3` | 1.75 | 3.61 | 23.8 | 426 |
+    | `lnAbsQGammaRat 1/3 x` | `1/3` | 1.44 | 2.89 | 20.8 | 454 |
+    | `lnAbsQGammaRat 1/3 x` | `−7/3` | 1.48 | 2.92 | 20.9 | 455 |
+    | `lnAbsQGammaRat 1/3 x` | `20` (exact) | 0.116 | 0.172 | 0.597 | 3.75 |
+
+    Reading: the cost of `Γ_q` itself, 0–13 % below it (the final exponential is saved; the
+    product dominates), as for `lnAbsBarnesG` against `barnesG`.  At an exact integer the
+    cost is one `ln` of a rational, 0.1–4 ms.
 * Tests `Tests/QGamma.lean` (values checked against an independent 60-digit product).
   Benchmark rows `qGamma 1/2 x`, `qGamma 2 x`, `qGamma 15/16 x`, `qGamma 1/1024 x`,
   `qGamma 1/3 x`, `qGammaRat 1/3 x`, `qGammaFloatRat 1/2 x`, `qGammaRatFloat 1/3 x` in
