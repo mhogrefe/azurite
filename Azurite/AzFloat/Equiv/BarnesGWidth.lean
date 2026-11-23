@@ -13,7 +13,7 @@ import Azurite.AzFloat.Equiv.EnclGeom
 /-!
 # The bracket of the Barnes `G`-function converges
 
-`barnesGCore_coreConv`: at a float `x` that is no zero of `G`, the core `barnesGCore x`
+`barnesGCoreOf_coreConv`: at an argument `x` (`BarnesArg`) that is no zero of `G`, the core
 answers at every large level with a positive enclosure of `± G(x)` whose width tends to `0`.
 The widths are kept by the calculus of `Equiv/EnclGeom.lean` (`AW`, `LW`, `TW`); the three
 pieces with their own arguments are the products (`barnesProdLo_lencl`), Stirling's series
@@ -85,13 +85,13 @@ theorem abs_log_barnesProd_le {xv d : ℝ} (hd0 : 0 < d) (hd : ∀ j : ℕ, d �
 /-! ### The levels -/
 
 /-- The shift at level `w`. -/
-def bgN (x : AzFloat) (w : ℕ) : ℕ := barnesShift x (glaisherArg w)
+def bgN (A : BarnesIn) (w : ℕ) : ℕ := A.shift (glaisherArg w)
 
 /-- The working precision at level `w`. -/
-def bgV (x : AzFloat) (w : ℕ) : ℕ :=
-  w + 3 * max (azIntPos (expOf x)) ((bgN x w + glaisherArg w + 3).log2 + 1) + 64
+def bgV (A : BarnesIn) (w : ℕ) : ℕ :=
+  w + 3 * max A.eb ((bgN A w + glaisherArg w + 3).log2 + 1) + 64
 
-theorem bgV_ge (x : AzFloat) (w : ℕ) : w + 64 ≤ bgV x w := by
+theorem bgV_ge (A : BarnesIn) (w : ℕ) : w + 64 ≤ bgV A w := by
   unfold bgV
   omega
 
@@ -102,48 +102,41 @@ theorem pb_glaisherTerms : PB fun w : ℕ => ((glaisherTerms w : ℕ) : ℝ) := 
   rw [abs_of_nonneg (Nat.cast_nonneg _), abs_of_nonneg (by positivity)]
   exact h'
 
-theorem bgN_le (x : AzFloat) (w : ℕ) :
-    (bgN x w : ℝ) ≤ glaisherArg w + 2 + |((truncToAzInt x).toInt : ℝ)| := by
-  have h := azIntPos_cast ((AzNat.ofNat (glaisherArg w + 2)).toAzInt - truncToAzInt x)
-  rw [AzInt.toInt_sub, AzNat.toInt_toAzInt, AzNat.toNat_ofNat] at h
-  have h2 : (bgN x w : ℤ) ≤ (glaisherArg w : ℤ) + 2 + |(truncToAzInt x).toInt| := by
-    unfold bgN barnesShift
-    rw [h]
-    have := neg_abs_le (truncToAzInt x).toInt
-    have h0 := abs_nonneg (truncToAzInt x).toInt
-    push_cast
-    omega
-  have h3 : ((bgN x w : ℤ) : ℝ) ≤ (((glaisherArg w : ℤ) + 2 + |(truncToAzInt x).toInt| : ℤ) : ℝ) :=
-    by exact_mod_cast h2
-  push_cast at h3
-  exact h3
-
-theorem pb_bgN (x : AzFloat) : PB fun w : ℕ => ((bgN x w : ℕ) : ℝ) := by
-  refine (pb_glaisherArg.add (PB.const (2 + |((truncToAzInt x).toInt : ℝ)|))).of_abs_le
-    fun w => ?_
-  have h := bgN_le x w
+theorem pb_bgN {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) :
+    PB fun w : ℕ => ((bgN A w : ℕ) : ℝ) := by
+  obtain ⟨C, hC⟩ := hA.shift_le
+  refine (pb_glaisherArg.add (PB.const |C|)).of_abs_le fun w => ?_
+  have h := hC (glaisherArg w)
   rw [abs_of_nonneg (Nat.cast_nonneg _), abs_of_nonneg (by positivity)]
-  linarith
+  exact h.trans (by linarith [le_abs_self C])
 
-theorem pb_bgV (x : AzFloat) : PB fun w : ℕ => ((bgV x w : ℕ) : ℝ) := by
-  refine ((PB.natCast.add (((PB.const (azIntPos (expOf x) : ℝ)).add
-    (((pb_bgN x).add pb_glaisherArg).add (PB.const 4))).const_mul 3)).add
+theorem pb_bgV {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) :
+    PB fun w : ℕ => ((bgV A w : ℕ) : ℝ) := by
+  refine ((PB.natCast.add (((PB.const (A.eb : ℝ)).add
+    (((pb_bgN hA).add pb_glaisherArg).add (PB.const 4))).const_mul 3)).add
     (PB.const 64)).of_abs_le fun w => ?_
-  have h1 := log2_le_self (bgN x w + glaisherArg w + 3)
-  have h : bgV x w ≤ w + 3 * (azIntPos (expOf x) + (bgN x w + glaisherArg w + 4)) + 64 := by
+  have h1 := log2_le_self (bgN A w + glaisherArg w + 3)
+  have h : bgV A w ≤ w + 3 * (A.eb + (bgN A w + glaisherArg w + 4)) + 64 := by
     unfold bgV
-    have := max_le_add_of_nonneg (Nat.zero_le (azIntPos (expOf x)))
-      (Nat.zero_le ((bgN x w + glaisherArg w + 3).log2 + 1))
+    have := max_le_add_of_nonneg (Nat.zero_le A.eb)
+      (Nat.zero_le ((bgN A w + glaisherArg w + 3).log2 + 1))
     omega
-  have h' : ((bgV x w : ℕ) : ℝ) ≤ (w : ℝ) + 3 * ((azIntPos (expOf x) : ℝ)
-      + ((bgN x w : ℝ) + glaisherArg w + 4)) + 64 := by exact_mod_cast h
+  have h' : ((bgV A w : ℕ) : ℝ) ≤ (w : ℝ) + 3 * ((A.eb : ℝ)
+      + ((bgN A w : ℝ) + glaisherArg w + 4)) + 64 := by exact_mod_cast h
   rw [abs_of_nonneg (Nat.cast_nonneg _), abs_of_nonneg (by positivity)]
   exact h'
 
+/-- The argument at level `w`: an enclosure of geometrically small width. -/
+theorem bgX_aw {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) :
+    AW (fun w => A.X (bgV A w)) fun _ => xv :=
+  ⟨PB.const xv, fun w => (1 / 2 : ℝ) ^ bgV A w, GS.half_pow (bgV_ge A),
+    Eventually.of_forall fun w => hA.encl _ (by have := bgV_ge A w; omega)⟩
+
 /-- The shifted argument at level `w` is beyond `8 j + 1`. -/
-theorem bgY_gt {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (w : ℕ) :
-    8 * (glaisherTerms w : ℝ) + 1 < xv + bgN x w := by
-  have := barnesShift_spec hx (glaisherArg w)
+theorem bgY_gt {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) (w : ℕ) :
+    8 * (glaisherTerms w : ℝ) + 1 < xv + bgN A w := by
+  have := hA.shift_gt (glaisherArg w)
+  unfold bgN
   have e : ((glaisherArg w : ℕ) : ℝ) = 8 * (glaisherTerms w : ℝ) := by
     unfold glaisherArg
     push_cast
@@ -155,16 +148,16 @@ theorem glaisherTerms_ge (w : ℕ) : 3 ≤ glaisherTerms w := by
   unfold glaisherTerms
   omega
 
-theorem bgY_aw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
-    AW (fun w => Encl.add (bgV x w) (Encl.exact x) (Encl.nat (bgN x w)))
-      fun w => xv + bgN x w :=
-  AW.add (bgV_ge x) (AW.exact hx) (AW.nat (pb_bgN x))
+theorem bgY_aw {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) :
+    AW (fun w => Encl.add (bgV A w) (A.X (bgV A w)) (Encl.nat (bgN A w)))
+      fun w => xv + bgN A w :=
+  AW.add (bgV_ge A) (bgX_aw hA) (AW.nat (pb_bgN hA))
 
-theorem bgY_lw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
-    LW (fun w => Encl.add (bgV x w) (Encl.exact x) (Encl.nat (bgN x w)))
-      fun w => xv + bgN x w :=
-  (bgY_aw hx).toLW (Eventually.of_forall fun w => by
-    have := bgY_gt hx w
+theorem bgY_lw {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) :
+    LW (fun w => Encl.add (bgV A w) (A.X (bgV A w)) (Encl.nat (bgN A w)))
+      fun w => xv + bgN A w :=
+  (bgY_aw hA).toLW (Eventually.of_forall fun w => by
+    have := bgY_gt hA w
     have h3 : (3 : ℝ) ≤ glaisherTerms w := by exact_mod_cast glaisherTerms_ge w
     linarith)
 
@@ -208,31 +201,31 @@ theorem abs_logGamma_sub_le {Y : ℝ} (hY : 1 ≤ Y) :
   constructor <;> nlinarith
 
 /-- **Stirling's series at the shifted argument**, level by level. -/
-theorem barnesStirling_aw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
-    AW (fun w => lnGammaStirlingEncl (bgV x w) (glaisherTerms w + 1)
-        (Encl.add (bgV x w) (Encl.exact x) (Encl.nat (bgN x w)))
+theorem barnesStirling_aw {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) :
+    AW (fun w => lnGammaStirlingEncl (bgV A w) (glaisherTerms w + 1)
+        (Encl.add (bgV A w) (A.X (bgV A w)) (Encl.nat (bgN A w)))
         (powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)))
-      fun w => Real.log (Real.Gamma (xv + bgN x w)) - 1 / 2 * Real.log (2 * Real.pi) := by
-  obtain ⟨lam, g, e⟩ := bgY_lw hx
-  have hY1 : ∀ w, 1 ≤ xv + bgN x w := fun w => by
-    have := bgY_gt hx w
+      fun w => Real.log (Real.Gamma (xv + bgN A w)) - 1 / 2 * Real.log (2 * Real.pi) := by
+  obtain ⟨lam, g, e⟩ := bgY_lw hA
+  have hY1 : ∀ w, 1 ≤ xv + bgN A w := fun w => by
+    have := bgY_gt hA w
     have h3 : (3 : ℝ) ≤ glaisherTerms w := by exact_mod_cast glaisherTerms_ge w
     linarith
-  have pbY : PB fun w : ℕ => xv + bgN x w := (PB.const xv).add (pb_bgN x)
-  have pbB : PB fun w : ℕ => xv + bgN x w + 2 := pbY.add (PB.const 2)
+  have pbY : PB fun w : ℕ => xv + bgN A w := (PB.const xv).add (pb_bgN hA)
+  have pbB : PB fun w : ℕ => xv + bgN A w + 2 := pbY.add (PB.const 2)
   have pbM : PB fun w : ℕ => ((glaisherTerms w + 1 : ℕ) : ℝ) := by
     simpa using pb_glaisherTerms.add (PB.const 1)
-  have gu : GS fun w => (1 / 2 : ℝ) ^ bgV x w := GS.half_pow (bgV_ge x)
-  have g1 : GS fun w => (xv + bgN x w + 2) * lam w := GS.pb_mul pbB g
-  have g2 : GS fun w => (xv + bgN x w + 2) ^ 2 * (1 / 2 : ℝ) ^ bgV x w :=
+  have gu : GS fun w => (1 / 2 : ℝ) ^ bgV A w := GS.half_pow (bgV_ge A)
+  have g1 : GS fun w => (xv + bgN A w + 2) * lam w := GS.pb_mul pbB g
+  have g2 : GS fun w => (xv + bgN A w + 2) ^ 2 * (1 / 2 : ℝ) ^ bgV A w :=
     GS.pb_mul (pbB.pow 2) gu
-  have gl12 : GS fun w => lam w + 12 * (1 / 2 : ℝ) ^ bgV x w := g.add (gu.const_mul 12)
+  have gl12 : GS fun w => lam w + 12 * (1 / 2 : ℝ) ^ bgV A w := g.add (gu.const_mul 12)
   have g3 : GS fun w => 2 * ((glaisherTerms w + 1 : ℕ) : ℝ)
-      * (lam w + 12 * (1 / 2 : ℝ) ^ bgV x w) := GS.pb_mul (pbM.const_mul 2) gl12
-  have glnW : GS fun w => lnW (xv + bgN x w + 2) (bgV x w) + 5 * lam w := by
+      * (lam w + 12 * (1 / 2 : ℝ) ^ bgV A w) := GS.pb_mul (pbM.const_mul 2) gl12
+  have glnW : GS fun w => lnW (xv + bgN A w + 2) (bgV A w) + 5 * lam w := by
     refine GS.add ?_ (g.const_mul 5)
     unfold lnW
-    exact GS.pb_mul (((((pb_bgV x).add (pbB.const_mul 2)).add (PB.const 10)).pow 5).const_mul _)
+    exact GS.pb_mul (((((pb_bgV hA).add (pbB.const_mul 2)).add (PB.const 10)).pow 5).const_mul _)
       gu
   have gtol : GS fun w : ℕ => (1 / 2 : ℝ) ^ (w + 16) :=
     GS.geom (by norm_num) (by norm_num) le_rfl (Eventually.of_forall fun w => by omega)
@@ -240,28 +233,28 @@ theorem barnesStirling_aw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ER
     (GS.geom (by norm_num) (by norm_num) (c := 6) (by norm_num)
       (Eventually.of_forall fun w => by unfold glaisherTerms; omega)).const_mul 2
   have gμ : GS fun w => ((glaisherTerms w + 1 : ℕ) : ℝ)
-        * (2 * (2 * ((glaisherTerms w + 1 : ℕ) : ℝ) * (lam w + 12 * (1 / 2 : ℝ) ^ bgV x w))
-          + 4 * (xv + bgN x w + 2) * (1 / 2 : ℝ) ^ bgV x w)
+        * (2 * (2 * ((glaisherTerms w + 1 : ℕ) : ℝ) * (lam w + 12 * (1 / 2 : ℝ) ^ bgV A w))
+          + 4 * (xv + bgN A w + 2) * (1 / 2 : ℝ) ^ bgV A w)
       + max ((1 / 2 : ℝ) ^ (w + 16)) (2 * (9 / 10 : ℝ) ^ (2 * (glaisherTerms w + 1) - 1))
-      + 2 * (xv + bgN x w + 2) * (1 / 2 : ℝ) ^ bgV x w :=
+      + 2 * (xv + bgN A w + 2) * (1 / 2 : ℝ) ^ bgV A w :=
     ((GS.pb_mul pbM ((g3.const_mul 2).add (GS.pb_mul (pbB.const_mul 4) gu))).add
       (gtol.max g910)).add (GS.pb_mul (pbB.const_mul 2) gu)
   refine ⟨(((pbY.pow 2).add pbY).add (PB.const 1)).of_abs_le fun w => ?_, _,
     (((GS.pb_mul ((pbB.pow 2).const_mul 3) g).add (GS.pb_mul pbB glnW)).add gμ).add
       (GS.pb_mul ((pbB.pow 2).const_mul 42) gu), ?_⟩
   · have h := abs_logGamma_sub_le (hY1 w)
-    rw [abs_of_nonneg (by have := hY1 w; positivity : (0 : ℝ) ≤ (xv + bgN x w) ^ 2
-      + (xv + bgN x w) + 1)]
+    rw [abs_of_nonneg (by have := hY1 w; positivity : (0 : ℝ) ≤ (xv + bgN A w) ^ 2
+      + (xv + bgN A w) + 1)]
     exact h
   · filter_upwards [e, g1.eventually_le (by norm_num : (0 : ℝ) < 1 / 8),
       g2.eventually_le (by norm_num : (0 : ℝ) < 1 / 16),
       g3.eventually_le (by norm_num : (0 : ℝ) < 1 / 2), glnW.eventually_le one_pos,
       gμ.eventually_le one_pos] with w he h1 h2 h3 h4 h5
-    have hY := bgY_gt hx w
+    have hY := bgY_gt hA w
     have hj3 : (3 : ℝ) ≤ glaisherTerms w := by exact_mod_cast glaisherTerms_ge w
-    have h64 : 64 ≤ bgV x w := by have := bgV_ge x w; omega
+    have h64 : 64 ≤ bgV A w := by have := bgV_ge A w; omega
     exact lnGammaStirlingEncl_width' h64 (M := glaisherTerms w + 1) (by omega) he.2 he.1
-      (hY1 w) (by push_cast; linarith) (toVal_lnGammaTol w) (B := xv + bgN x w + 2) le_rfl
+      (hY1 w) (by push_cast; linarith) (toVal_lnGammaTol w) (B := xv + bgN A w + 2) le_rfl
       (by push_cast; linarith) ((le_abs_self _).trans h1) ((le_abs_self _).trans h2)
       ((le_abs_self _).trans h3) ((le_abs_self _).trans h4) ((le_abs_self _).trans h5)
 
@@ -288,92 +281,92 @@ theorem glaisherTermEncl_lencl' {V : ℕ} [NeZero V] (hu : (1 / 2 : ℝ) ^ V ≤
 
 /-- The shifted argument less one, its square and the reciprocal of the square, at level
 `w`. -/
-def bgy (x : AzFloat) (w : ℕ) : Encl :=
-  Encl.sub (bgV x w) (Encl.add (bgV x w) (Encl.exact x) (Encl.nat (bgN x w))) (Encl.exact one)
+def bgy (A : BarnesIn) (w : ℕ) : Encl :=
+  Encl.sub (bgV A w) (Encl.add (bgV A w) (A.X (bgV A w)) (Encl.nat (bgN A w))) (Encl.exact one)
 
-def bgy2 (x : AzFloat) (w : ℕ) : Encl := Encl.mul (bgV x w) (bgy x w) (bgy x w)
+def bgy2 (A : BarnesIn) (w : ℕ) : Encl := Encl.mul (bgV A w) (bgy A w) (bgy A w)
 
-def bgInv2 (x : AzFloat) (w : ℕ) : Encl := Encl.div (bgV x w) (Encl.exact one) (bgy2 x w)
+def bgInv2 (A : BarnesIn) (w : ℕ) : Encl := Encl.div (bgV A w) (Encl.exact one) (bgy2 A w)
 
-theorem bgy_gt {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (w : ℕ) :
-    8 * (glaisherTerms w : ℝ) < xv + bgN x w - 1 := by
-  have := bgY_gt hx w
+theorem bgy_gt {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) (w : ℕ) :
+    8 * (glaisherTerms w : ℝ) < xv + bgN A w - 1 := by
+  have := bgY_gt hA w
   linarith
 
-theorem bgy_aw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
-    AW (bgy x) fun w => xv + bgN x w - 1 :=
-  AW.sub (bgV_ge x) (bgY_aw hx) (AW.exact toVal_one')
+theorem bgy_aw {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) :
+    AW (bgy A) fun w => xv + bgN A w - 1 :=
+  AW.sub (bgV_ge A) (bgY_aw hA) (AW.exact toVal_one')
 
-theorem bgy_lw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
-    LW (bgy x) fun w => xv + bgN x w - 1 :=
-  (bgy_aw hx).toLW (Eventually.of_forall fun w => by
-    have := bgy_gt hx w
+theorem bgy_lw {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) :
+    LW (bgy A) fun w => xv + bgN A w - 1 :=
+  (bgy_aw hA).toLW (Eventually.of_forall fun w => by
+    have := bgy_gt hA w
     have h3 : (3 : ℝ) ≤ glaisherTerms w := by exact_mod_cast glaisherTerms_ge w
     linarith)
 
 /-- **The alternating sum at the shifted argument**, level by level. -/
-theorem barnesSum_aw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
-    AW (fun w => altSumLoop (bgV x w)
-        (glaisherTermEncl (bgV x w) (AzNat.tangentNumbers (glaisherTerms w + 1)) (bgy2 x w))
-        (bgInv2 x w) (powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)) (glaisherTerms w - 1) 1
-        (Encl.mul (bgV x w) (bgInv2 x w) (bgInv2 x w)) (Encl.exact zero))
-      fun w => -(glaisherR ((xv + bgN x w - 1 : ℝ) : ℂ)).re - glaisherC := by
-  have hV := bgV_ge x
-  have hy2l := LW.mul hV (bgy_lw hx) (bgy_lw hx)
+theorem barnesSum_aw {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv) :
+    AW (fun w => altSumLoop (bgV A w)
+        (glaisherTermEncl (bgV A w) (AzNat.tangentNumbers (glaisherTerms w + 1)) (bgy2 A w))
+        (bgInv2 A w) (powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)) (glaisherTerms w - 1) 1
+        (Encl.mul (bgV A w) (bgInv2 A w) (bgInv2 A w)) (Encl.exact zero))
+      fun w => -(glaisherR ((xv + bgN A w - 1 : ℝ) : ℂ)).re - glaisherC := by
+  have hV := bgV_ge A
+  have hy2l := LW.mul hV (bgy_lw hA) (bgy_lw hA)
   have hinvl := LW.div hV (LW.exact toVal_one' one_pos) hy2l
   have hp1l := LW.mul hV hinvl hinvl
   obtain ⟨l2, gl2, el2⟩ := hy2l
   obtain ⟨li, gli, eli⟩ := hinvl
   obtain ⟨lp, glp, elp⟩ := hp1l
-  have gu : GS fun w => (1 / 2 : ℝ) ^ bgV x w := GS.half_pow hV
+  have gu : GS fun w => (1 / 2 : ℝ) ^ bgV A w := GS.half_pow hV
   have pbJ : PB fun w : ℕ => ((glaisherTerms w : ℕ) : ℝ) := pb_glaisherTerms
   have pbJ1 : PB fun w : ℕ => ((glaisherTerms w - 1 : ℕ) : ℝ) :=
     pbJ.of_abs_le fun w => by
       rw [abs_of_nonneg (Nat.cast_nonneg _), abs_of_nonneg (Nat.cast_nonneg _)]
       exact_mod_cast Nat.sub_le _ _
-  have hy0 : ∀ w, 0 < xv + bgN x w - 1 := fun w => by
-    have := bgy_gt hx w
+  have hy0 : ∀ w, 0 < xv + bgN A w - 1 := fun w => by
+    have := bgy_gt hA w
     have h3 : (3 : ℝ) ≤ glaisherTerms w := by exact_mod_cast glaisherTerms_ge w
     linarith
   -- the terms are at most `16`
-  have hτ16 : ∀ w k, 1 ≤ k → k ≤ glaisherTerms w → barnesTau (xv + bgN x w - 1) k ≤ 16 :=
+  have hτ16 : ∀ w k, 1 ≤ k → k ≤ glaisherTerms w → barnesTau (xv + bgN A w - 1) k ≤ 16 :=
     fun w k hk hkj => by
-      have hy := bgy_gt hx w
+      have hy := bgy_gt hA w
       have hkj' : (k : ℝ) ≤ glaisherTerms w := by exact_mod_cast hkj
       have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
-      have h1 := barnesTau_le (y := xv + bgN x w - 1) hk (by push_cast; linarith)
+      have h1 := barnesTau_le (y := xv + bgN A w - 1) hk (by push_cast; linarith)
       have h2 := succ_sq_mul_quarter_pow_le k hk
       linarith
   -- the relative width along the loop
   have gLam : GS fun w => lp w + ((glaisherTerms w - 1 : ℕ) : ℝ)
-      * (li w + 6 * (1 / 2 : ℝ) ^ bgV x w) + (l2 w + 24 * (1 / 2 : ℝ) ^ bgV x w) :=
+      * (li w + 6 * (1 / 2 : ℝ) ^ bgV A w) + (l2 w + 24 * (1 / 2 : ℝ) ^ bgV A w) :=
     (glp.add (GS.pb_mul pbJ1 (gli.add (gu.const_mul 6)))).add (gl2.add (gu.const_mul 24))
   have gBu : GS fun w => 4 * (33 * ((glaisherTerms w : ℕ) : ℝ) + 33)
-      * (1 / 2 : ℝ) ^ bgV x w :=
+      * (1 / 2 : ℝ) ^ bgV A w :=
     GS.pb_mul (((pbJ.const_mul 33).add (PB.const 33)).const_mul 4) gu
   have gtol : GS fun w : ℕ => (1 / 2 : ℝ) ^ (w + 16) :=
     GS.geom (by norm_num) (by norm_num) le_rfl (Eventually.of_forall fun w => by omega)
-  have gτ : GS fun w => 2 * barnesTau (xv + bgN x w - 1) (glaisherTerms w) := by
+  have gτ : GS fun w => 2 * barnesTau (xv + bgN A w - 1) (glaisherTerms w) := by
     have g4 : GS fun w : ℕ => (1 / 4 : ℝ) ^ glaisherTerms w :=
       GS.geom (by norm_num) (by norm_num) (c := 12) (by norm_num)
         (Eventually.of_forall fun w => by unfold glaisherTerms; omega)
     refine (GS.pb_mul (((pbJ.add (PB.const 1)).pow 2).const_mul 32) g4).of_le
       (Eventually.of_forall fun w => ?_)
     have hj1 : 1 ≤ glaisherTerms w := by have := glaisherTerms_ge w; omega
-    have hy := bgy_gt hx w
+    have hy := bgy_gt hA w
     have hj1r : (1 : ℝ) ≤ glaisherTerms w := by exact_mod_cast hj1
-    have h1 := barnesTau_le (y := xv + bgN x w - 1) hj1 (by push_cast; linarith)
+    have h1 := barnesTau_le (y := xv + bgN A w - 1) hj1 (by push_cast; linarith)
     have h0 := (barnesTau_pos (hy0 w) hj1).le
     rw [abs_of_nonneg (by positivity), abs_of_nonneg (by positivity)]
     linarith
   refine ⟨(PB.const 16).of_abs_le fun w => ?_, fun w => 0 + ((glaisherTerms w - 1 : ℕ) : ℝ)
       * (2 * 16 * (lp w + ((glaisherTerms w - 1 : ℕ) : ℝ)
-          * (li w + 6 * (1 / 2 : ℝ) ^ bgV x w) + (l2 w + 24 * (1 / 2 : ℝ) ^ bgV x w))
-        + 4 * (33 * ((glaisherTerms w : ℕ) : ℝ) + 33) * (1 / 2 : ℝ) ^ bgV x w)
-      + max ((1 / 2 : ℝ) ^ (w + 16)) (2 * barnesTau (xv + bgN x w - 1) (glaisherTerms w))
-      + 2 * (33 * ((glaisherTerms w : ℕ) : ℝ) + 33) * (1 / 2 : ℝ) ^ bgV x w, ?_, ?_⟩
+          * (li w + 6 * (1 / 2 : ℝ) ^ bgV A w) + (l2 w + 24 * (1 / 2 : ℝ) ^ bgV A w))
+        + 4 * (33 * ((glaisherTerms w : ℕ) : ℝ) + 33) * (1 / 2 : ℝ) ^ bgV A w)
+      + max ((1 / 2 : ℝ) ^ (w + 16)) (2 * barnesTau (xv + bgN A w - 1) (glaisherTerms w))
+      + 2 * (33 * ((glaisherTerms w : ℕ) : ℝ) + 33) * (1 / 2 : ℝ) ^ bgV A w, ?_, ?_⟩
   · obtain ⟨r, h1, -, h3⟩ := barnesMu_alt (hy0 w) (k := 1) le_rfl
-    have h4 : altPartial (barnesTau (xv + bgN x w - 1)) 1 = 0 := by simp [altPartial]
+    have h4 : altPartial (barnesTau (xv + bgN A w - 1)) 1 = 0 := by simp [altPartial]
     rw [h4, zero_add] at h1
     have := hτ16 w 1 le_rfl (by have := glaisherTerms_ge w; omega)
     rw [h1, abs_of_pos (by norm_num : (0 : ℝ) < 16)]
@@ -384,35 +377,35 @@ theorem barnesSum_aw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
   · filter_upwards [el2, eli, elp, gLam.eventually_le (by norm_num : (0 : ℝ) < 1 / 2),
       gBu.eventually_le one_pos] with w h2 hi hp hL hB
     have hj3 := glaisherTerms_ge w
-    have h64 : 64 ≤ bgV x w := by have := hV w; omega
-    have : NeZero (bgV x w) := ⟨by omega⟩
-    have hu8 : (1 / 2 : ℝ) ^ bgV x w ≤ 1 / 8 := half_pow_le_eighth (by omega)
-    have hu0 : (0 : ℝ) < (1 / 2 : ℝ) ^ bgV x w := by positivity
+    have h64 : 64 ≤ bgV A w := by have := hV w; omega
+    have : NeZero (bgV A w) := ⟨by omega⟩
+    have hu8 : (1 / 2 : ℝ) ^ bgV A w ≤ 1 / 8 := half_pow_le_eighth (by omega)
+    have hu0 : (0 : ℝ) < (1 / 2 : ℝ) ^ bgV A w := by positivity
     have hy := hy0 w
     have hL' := (le_abs_self _).trans hL
-    have hy2' : LEncl (bgy2 x w) ((xv + bgN x w - 1) ^ 2) (l2 w) := by
+    have hy2' : LEncl (bgy2 A w) ((xv + bgN A w - 1) ^ 2) (l2 w) := by
       rw [sq]; exact h2.2
-    have hinv' : LEncl (bgInv2 x w) (1 / (xv + bgN x w - 1) ^ 2) (li w) := by
+    have hinv' : LEncl (bgInv2 A w) (1 / (xv + bgN A w - 1) ^ 2) (li w) := by
       rw [sq]; exact hi.2
-    have hc0 : 0 ≤ (l2 w + 24 * (1 / 2 : ℝ) ^ bgV x w) / (1 / 2 : ℝ) ^ bgV x w :=
+    have hc0 : 0 ≤ (l2 w + 24 * (1 / 2 : ℝ) ^ bgV A w) / (1 / 2 : ℝ) ^ bgV A w :=
       div_nonneg (by have := h2.1; positivity) hu0.le
-    have hcu : (l2 w + 24 * (1 / 2 : ℝ) ^ bgV x w) / (1 / 2 : ℝ) ^ bgV x w
-        * (1 / 2 : ℝ) ^ bgV x w = l2 w + 24 * (1 / 2 : ℝ) ^ bgV x w :=
+    have hcu : (l2 w + 24 * (1 / 2 : ℝ) ^ bgV A w) / (1 / 2 : ℝ) ^ bgV A w
+        * (1 / 2 : ℝ) ^ bgV A w = l2 w + 24 * (1 / 2 : ℝ) ^ bgV A w :=
       div_mul_cancel₀ _ hu0.ne'
     have hjr : (0 : ℝ) ≤ ((glaisherTerms w : ℕ) : ℝ) := Nat.cast_nonneg _
-    have := altSumLoop_width (V := bgV x w) (M := glaisherTerms w)
-      (t := barnesTau (xv + bgN x w - 1)) (q := fun k => 1 / (xv + bgN x w - 1) ^ (2 * (k + 1)))
-      (term := glaisherTermEncl (bgV x w) (AzNat.tangentNumbers (glaisherTerms w + 1))
-        (bgy2 x w))
+    have := altSumLoop_width (V := bgV A w) (M := glaisherTerms w)
+      (t := barnesTau (xv + bgN A w - 1)) (q := fun k => 1 / (xv + bgN A w - 1) ^ (2 * (k + 1)))
+      (term := glaisherTermEncl (bgV A w) (AzNat.tangentNumbers (glaisherTerms w + 1))
+        (bgy2 A w))
       (T := 16) (B := 33 * ((glaisherTerms w : ℕ) : ℝ) + 33)
       (Lam := lp w + ((glaisherTerms w - 1 : ℕ) : ℝ)
-        * (li w + 6 * (1 / 2 : ℝ) ^ bgV x w) + (l2 w + 24 * (1 / 2 : ℝ) ^ bgV x w))
-      (c := (l2 w + 24 * (1 / 2 : ℝ) ^ bgV x w) / (1 / 2 : ℝ) ^ bgV x w)
-      (μ := -(glaisherR ((xv + bgN x w - 1 : ℝ) : ℂ)).re - glaisherC)
+        * (li w + 6 * (1 / 2 : ℝ) ^ bgV A w) + (l2 w + 24 * (1 / 2 : ℝ) ^ bgV A w))
+      (c := (l2 w + 24 * (1 / 2 : ℝ) ^ bgV A w) / (1 / 2 : ℝ) ^ bgV A w)
+      (μ := -(glaisherR ((xv + bgN A w - 1 : ℝ) : ℂ)).re - glaisherC)
       hu8 hinv'
       (fun k => by
-        show 1 / (xv + bgN x w - 1) ^ (2 * (k + 1 + 1))
-          = 1 / (xv + bgN x w - 1) ^ (2 * (k + 1)) * (1 / (xv + bgN x w - 1) ^ 2)
+        show 1 / (xv + bgN A w - 1) ^ (2 * (k + 1 + 1))
+          = 1 / (xv + bgN A w - 1) ^ (2 * (k + 1)) * (1 / (xv + bgN A w - 1) ^ 2)
         rw [show 2 * (k + 1 + 1) = 2 * (k + 1) + 2 by ring, pow_add]
         field_simp)
       (toVal_lnGammaTol w) hL' (by norm_num) hc0
@@ -423,15 +416,15 @@ theorem barnesSum_aw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
       (fun k hk _ => barnesMu_alt hy hk)
       ((le_abs_self _).trans hB)
       (by nlinarith)
-      (glaisherTerms w - 1) 1 (Encl.mul (bgV x w) (bgInv2 x w) (bgInv2 x w)) (Encl.exact zero)
+      (glaisherTerms w - 1) 1 (Encl.mul (bgV A w) (bgInv2 A w) (bgInv2 A w)) (Encl.exact zero)
       (lp w) 0 le_rfl (by omega)
       (by
-        show LEncl _ (1 / (xv + bgN x w - 1) ^ (2 * (1 + 1))) (lp w)
+        show LEncl _ (1 / (xv + bgN A w - 1) ^ (2 * (1 + 1))) (lp w)
         refine (congrArg (fun v => LEncl _ v (lp w)) ?_).mp hp.2
         field_simp)
       hp.1 (by rw [hcu])
       (by
-        have h4 : altPartial (barnesTau (xv + bgN x w - 1)) 1 = 0 := by simp [altPartial]
+        have h4 : altPartial (barnesTau (xv + bgN A w - 1)) 1 = 0 := by simp [altPartial]
         rw [h4]
         exact ⟨0, 0, toVal_zero', toVal_zero', le_rfl, le_rfl, by simp⟩)
       (by simp)
@@ -440,61 +433,62 @@ theorem barnesSum_aw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
 /-! ### The enclosure of `ln |G(x)|` at level `w` -/
 
 /-- The enclosure of the product at level `w` (`1` when `barnesProdLo` gives nothing). -/
-def bgW (x : AzFloat) (w : ℕ) : Encl :=
-  match barnesProdLo (bgV x w) x (bgN x w) one one false with
-  | some (_, wlo) => (wlo, glaisherUpper (bgV x w) wlo (14 * bgN x w * bgN x w))
+def bgW (A : BarnesIn) (w : ℕ) : Encl :=
+  match barnesProdLo (bgV A w) (A.frac (bgV A w)) (bgN A w) one one false with
+  | some (_, wlo) => (wlo, glaisherUpper (bgV A w) wlo (16 * bgN A w * bgN A w))
   | none => Encl.exact one
 
 /-- The products are small against the precision. -/
-theorem bgN_sq_le (x : AzFloat) (w : ℕ) :
-    14 * ((bgN x w : ℕ) : ℝ) ^ 2 * (1 / 2 : ℝ) ^ bgV x w ≤ 1 / 2 :=
-  sq_mul_half_pow_le (L := (bgN x w + glaisherArg w + 3).log2 + 1)
-    ((Nat.lt_log2_self (n := bgN x w + glaisherArg w + 3)).trans_le' (by omega)) (by
+theorem bgN_sq_le (A : BarnesIn) (w : ℕ) :
+    16 * ((bgN A w : ℕ) : ℝ) ^ 2 * (1 / 2 : ℝ) ^ bgV A w ≤ 1 / 2 :=
+  sq_mul_half_pow_le (L := (bgN A w + glaisherArg w + 3).log2 + 1)
+    ((Nat.lt_log2_self (n := bgN A w + glaisherArg w + 3)).trans_le' (by omega)) (by
       unfold bgV
-      have := le_max_right (azIntPos (expOf x)) ((bgN x w + glaisherArg w + 3).log2 + 1)
+      have := le_max_right A.eb ((bgN A w + glaisherArg w + 3).log2 + 1)
       omega)
 
 /-- The enclosure of `ln |G(x)|` at level `w`, on the product `bgW`. -/
-def bgL (x : AzFloat) (w : ℕ) : Encl :=
-  Encl.add (bgV x w)
-    (Encl.sub (bgV x w)
-      (Encl.sub (bgV x w)
-        (Encl.sub (bgV x w)
-          (Encl.add (bgV x w) (Encl.half (Encl.half (bgy2 x w)))
-            (Encl.mulPos (bgV x w) (Encl.sub (bgV x w) (Encl.exact x) (Encl.exact one))
-              (clampNonneg (Encl.add (bgV x w)
-                  (lnGammaStirlingEncl (bgV x w) (glaisherTerms w + 1)
-                    (Encl.add (bgV x w) (Encl.exact x) (Encl.nat (bgN x w)))
+def bgL (A : BarnesIn) (w : ℕ) : Encl :=
+  Encl.add (bgV A w)
+    (Encl.sub (bgV A w)
+      (Encl.sub (bgV A w)
+        (Encl.sub (bgV A w)
+          (Encl.add (bgV A w) (Encl.half (Encl.half (bgy2 A w)))
+            (Encl.mulPos (bgV A w) (Encl.sub (bgV A w) (A.X (bgV A w)) (Encl.exact one))
+              (clampNonneg (Encl.add (bgV A w)
+                  (lnGammaStirlingEncl (bgV A w) (glaisherTerms w + 1)
+                    (Encl.add (bgV A w) (A.X (bgV A w)) (Encl.nat (bgN A w)))
                     (powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)))
-                  (Encl.half (lnOfEncl (Encl.mul (bgV x w) (Encl.nat 2) (Encl.pi (bgV x w)))
-                    (bgV x w)))).1,
-                (Encl.add (bgV x w)
-                  (lnGammaStirlingEncl (bgV x w) (glaisherTerms w + 1)
-                    (Encl.add (bgV x w) (Encl.exact x) (Encl.nat (bgN x w)))
+                  (Encl.half (lnOfEncl (Encl.mul (bgV A w) (Encl.nat 2) (Encl.pi (bgV A w)))
+                    (bgV A w)))).1,
+                (Encl.add (bgV A w)
+                  (lnGammaStirlingEncl (bgV A w) (glaisherTerms w + 1)
+                    (Encl.add (bgV A w) (A.X (bgV A w)) (Encl.nat (bgN A w)))
                     (powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)))
-                  (Encl.half (lnOfEncl (Encl.mul (bgV x w) (Encl.nat 2) (Encl.pi (bgV x w)))
-                    (bgV x w)))).2)))
-          (Encl.mulPos (bgV x w)
-            (Encl.add (bgV x w)
-              (Encl.half (Encl.mul (bgV x w) (bgy x w)
-                (Encl.add (bgV x w) (Encl.exact x) (Encl.nat (bgN x w)))))
-              (Encl.div (bgV x w) (Encl.exact one) (Encl.nat 12)))
-            (clampNonneg (lnOfEncl (bgy x w) (bgV x w)).1, (lnOfEncl (bgy x w) (bgV x w)).2)))
+                  (Encl.half (lnOfEncl (Encl.mul (bgV A w) (Encl.nat 2) (Encl.pi (bgV A w)))
+                    (bgV A w)))).2)))
+          (Encl.mulPos (bgV A w)
+            (Encl.add (bgV A w)
+              (Encl.half (Encl.mul (bgV A w) (bgy A w)
+                (Encl.add (bgV A w) (A.X (bgV A w)) (Encl.nat (bgN A w)))))
+              (Encl.div (bgV A w) (Encl.exact one) (Encl.nat 12)))
+            (clampNonneg (lnOfEncl (bgy A w) (bgV A w)).1, (lnOfEncl (bgy A w) (bgV A w)).2)))
         (glaisherKinkelinLnEnclWith w (AzNat.tangentNumbers (glaisherTerms w + 1))))
-      (altSumLoop (bgV x w)
-        (glaisherTermEncl (bgV x w) (AzNat.tangentNumbers (glaisherTerms w + 1)) (bgy2 x w))
-        (bgInv2 x w) (powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)) (glaisherTerms w - 1) 1
-        (Encl.mul (bgV x w) (bgInv2 x w) (bgInv2 x w)) (Encl.exact zero)))
-    (lnOfEncl (bgW x w) (bgV x w))
+      (altSumLoop (bgV A w)
+        (glaisherTermEncl (bgV A w) (AzNat.tangentNumbers (glaisherTerms w + 1)) (bgy2 A w))
+        (bgInv2 A w) (powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)) (glaisherTerms w - 1) 1
+        (Encl.mul (bgV A w) (bgInv2 A w) (bgInv2 A w)) (Encl.exact zero)))
+    (lnOfEncl (bgW A w) (bgV A w))
 
 /-- `barnesGLnEncl` is `bgL` when the product answers. -/
-theorem barnesGLnEncl_eq_bgL {x : AzFloat} {w : ℕ} {neg : Bool} {wlo : AzFloat}
-    (hprod : barnesProdLo (bgV x w) x (bgN x w) one one false = some (neg, wlo)) :
-    barnesGLnEncl x w = some (neg, bgL x w) := by
-  have hW : bgW x w = (wlo, glaisherUpper (bgV x w) wlo (14 * bgN x w * bgN x w)) := by
+theorem barnesGLnEncl_eq_bgL {A : BarnesIn} {w : ℕ} {neg : Bool} {wlo : AzFloat}
+    (hprod : barnesProdLo (bgV A w) (A.frac (bgV A w)) (bgN A w) one one false
+      = some (neg, wlo)) :
+    barnesGLnEnclOf A w = some (neg, bgL A w) := by
+  have hW : bgW A w = (wlo, glaisherUpper (bgV A w) wlo (16 * bgN A w * bgN A w)) := by
     unfold bgW
     rw [hprod]
-  unfold barnesGLnEncl
+  unfold barnesGLnEnclOf
   dsimp only
   split
   · next heq => exact absurd (hprod.symm.trans heq) (by simp)
@@ -509,30 +503,30 @@ theorem barnesGLnEncl_eq_bgL {x : AzFloat} {w : ℕ} {neg : Bool} {wlo : AzFloat
     rfl
 
 /-- **The enclosure of `ln |G(x)|` has a width that tends to `0`.** -/
-theorem bgL_tw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hnz : ∀ m : ℕ, xv ≠ -m) : ∃ v : ℕ → ℝ, TW (bgL x) v := by
-  have hV := bgV_ge x
-  have pbV := pb_bgV x
-  have pbY : PB fun w : ℕ => xv + bgN x w := (PB.const xv).add (pb_bgN x)
-  have pby : PB fun w : ℕ => xv + bgN x w - 1 := pbY.sub (PB.const 1)
-  have hYgt := bgY_gt hx
+theorem bgL_tw {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv)
+    (hnz : ∀ m : ℕ, xv ≠ -m) : ∃ v : ℕ → ℝ, TW (bgL A) v := by
+  have hV := bgV_ge A
+  have pbV := pb_bgV hA
+  have pbY : PB fun w : ℕ => xv + bgN A w := (PB.const xv).add (pb_bgN hA)
+  have pby : PB fun w : ℕ => xv + bgN A w - 1 := pbY.sub (PB.const 1)
+  have hYgt := bgY_gt hA
   have hj3 : ∀ w, (3 : ℝ) ≤ glaisherTerms w := fun w => by exact_mod_cast glaisherTerms_ge w
-  have Xa : AW (fun _ : ℕ => Encl.exact x) fun _ => xv := AW.exact hx
-  have yl := bgy_lw hx
-  have Yl := bgY_lw hx
+  have Xa := bgX_aw hA
+  have yl := bgy_lw hA
+  have Yl := bgY_lw hA
   -- `y²/4`
-  have y2A : AW (bgy2 x) fun w => (xv + bgN x w - 1) * (xv + bgN x w - 1) :=
+  have y2A : AW (bgy2 A) fun w => (xv + bgN A w - 1) * (xv + bgN A w - 1) :=
     (LW.mul hV yl yl).toAW (pby.mul pby)
   have q4 := y2A.half.half
   -- `(x − 1) ln Γ(Y)`
   have ln2pi := (LW.ln hV pbV (LW.mul hV (LW.nat (n := fun _ => 2) (fun _ => by norm_num))
     (LW.pi hV)) (G := fun _ => 3) (PB.const 3) (fun _ => by
       simpa using abs_log_two_pi_le)).half
-  have lnGam := AW.add hV (barnesStirling_aw hx) ln2pi
+  have lnGam := AW.add hV (barnesStirling_aw hA) ln2pi
   have t2 := AW.mulPosClamp hV (AW.sub hV Xa (AW.exact toVal_one')) lnGam
     (Eventually.of_forall fun w => by
-      have e : Real.log (Real.Gamma (xv + bgN x w)) - 1 / 2 * Real.log (2 * Real.pi)
-          + Real.log (((2 : ℕ) : ℝ) * Real.pi) / 2 = Real.log (Real.Gamma (xv + bgN x w)) := by
+      have e : Real.log (Real.Gamma (xv + bgN A w)) - 1 / 2 * Real.log (2 * Real.pi)
+          + Real.log (((2 : ℕ) : ℝ) * Real.pi) / 2 = Real.log (Real.Gamma (xv + bgN A w)) := by
         push_cast
         ring
       rw [e]
@@ -544,14 +538,14 @@ theorem bgL_tw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
   have cA := AW.add hV ((LW.mul hV yl Yl).toAW (pby.mul pbY)).half
     ((LW.div hV (LW.exact toVal_one' one_pos) (LW.nat (n := fun _ => 12)
       (fun _ => by norm_num))).toAW (PB.const _))
-  have hy1 : ∀ w, 1 ≤ xv + bgN x w - 1 := fun w => by
+  have hy1 : ∀ w, 1 ≤ xv + bgN A w - 1 := fun w => by
     have := hYgt w
     have := hj3 w
     linarith
-  have lny := LW.ln hV pbV yl (G := fun w => xv + bgN x w - 1) pby (fun w => by
+  have lny := LW.ln hV pbV yl (G := fun w => xv + bgN A w - 1) pby (fun w => by
     have h1 := hy1 w
     rw [abs_of_nonneg (Real.log_nonneg h1)]
-    have := Real.log_le_sub_one_of_pos (by linarith : (0 : ℝ) < xv + bgN x w - 1)
+    have := Real.log_le_sub_one_of_pos (by linarith : (0 : ℝ) < xv + bgN A w - 1)
     linarith)
   have t3 := AW.mulPosClamp hV cA lny
     (Eventually.of_forall fun w => Real.log_nonneg (hy1 w))
@@ -562,51 +556,56 @@ theorem bgL_tw {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
       (eventually_ge_atTop 64).mono fun w hw => glaisherKinkelinLnEncl_aencl hw⟩
   -- the product
   obtain ⟨d, hd0, -, hd⟩ := exists_pos_le_abs_add hnz
-  have gu : GS fun w => (1 / 2 : ℝ) ^ bgV x w := GS.half_pow hV
-  have Wl : LW (bgW x) fun w => ∏ j ∈ range (bgN x w), |xv + j| ^ (j + 1) := by
-    refine ⟨fun w => (28 * ((bgN x w : ℕ) : ℝ) ^ 2 + 4) * (1 / 2 : ℝ) ^ bgV x w,
-      GS.pb_mul ((((pb_bgN x).pow 2).const_mul 28).add (PB.const 4)) gu,
+  have gu : GS fun w => (1 / 2 : ℝ) ^ bgV A w := GS.half_pow hV
+  have Wl : LW (bgW A) fun w => ∏ j ∈ range (bgN A w), |xv + j| ^ (j + 1) := by
+    refine ⟨fun w => (32 * ((bgN A w : ℕ) : ℝ) ^ 2 + 4) * (1 / 2 : ℝ) ^ bgV A w,
+      GS.pb_mul ((((pb_bgN hA).pow 2).const_mul 32).add (PB.const 4)) gu,
       Eventually.of_forall fun w => ?_⟩
-    have h64 : 64 ≤ bgV x w := by have := hV w; omega
-    have : NeZero (bgV x w) := ⟨by omega⟩
-    obtain ⟨neg', wlo, h1, h2, -⟩ := barnesProdLo_lencl (half_pow_le_eighth (by omega)) hx hnz
-      (bgN x w) (bgN_sq_le x w)
-    have hW : bgW x w = (wlo, glaisherUpper (bgV x w) wlo (14 * bgN x w * bgN x w)) := by
+    have h64 : 64 ≤ bgV A w := by have := hV w; omega
+    have : NeZero (bgV A w) := ⟨by omega⟩
+    obtain ⟨neg', wlo, h1, h2, -⟩ := barnesProdLo_lencl (half_pow_le_eighth (by omega))
+      (hA.frac _ (half_pow_le_eighth (by omega))) hnz (bgN A w) (bgN_sq_le A w)
+    have hW : bgW A w = (wlo, glaisherUpper (bgV A w) wlo (16 * bgN A w * bgN A w)) := by
       unfold bgW
       rw [h1]
     rw [hW]
     exact ⟨by positivity, h2⟩
   have lnP := LW.ln hV pbV Wl
-    (G := fun w => ((bgN x w : ℕ) : ℝ) ^ 2 * (|xv| + (bgN x w : ℕ) + 1 / d))
-    (((pb_bgN x).pow 2).mul (((PB.const |xv|).add (pb_bgN x)).add (PB.const (1 / d))))
-    (fun w => abs_log_barnesProd_le hd0 hd (bgN x w))
+    (G := fun w => ((bgN A w : ℕ) : ℝ) ^ 2 * (|xv| + (bgN A w : ℕ) + 1 / d))
+    (((pb_bgN hA).pow 2).mul (((PB.const |xv|).add (pb_bgN hA)).add (PB.const (1 / d))))
+    (fun w => abs_log_barnesProd_le hd0 hd (bgN A w))
   exact ⟨_, TW.add hV (TW.sub hV (TW.sub hV ((AW.sub hV (AW.add hV q4 t2) t3).toTW) lnA)
-    (barnesSum_aw hx).toTW) lnP.toTW⟩
+    (barnesSum_aw hA).toTW) lnP.toTW⟩
 
 /-- **The core of `G(x)` converges** off the zeros of `G`. -/
-theorem barnesGCore_coreConv {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hnz : ∀ m : ℕ, xv ≠ -m) : CoreConv (barnesGCore x) (barnesGR xv) := by
-  obtain ⟨v, -, E, hE, hev⟩ := bgL_tw hx hnz
+theorem barnesGCoreOf_coreConv {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv)
+    (hnz : ∀ m : ℕ, xv ≠ -m) : CoreConv (barnesGCoreOf A) (barnesGR xv) := by
+  obtain ⟨v, -, E, hE, hev⟩ := bgL_tw hA hnz
   obtain ⟨ht, hevE⟩ := gammaExpEncl_eventually false (Real.log |barnesGR xv|) hE
   simp only [Bool.false_eq_true, ↓reduceIte] at ht hevE
   refine ⟨_, ht, ?_⟩
   filter_upwards [hev, hevE, eventually_ge_atTop 64] with w h1 h2 h3
-  have h64 : 64 ≤ bgV x w := by have := bgV_ge x w; omega
-  have : NeZero (bgV x w) := ⟨by omega⟩
-  obtain ⟨neg, wlo, hprod, -⟩ := barnesProdLo_lencl (half_pow_le_eighth (by omega)) hx hnz
-    (bgN x w) (bgN_sq_le x w)
+  have h64 : 64 ≤ bgV A w := by have := bgV_ge A w; omega
+  have : NeZero (bgV A w) := ⟨by omega⟩
+  obtain ⟨neg, wlo, hprod, -⟩ := barnesProdLo_lencl (half_pow_le_eighth (by omega))
+    (hA.frac _ (half_pow_le_eighth (by omega))) hnz (bgN A w) (bgN_sq_le A w)
   have hc := barnesGLnEncl_eq_bgL hprod
-  obtain ⟨hpos, hL⟩ := barnesGLnEncl_spec hx hnz h3 hc
+  obtain ⟨hpos, hL⟩ := barnesGLnEnclOf_spec hA hnz h3 hc
   have habs := sign_mul_eq_abs hpos
   rw [habs] at hL
   have hB0 : 0 < |barnesGR xv| := habs ▸ hpos
-  obtain ⟨b, hb, hb1, hb2⟩ := h2 (bgL x w) (h1.of_isEncl hL)
+  obtain ⟨b, hb, hb1, hb2⟩ := h2 (bgL A w) (h1.of_isEncl hL)
   rw [Real.exp_log hB0] at hb1 hb2
   refine ⟨neg, b, ?_, ?_, ?_⟩
-  · unfold barnesGCore
+  · unfold barnesGCoreOf
     rw [hc]
     simp [hb]
   · rw [habs]; exact hb1
   · rw [habs]; exact hb2
+
+/-- The core of `G(x)` converges at a float off the zeros of `G`. -/
+theorem barnesGCore_coreConv {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hnz : ∀ m : ℕ, xv ≠ -m) : CoreConv (barnesGCore x) (barnesGR xv) :=
+  barnesGCoreOf_coreConv (barnesArg_float hx) hnz
 
 end Azurite.AzFloat

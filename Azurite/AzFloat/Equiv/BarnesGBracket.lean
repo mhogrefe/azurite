@@ -195,14 +195,17 @@ theorem barnesFrac_spec {V : ℕ} [NeZero V] (hu : (1 / 2 : ℝ) ^ V ≤ 1 / 8) 
         exact (abs_of_neg (by linarith)).symm
 
 /-- **The suffix products rounded down**: an answer, a lower bound of the product within
-`e^(lamW + k lamS + 14 k² u)`, and the sign. -/
-theorem barnesProdLo_llow {V : ℕ} [NeZero V] (hu : (1 / 2 : ℝ) ^ V ≤ 1 / 8) {x : AzFloat}
-    {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hnz : ∀ m : ℕ, xv ≠ -m) :
+`e^(lamW + k lamS + 16 k² u)`, and the sign, from factors within `e^(10u)`. -/
+theorem barnesProdLo_llow {V : ℕ} [NeZero V] (hu : (1 / 2 : ℝ) ^ V ≤ 1 / 8)
+    {F : ℕ → Option (Bool × AzFloat)} {xv : ℝ}
+    (hF : ∀ k : ℕ, xv + k ≠ 0 → ∃ (σ : Bool) (f : AzFloat), F k = some (σ, f) ∧
+      LLow f |xv + k| (10 * (1 / 2 : ℝ) ^ V) ∧
+      (if σ then (-1 : ℝ) else 1) * (xv + k) = |xv + k|) (hnz : ∀ m : ℕ, xv ≠ -m) :
     ∀ (k : ℕ) (s w : AzFloat) (neg : Bool) (sv wv lamS lamW : ℝ), 0 ≤ lamS →
       LLow s sv lamS → LLow w wv lamW →
-      ∃ (neg' : Bool) (w' : AzFloat), barnesProdLo V x k s w neg = some (neg', w') ∧
+      ∃ (neg' : Bool) (w' : AzFloat), barnesProdLo V F k s w neg = some (neg', w') ∧
         LLow w' (wv * sv ^ k * ∏ j ∈ range k, |xv + j| ^ (j + 1))
-          (lamW + k * lamS + 14 * (k : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V) ∧
+          (lamW + k * lamS + 16 * (k : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V) ∧
         (if neg' then (-1 : ℝ) else 1) * ∏ j ∈ range k, (xv + j) ^ (j + 1)
           = (if neg then (-1 : ℝ) else 1) * ∏ j ∈ range k, |xv + j| ^ (j + 1)
   | 0, s, w, neg, sv, wv, lamS, lamW, _, _, hw => by
@@ -211,13 +214,13 @@ theorem barnesProdLo_llow {V : ℕ} [NeZero V] (hu : (1 / 2 : ℝ) ^ V ≤ 1 / 8
   | k + 1, s, w, neg, sv, wv, lamS, lamW, hS0, hs, hw => by
     have hu0 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ V := by positivity
     have hd : xv + k ≠ 0 := fun h => hnz k (by linarith)
-    obtain ⟨σ, f, hF, hfL, habs⟩ := barnesFrac_spec hu hx hd
+    obtain ⟨σ, f, hFk, hfL, habs⟩ := hF k hd
     have hs' := hs.mulFloor hu hfL
     have hw' := hw.mulFloor hu hs'
-    obtain ⟨neg', w', h1, h2, h3⟩ := barnesProdLo_llow hu hx hnz k _ _
+    obtain ⟨neg', w', h1, h2, h3⟩ := barnesProdLo_llow hu hF hnz k _ _
       (neg != (σ && k % 2 == 0)) _ _ _ _ (by positivity) hs' hw'
     refine ⟨neg', w', ?_, ?_, ?_⟩
-    · rw [barnesProdLo, hF]
+    · rw [barnesProdLo, hFk]
       exact h1
     · have hk0 : (0 : ℝ) ≤ k := Nat.cast_nonneg k
       refine (congrArg (fun v => LLow w' v _) ?_).mp (h2.mono ?_)
@@ -249,9 +252,9 @@ theorem barnesProdLo_llow {V : ℕ} [NeZero V] (hu : (1 / 2 : ℝ) ^ V ≤ 1 / 8
           cases neg <;> cases σ <;> simp [hk2]
       linear_combination (∏ j ∈ range k, |xv + j| ^ (j + 1)) * hsgn
 
-/-- `14 N² 2^(−V)` is tiny when `N < 2^L` and `V ≥ 3L + 64`. -/
+/-- `16 N² 2^(−V)` is tiny when `N < 2^L` and `V ≥ 3L + 64`. -/
 theorem sq_mul_half_pow_le {N L V : ℕ} (hN : N < 2 ^ L) (hV : 3 * L + 64 ≤ V) :
-    14 * (N : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V ≤ 1 / 2 := by
+    16 * (N : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V ≤ 1 / 2 := by
   have h1 : (N : ℝ) ^ 2 ≤ ((2 : ℝ) ^ L) ^ 2 :=
     pow_le_pow_left₀ (Nat.cast_nonneg N) (by exact_mod_cast hN.le) 2
   have h2 : (1 / 2 : ℝ) ^ V ≤ (1 / 2 : ℝ) ^ (2 * L) * (1 / 2 : ℝ) ^ 64 := by
@@ -261,32 +264,76 @@ theorem sq_mul_half_pow_le {N L V : ℕ} (hN : N < 2 ^ L) (hV : 3 * L + 64 ≤ V
     rw [← pow_mul, mul_comm L 2, ← mul_pow]
     norm_num
   have h4 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ V := by positivity
-  calc 14 * (N : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V
-      ≤ 14 * ((2 : ℝ) ^ L) ^ 2 * ((1 / 2 : ℝ) ^ (2 * L) * (1 / 2 : ℝ) ^ 64) :=
+  calc 16 * (N : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V
+      ≤ 16 * ((2 : ℝ) ^ L) ^ 2 * ((1 / 2 : ℝ) ^ (2 * L) * (1 / 2 : ℝ) ^ 64) :=
         mul_le_mul (by linarith) h2 h4 (by positivity)
-    _ = 14 * (((2 : ℝ) ^ L) ^ 2 * (1 / 2 : ℝ) ^ (2 * L)) * (1 / 2 : ℝ) ^ 64 := by ring
+    _ = 16 * (((2 : ℝ) ^ L) ^ 2 * (1 / 2 : ℝ) ^ (2 * L)) * (1 / 2 : ℝ) ^ 64 := by ring
     _ ≤ 1 / 2 := by rw [h3]; norm_num
 
 /-- **The enclosure of the product**: rounded down, the upper end from the count of the
 roundings. -/
-theorem barnesProdLo_lencl {V : ℕ} [NeZero V] (hu : (1 / 2 : ℝ) ^ V ≤ 1 / 8) {x : AzFloat}
-    {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hnz : ∀ m : ℕ, xv ≠ -m) (N : ℕ)
-    (hN : 14 * (N : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V ≤ 1 / 2) :
-    ∃ (neg : Bool) (wlo : AzFloat), barnesProdLo V x N one one false = some (neg, wlo) ∧
-      LEncl (wlo, glaisherUpper V wlo (14 * N * N)) (∏ j ∈ range N, |xv + j| ^ (j + 1))
-        ((28 * (N : ℝ) ^ 2 + 4) * (1 / 2 : ℝ) ^ V) ∧
+theorem barnesProdLo_lencl {V : ℕ} [NeZero V] (hu : (1 / 2 : ℝ) ^ V ≤ 1 / 8)
+    {F : ℕ → Option (Bool × AzFloat)} {xv : ℝ}
+    (hF : ∀ k : ℕ, xv + k ≠ 0 → ∃ (σ : Bool) (f : AzFloat), F k = some (σ, f) ∧
+      LLow f |xv + k| (10 * (1 / 2 : ℝ) ^ V) ∧
+      (if σ then (-1 : ℝ) else 1) * (xv + k) = |xv + k|) (hnz : ∀ m : ℕ, xv ≠ -m) (N : ℕ)
+    (hN : 16 * (N : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V ≤ 1 / 2) :
+    ∃ (neg : Bool) (wlo : AzFloat), barnesProdLo V F N one one false = some (neg, wlo) ∧
+      LEncl (wlo, glaisherUpper V wlo (16 * N * N)) (∏ j ∈ range N, |xv + j| ^ (j + 1))
+        ((32 * (N : ℝ) ^ 2 + 4) * (1 / 2 : ℝ) ^ V) ∧
       (if neg then (-1 : ℝ) else 1) * ∏ j ∈ range N, (xv + j) ^ (j + 1)
         = ∏ j ∈ range N, |xv + j| ^ (j + 1) := by
-  obtain ⟨neg, wlo, h1, h2, h3⟩ := barnesProdLo_llow hu hx hnz N one one false 1 1 0 0 le_rfl
+  obtain ⟨neg, wlo, h1, h2, h3⟩ := barnesProdLo_llow hu hF hnz N one one false 1 1 0 0 le_rfl
     (LLow.exact toVal_one' one_pos) (LLow.exact toVal_one' one_pos)
   refine ⟨neg, wlo, h1, ?_, by simpa using h3⟩
   simp only [one_pow, one_mul, mul_zero, zero_add] at h2
-  have := h2.toEncl (K := 14 * N * N) (le_of_eq (by push_cast; ring))
-    (by push_cast; linarith [show 14 * (N : ℝ) * N * (1 / 2 : ℝ) ^ V
-      = 14 * (N : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V by ring])
+  have := h2.toEncl (K := 16 * N * N) (le_of_eq (by push_cast; ring))
+    (by push_cast; linarith [show 16 * (N : ℝ) * N * (1 / 2 : ℝ) ^ V
+      = 16 * (N : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V by ring])
   refine this.mono (le_of_eq ?_)
   push_cast
   ring
+
+/-! ### The argument -/
+
+/-- **What the bracket asks of its argument** `x = xv`: enclosures of width at most `2^(−V)`,
+a shift beyond `n + 1` that grows no faster than `n`, and the factors `|x + k|` within
+`e^(10u)` with their signs. -/
+structure BarnesArg (A : BarnesIn) (xv : ℝ) : Prop where
+  encl : ∀ V, 64 ≤ V → AEncl (A.X V) xv ((1 / 2 : ℝ) ^ V)
+  shift_gt : ∀ n : ℕ, (n : ℝ) + 1 < xv + A.shift n
+  shift_le : ∃ C : ℝ, ∀ n : ℕ, (A.shift n : ℝ) ≤ n + C
+  frac : ∀ (V : ℕ) [NeZero V], (1 / 2 : ℝ) ^ V ≤ 1 / 8 → ∀ k : ℕ, xv + k ≠ 0 →
+    ∃ (σ : Bool) (f : AzFloat), A.frac V k = some (σ, f) ∧
+      LLow f |xv + k| (10 * (1 / 2 : ℝ) ^ V) ∧
+      (if σ then (-1 : ℝ) else 1) * (xv + k) = |xv + k|
+
+theorem barnesShift_le (x : AzFloat) (n : ℕ) :
+    (barnesShift x n : ℝ) ≤ n + (2 + |((truncToAzInt x).toInt : ℝ)|) := by
+  have h := azIntPos_cast ((AzNat.ofNat (n + 2)).toAzInt - truncToAzInt x)
+  rw [AzInt.toInt_sub, AzNat.toInt_toAzInt, AzNat.toNat_ofNat] at h
+  have h2 : (barnesShift x n : ℤ) ≤ (n : ℤ) + 2 + |(truncToAzInt x).toInt| := by
+    unfold barnesShift
+    rw [h]
+    have := neg_abs_le (truncToAzInt x).toInt
+    have h0 := abs_nonneg (truncToAzInt x).toInt
+    push_cast
+    omega
+  have h3 : ((barnesShift x n : ℤ) : ℝ) ≤ (((n : ℤ) + 2 + |(truncToAzInt x).toInt| : ℤ) : ℝ) :=
+    by exact_mod_cast h2
+  push_cast at h3
+  linarith
+
+/-- **A float is an argument of the bracket.** -/
+theorem barnesArg_float {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
+    BarnesArg (barnesIn x) xv where
+  encl := fun V _ => ⟨xv, xv, hx, hx, le_rfl, le_rfl, by simp⟩
+  shift_gt := barnesShift_spec hx
+  shift_le := ⟨_, barnesShift_le x⟩
+  frac := fun V _ hu k hk => by
+    obtain ⟨σ, f, h1, h2, h3⟩ := barnesFrac_spec hu hx hk
+    exact ⟨σ, f, h1, h2.mono (by have : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ V := by positivity
+                                 linarith), h3⟩
 
 /-! ### The enclosure of `ln |G(x)|` -/
 
@@ -304,20 +351,20 @@ theorem one_le_gamma_of_two_le {Y : ℝ} (hY : 2 ≤ Y) : 1 ≤ Real.Gamma Y := 
 
 /-- **The enclosure of `ln |G(x)|` and the sign of `G(x)`**, at every level, off the zeros of
 `G`. -/
-theorem barnesGLnEncl_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+theorem barnesGLnEnclOf_spec {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv)
     (hnz : ∀ m : ℕ, xv ≠ -m) {w : ℕ} (hw : 64 ≤ w) {neg : Bool} {L : Encl}
-    (h : barnesGLnEncl x w = some (neg, L)) :
+    (h : barnesGLnEnclOf A w = some (neg, L)) :
     0 < (if neg then (-1 : ℝ) else 1) * barnesGR xv ∧
       IsEncl L (Real.log ((if neg then (-1 : ℝ) else 1) * barnesGR xv)) := by
-  unfold barnesGLnEncl at h
+  unfold barnesGLnEnclOf at h
   dsimp only at h
   obtain ⟨j, hj⟩ : ∃ j : ℕ, j = glaisherTerms w := ⟨_, rfl⟩
   obtain ⟨n, hn⟩ : ∃ n : ℕ, n = glaisherArg w := ⟨_, rfl⟩
   rw [← hj, ← hn] at h
-  obtain ⟨N, hN⟩ : ∃ N : ℕ, N = barnesShift x n := ⟨_, rfl⟩
+  obtain ⟨N, hN⟩ : ∃ N : ℕ, N = A.shift n := ⟨_, rfl⟩
   rw [← hN] at h
   obtain ⟨V, hVd⟩ : ∃ V : ℕ,
-      V = w + 3 * max (azIntPos (expOf x)) ((N + n + 3).log2 + 1) + 64 := ⟨_, rfl⟩
+      V = w + 3 * max A.eb ((N + n + 3).log2 + 1) + 64 := ⟨_, rfl⟩
   rw [← hVd] at h
   split at h
   · exact absurd h (by simp)
@@ -329,7 +376,7 @@ theorem barnesGLnEncl_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : E
   have : NeZero V := ⟨by omega⟩
   have hj1 : 1 ≤ j := by rw [hj]; unfold glaisherTerms; omega
   have hn24 : 24 ≤ n := by rw [hn]; exact glaisherArg_ge w
-  have hshift := barnesShift_spec hx n
+  have hshift := hA.shift_gt n
   rw [← hN] at hshift
   have hn24r : (24 : ℝ) ≤ n := by exact_mod_cast hn24
   obtain ⟨Yv, hYv⟩ : ∃ Yv : ℝ, Yv = xv + N := ⟨_, rfl⟩
@@ -346,29 +393,32 @@ theorem barnesGLnEncl_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : E
           pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
       _ = 1 / 64 := by norm_num
   -- the arguments
-  have hX : IsEncl (Encl.exact x) xv := ⟨xv, xv, hx, hx, le_rfl, le_rfl⟩
-  have hYA := (AEncl.exact hx).add (w := V) (AEncl.natEncl N) (B := Yv)
+  have hXA := hA.encl V hV64
+  rw [← hu] at hXA
+  have hX : IsEncl (A.X V) xv := hXA.isEncl
+  have hYA := hXA.add (w := V) (AEncl.natEncl N) (B := Yv + 1)
     (by rw [← hYv, abs_of_pos (by linarith)]; linarith)
   rw [← hYv, ← hu] at hYA
   have hYu : Yv * u ≤ Yv / 64 := by
     have := mul_le_mul_of_nonneg_left hu64 (by linarith : (0 : ℝ) ≤ Yv)
     linarith
-  have hYpos : IsEnclPos (Encl.add V (Encl.exact x) (Encl.nat N)) Yv :=
+  have hYpos : IsEnclPos (Encl.add V (A.X V) (Encl.nat N)) Yv :=
     hYA.toPos (by linarith)
   have hyA := hYA.sub (w := V) (AEncl.exact toVal_one') (B := 2 * Yv)
     (by rw [abs_of_pos (by linarith)]; linarith)
   rw [← hyv, ← hu] at hyA
-  have hypos : IsEnclPos (Encl.sub V (Encl.add V (Encl.exact x) (Encl.nat N))
+  have hypos : IsEnclPos (Encl.sub V (Encl.add V (A.X V) (Encl.nat N))
       (Encl.exact one)) yv := hyA.toPos (by rw [hyv]; linarith)
   -- the product
-  have hNs : 14 * (N : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V ≤ 1 / 2 :=
+  have hNs : 16 * (N : ℝ) ^ 2 * (1 / 2 : ℝ) ^ V ≤ 1 / 2 :=
     sq_mul_half_pow_le (L := (N + n + 3).log2 + 1)
       ((Nat.lt_log2_self (n := N + n + 3)).trans_le' (by omega)) (by
         rw [hVd]
-        have := le_max_right (azIntPos (expOf x)) ((N + n + 3).log2 + 1)
+        have := le_max_right A.eb ((N + n + 3).log2 + 1)
         omega)
   obtain ⟨neg1, wlo1, hprod1, hWL, hsgn⟩ :=
-    barnesProdLo_lencl (half_pow_le_eighth (by omega)) hx hnz N hNs
+    barnesProdLo_lencl (half_pow_le_eighth (by omega))
+      (hA.frac V (half_pow_le_eighth (by omega))) hnz N hNs
   rw [hprod] at hprod1
   rw [Option.some.injEq, Prod.mk.injEq] at hprod1
   obtain ⟨rfl, rfl⟩ := hprod1
@@ -399,12 +449,12 @@ theorem barnesGLnEncl_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : E
   have hinv2 := enclosesPos_one.div hV2 hy2
   have hp1 := hinv2.mul hV2 hinv2
   have hy2' : IsEnclPos (Encl.mul V
-      (Encl.sub V (Encl.add V (Encl.exact x) (Encl.nat N)) (Encl.exact one))
-      (Encl.sub V (Encl.add V (Encl.exact x) (Encl.nat N)) (Encl.exact one))) (yv ^ 2) := by
+      (Encl.sub V (Encl.add V (A.X V) (Encl.nat N)) (Encl.exact one))
+      (Encl.sub V (Encl.add V (A.X V) (Encl.nat N)) (Encl.exact one))) (yv ^ 2) := by
     rw [sq]; exact hy2
   have hinv2' : IsEnclPos (Encl.div V (Encl.exact one) (Encl.mul V
-      (Encl.sub V (Encl.add V (Encl.exact x) (Encl.nat N)) (Encl.exact one))
-      (Encl.sub V (Encl.add V (Encl.exact x) (Encl.nat N)) (Encl.exact one))))
+      (Encl.sub V (Encl.add V (A.X V) (Encl.nat N)) (Encl.exact one))
+      (Encl.sub V (Encl.add V (A.X V) (Encl.nat N)) (Encl.exact one))))
       (1 / yv ^ 2) := by
     rw [sq]; exact hinv2
   have hS := altSumLoop_isEncl hV2 (t := barnesTau yv) (q := fun k => 1 / yv ^ (2 * (k + 1)))
@@ -455,19 +505,26 @@ theorem barnesGLnEncl_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : E
   ring
 
 /-- **The enclosure of `|G(x)|` and the sign of `G(x)`.** -/
-theorem barnesGCore_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+theorem barnesGCoreOf_spec {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv)
     (hnz : ∀ m : ℕ, xv ≠ -m) {w : ℕ} (hw : 64 ≤ w) {neg : Bool} {b : Encl}
-    (h : barnesGCore x w = some (neg, b)) :
+    (h : barnesGCoreOf A w = some (neg, b)) :
     IsEnclPos b ((if neg then (-1 : ℝ) else 1) * barnesGR xv) := by
-  unfold barnesGCore at h
+  unfold barnesGCoreOf at h
   obtain ⟨c, hc, hr⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨neg', Lg⟩ := c
   obtain ⟨g, hg, hgeq⟩ := Option.map_eq_some_iff.mp hr
   rw [Prod.mk.injEq] at hgeq
   obtain ⟨rfl, rfl⟩ := hgeq
-  obtain ⟨hpos, hL⟩ := barnesGLnEncl_spec hx hnz hw hc
+  obtain ⟨hpos, hL⟩ := barnesGLnEnclOf_spec hA hnz hw hc
   have := gammaExpEncl_spec hL hw hg
   simp only [Bool.false_eq_true, ↓reduceIte] at this
   rwa [Real.exp_log hpos] at this
+
+/-- The enclosure of `|G(x)|` and the sign of `G(x)` for a float. -/
+theorem barnesGCore_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hnz : ∀ m : ℕ, xv ≠ -m) {w : ℕ} (hw : 64 ≤ w) {neg : Bool} {b : Encl}
+    (h : barnesGCore x w = some (neg, b)) :
+    IsEnclPos b ((if neg then (-1 : ℝ) else 1) * barnesGR xv) :=
+  barnesGCoreOf_spec (barnesArg_float hx) hnz hw h
 
 end Azurite.AzFloat

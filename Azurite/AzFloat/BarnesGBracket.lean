@@ -15,14 +15,15 @@ import Azurite.AzFloat.RoundToInteger
 ## The bracket of the Barnes `G`-function
 
 `barnesGCore x w` is the sign of `G(x)` and a positive enclosure of `|G(x)|` at Ziv level `w`,
-for a finite float `x` that is no zero of `G`; `none` when the level gives nothing.  It is the
-exponential of `barnesGLnEncl`, an enclosure of `ln |G(x)|`:
+for a finite float `x` that is no zero of `G`; `none` when the level gives nothing.  The bracket
+is written for an argument given by a `BarnesIn` (`barnesGCoreOf`: its enclosures, its shift,
+the factors `|x + k|`), so that a rational argument (`AzFloat/BarnesGRat.lean`) uses it too.
+It is the exponential of `barnesGLnEncl`, an enclosure of `ln |G(x)|`:
 
 * **The shift.**  `G(x + 1) = Γ(x) G(x)` gives
   `G(x) = G(Y) ∏_{j<N} (x + j)^(j+1) / Γ(Y)^N` for `Y = x + N`.  `N` (`barnesShift`) is taken
   with `Y > n + 1`, `n = glaisherArg w = 8 j`, `j = glaisherTerms w` — the argument and the
-  number of terms of the Glaisher–Kinkelin constant.  A level whose shift exceeds `64 w` gives
-  nothing (an astronomically negative `x` then ends with the fuel instead of running).
+  number of terms of the Glaisher–Kinkelin constant.
 * **The expansion** (DLMF 5.17.5) at `y = Y − 1`:
   `ln G(y + 1) = y²/4 + y ln Γ(y + 1) − (y (y + 1)/2 + 1/12) ln y − ln A − μ(y)`, with
   `μ(y) = τ₁ − τ₂ + ⋯`, `τ_k = |B_{2k+2}| / (2k (2k + 1) (2k + 2) y^{2k})` — the terms of the
@@ -56,9 +57,18 @@ def azIntPos (e : AzInt) : Nat := if e.sign then e.abs.toNat else 0
 def barnesShift (x : AzFloat) (n : Nat) : Nat :=
   azIntPos ((AzNat.ofNat (n + 2)).toAzInt - truncToAzInt x)
 
-/-- The sign of `x + k` (`true`: negative) and a lower bound of `|x + k|` within the factor
-`e^(8u)`, `u = 2^(−V)`: the exact sum when it has at most `2V` bits, else the lower end of its
-enclosure at `V` bits.  `none` when the sign is not decided. -/
+/-- **The argument of the bracket**, as it enters: `X V` an enclosure of `x` of width at most
+`2^(−V)`, `shift n` a shift `N` with `x + N > n + 1`, `frac V k` the sign of `x + k` (`true`:
+negative) with a lower bound of `|x + k|` within the factor `e^(10u)`, `u = 2^(−V)` (`none`
+when the sign is not decided), and `eb`, the bits of `|x|`. -/
+structure BarnesIn where
+  X : Nat → Encl
+  shift : Nat → Nat
+  frac : Nat → Nat → Option (Bool × AzFloat)
+  eb : Nat
+
+/-- The sign of `x + k` and a lower bound of `|x + k|` for a float `x`: the exact sum when it
+has at most `2V` bits, else the lower end of its enclosure at `V` bits. -/
 def barnesFrac (V : Nat) (x : AzFloat) (k : Nat) : Option (Bool × AzFloat) :=
   let K := ofAzNat (AzNat.ofNat k)
   if exactSumPrec x K ≤ 2 * V then
@@ -66,35 +76,42 @@ def barnesFrac (V : Nat) (x : AzFloat) (k : Nat) : Option (Bool × AzFloat) :=
     if lt zero d then some (false, d) else if lt d zero then some (true, -d) else none
   else (fracOfEncl (Encl.add V (Encl.exact x) (Encl.nat k))).map fun t => (t.1, t.2.1)
 
-/-- From `(s, w, neg)` and `k`: the factors `|x + j|`, `j = k − 1, …, 0`, taken into lower
-bounds of the suffix products `S ← S |x + j|`, `W ← W S`, every product rounded down, with
-the parity of the negative factors of `∏ (x + j)^(j + 1)`.  `none` when a sign is not
+/-- A float as the argument of the bracket. -/
+def barnesIn (x : AzFloat) : BarnesIn where
+  X := fun _ => Encl.exact x
+  shift := barnesShift x
+  frac := fun V k => barnesFrac V x k
+  eb := azIntPos (expOf x)
+
+/-- From `(s, w, neg)` and `k`: the factors `|x + j|`, `j = k − 1, …, 0` (`F j`), taken into
+lower bounds of the suffix products `S ← S |x + j|`, `W ← W S`, every product rounded down,
+with the parity of the negative factors of `∏ (x + j)^(j + 1)`.  `none` when a sign is not
 decided. -/
-def barnesProdLo (V : Nat) (x : AzFloat) : Nat → AzFloat → AzFloat → Bool →
-    Option (Bool × AzFloat)
+def barnesProdLo (V : Nat) (F : Nat → Option (Bool × AzFloat)) : Nat → AzFloat → AzFloat →
+    Bool → Option (Bool × AzFloat)
   | 0, _, w, neg => some (neg, w)
   | k + 1, s, w, neg =>
-    match barnesFrac V x k with
+    match F k with
     | none => none
     | some (σ, f) =>
       let s' := (mulPrecRound s f V .Floor).1
-      barnesProdLo V x k s' (mulPrecRound w s' V .Floor).1 (neg != (σ && k % 2 == 0))
+      barnesProdLo V F k s' (mulPrecRound w s' V .Floor).1 (neg != (σ && k % 2 == 0))
 
-/-- `(neg, L)`: the sign of `G(x)` and an enclosure of `ln |G(x)|` at level `w`, for a finite
-`x` that is not an integer `≤ 0`. -/
-def barnesGLnEncl (x : AzFloat) (w : Nat) : Option (Bool × Encl) :=
+/-- `(neg, L)`: the sign of `G(x)` and an enclosure of `ln |G(x)|` at level `w`, for an
+argument `x` that is not an integer `≤ 0`. -/
+def barnesGLnEnclOf (A : BarnesIn) (w : Nat) : Option (Bool × Encl) :=
   let j := glaisherTerms w
   let n := glaisherArg w
-  let N := barnesShift x n
-  let eb := max (azIntPos (expOf x)) ((N + n + 3).log2 + 1)
+  let N := A.shift n
+  let eb := max A.eb ((N + n + 3).log2 + 1)
   let V := w + 3 * eb + 64
-  let X := Encl.exact x
+  let X := A.X V
   let Y := Encl.add V X (Encl.nat N)
   let y := Encl.sub V Y (Encl.exact one)
-  match barnesProdLo V x N one one false with
+  match barnesProdLo V (A.frac V) N one one false with
   | none => none
   | some (neg, wlo) =>
-    let lnP := lnOfEncl (wlo, glaisherUpper V wlo (14 * N * N)) V
+    let lnP := lnOfEncl (wlo, glaisherUpper V wlo (16 * N * N)) V
     let lny := lnOfEncl y V
     let T := AzNat.tangentNumbers (j + 1)
     let tol := powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)
@@ -113,11 +130,22 @@ def barnesGLnEncl (x : AzFloat) (w : Nat) : Option (Bool × Encl) :=
       (Encl.add V (Encl.half (Encl.half y2)) t2) t3) lnA) S) lnP)
 
 /-- The sign of `G(x)` and a positive enclosure of `|G(x)|` at Ziv level `w`. -/
-def barnesGCore (x : AzFloat) (w : Nat) : Option (Bool × Encl) :=
-  (barnesGLnEncl x w).bind fun r => (gammaExpEncl false r.2 w).map fun g => (r.1, g)
+def barnesGCoreOf (A : BarnesIn) (w : Nat) : Option (Bool × Encl) :=
+  (barnesGLnEnclOf A w).bind fun r => (gammaExpEncl false r.2 w).map fun g => (r.1, g)
 
 /-- The bracket of `G(x)` as a pair of `Roundable`s. -/
+def barnesGApproxOf (A : BarnesIn) (w : Nat) : Roundable × Roundable :=
+  gammaApproxOf (barnesGCoreOf A w) w
+
+/-- `barnesGLnEnclOf` for a float. -/
+def barnesGLnEncl (x : AzFloat) (w : Nat) : Option (Bool × Encl) :=
+  barnesGLnEnclOf (barnesIn x) w
+
+/-- The sign of `G(x)` and a positive enclosure of `|G(x)|` at Ziv level `w`, for a float. -/
+def barnesGCore (x : AzFloat) (w : Nat) : Option (Bool × Encl) := barnesGCoreOf (barnesIn x) w
+
+/-- The bracket of `G(x)` for a float, as a pair of `Roundable`s. -/
 def barnesGApprox (x : AzFloat) (w : Nat) : Roundable × Roundable :=
-  gammaApproxOf (barnesGCore x w) w
+  barnesGApproxOf (barnesIn x) w
 
 end Azurite.AzFloat

@@ -357,11 +357,15 @@ def checkBigExponentFloatLnAbsGamma : String → Verdict :=
 def checkBigExponentFloatLnAbsGammaRational : String → Verdict :=
   withBigExponentFloatNames checkFloatLnAbsGammaRational
 
+/-- `Float`'s `wright_omega` checks replace a very negative input (`x ≤ -2^31`) by `-2^31`, where
+`ω(x)` underflows `Float`'s range the same way; a `BigExponentFloat` has no underflow, so these
+call Azurite at the input itself, as the exponential checks do. -/
 def checkBigExponentFloatWrightOmega : String → Verdict :=
-  withBigExponentFloatNames checkFloatWrightOmega
+  withBigExponentFloatNames <| checkFloatUnaryWith "wright_omega" AzFloat.wrightOmegaPrecRound
 
 def checkBigExponentFloatWrightOmegaRational : String → Verdict :=
-  withBigExponentFloatNames checkFloatWrightOmegaRational
+  withBigExponentFloatNames <|
+    checkFloatOfRational "wright_omega_rational" AzFloat.wrightOmegaRatPrecRound
 
 def checkBigExponentFloatPowerOf2OfFloat : String → Verdict :=
   withBigExponentFloatNames fun line =>

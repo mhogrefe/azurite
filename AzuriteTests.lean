@@ -61,6 +61,7 @@ import Azurite.AzFloat.Tests.AtanWithPeriod
 import Azurite.AzFloat.Tests.Atanh
 import Azurite.AzFloat.Tests.AtanhRat
 import Azurite.AzFloat.Tests.BarnesG
+import Azurite.AzFloat.Tests.BarnesGRat
 import Azurite.AzFloat.Tests.Basic
 import Azurite.AzFloat.Tests.Beta
 import Azurite.AzFloat.Tests.BetaFloatRat

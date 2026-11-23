@@ -10078,6 +10078,38 @@ User request: "implement the Barnes G function".  `barnesGPrecRound x p mode`, `
   11 to 6.2 ms at 1000 bits and from 200 to 105 at 4000 — halved, not quartered: the
   logarithm of `P` and the additions stay, and `W S` is a full product.  The shared table
   saved 0.9 ms at 1000 bits and 42 ms at 4000 (`G(5001/2)`).  Now about 2.4 constants.
+* **The rational argument (2026-11-22, user request, TIMED 2026-11-23).**  `barnesGRatPrecRound q p mode`,
+  `barnesGRat q p`, `barnesGRatPrecRoundFuel` (`AzFloat/BarnesGRat.lean`).  The bracket was
+  made generic first: it takes a `BarnesIn` (the enclosures `X V` of the argument, the shift,
+  the factors `frac V k`, the bits `eb`) — `barnesGLnEnclOf`, `barnesGCoreOf`,
+  `barnesGApproxOf` — and the proofs a `BarnesArg A xv` (width of `X V` at most `2^(−V)`; the
+  shift beyond `n + 1` and at most `n + C`; the factors within `e^(10u)` with their signs):
+  `barnesGLnEnclOf_spec`, `barnesGCoreOf_spec`, `barnesGCoreOf_coreConv`.  A float is one
+  instance (`barnesIn`, `barnesArg_float`; the float theorems are corollaries, the values are
+  unchanged), a rational the other (`barnesRatIn`, `barnesArg_rat`): enclosures by the
+  roundings at `V + eb + 32` bits; shift from `⌊|q|⌋`; **the factors `|q + k| = |N + kD| / D`
+  with the integer exact and short and one lower bound of `1/D`** for all `k`
+  (`barnesRatFrac`), so a step is still one short and one full multiplication.  (The count
+  constant of the upper bound went from `14 N²` to `16 N²` for the `10u` of the factors.)
+  Zeros and integers as for floats; `barnesGRatPrecRoundFuel_zivSpec`
+  (`Equiv/BarnesGRat.lean`).  Tests `Tests/BarnesGRat.lean`; benchmark row `barnesGRat`.
+
+  Timings (2026-11-23, same benchmark, one run, ms):
+
+  | bits | 53 | 200 | 1000 | 4000 |
+  |---|---|---|---|---|
+  | `barnesG 1/2` | 1.51 | 2.91 | 19.5 | 375 |
+  | `barnesG 5001/2` (no shift) | 1.12 | 2.14 | 13.3 | 273 |
+  | `barnesGRat 1/2` | 1.52 | 3.09 | 20.9 | 411 |
+  | `barnesGRat 1/3` | 1.54 | 3.20 | 20.9 | 388 |
+  | `barnesGRat −7/3` | 1.55 | 3.12 | 20.9 | 388 |
+  | `barnesGRat 301/3` | 1.18 | 2.69 | 20.1 | 384 |
+  | `barnesGRat 15001/3` (no shift) | 1.13 | 2.09 | 12.8 | 249 |
+
+  The rational function costs 4–7 % more than the float one at an argument of the same size
+  (the factor `|N + kD| · ⌊1/D⌋` is long where the float's exact `x + k` is short), nothing
+  more where there is no shift.  The float rows are 2–3 % below the run of 2026-11-20: the
+  generic bracket and the constant `16 N²` cost nothing.
 * Not done: computing the shift products with a product tree (they are a sequential
   recurrence); a reflection formula (Clausen integral) for very negative `x`.
 
