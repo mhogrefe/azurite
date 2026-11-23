@@ -608,4 +608,22 @@ theorem barnesGCore_coreConv {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv :
     (hnz : ∀ m : ℕ, xv ≠ -m) : CoreConv (barnesGCore x) (barnesGR xv) :=
   barnesGCoreOf_coreConv (barnesArg_float hx) hnz
 
+/-- **The enclosure of `ln |G(x)|` converges**: at every large level `barnesGLnEnclOf` answers,
+with a width that tends to `0`. -/
+theorem barnesGLnEnclOf_conv {A : BarnesIn} {xv : ℝ} (hA : BarnesArg A xv)
+    (hnz : ∀ m : ℕ, xv ≠ -m) :
+    ∃ ε : ℕ → ℝ, Tendsto ε atTop (𝓝 0) ∧ ∀ᶠ w in atTop, ∃ (neg : Bool) (L : Encl),
+      barnesGLnEnclOf A w = some (neg, L) ∧ AEncl L (Real.log |barnesGR xv|) (ε w) := by
+  obtain ⟨v, -, E, hE, hev⟩ := bgL_tw hA hnz
+  refine ⟨E, hE, ?_⟩
+  filter_upwards [hev, eventually_ge_atTop 64] with w h1 h3
+  have h64 : 64 ≤ bgV A w := by have := bgV_ge A w; omega
+  have : NeZero (bgV A w) := ⟨by omega⟩
+  obtain ⟨neg, wlo, hprod, -⟩ := barnesProdLo_lencl (half_pow_le_eighth (by omega))
+    (hA.frac _ (half_pow_le_eighth (by omega))) hnz (bgN A w) (bgN_sq_le A w)
+  have hc := barnesGLnEncl_eq_bgL hprod
+  obtain ⟨hpos, hL⟩ := barnesGLnEnclOf_spec hA hnz h3 hc
+  rw [sign_mul_eq_abs hpos] at hL
+  exact ⟨neg, bgL A w, hc, h1.of_isEncl hL⟩
+
 end Azurite.AzFloat

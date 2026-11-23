@@ -110,6 +110,7 @@ import Azurite.AzFloat.EulerGamma
 import Azurite.AzFloat.GammaExtremum
 import Azurite.AzFloat.BarnesG
 import Azurite.AzFloat.BarnesGRat
+import Azurite.AzFloat.LnBarnesG
 import Azurite.AzFloat.GlaisherKinkelin
 import Azurite.AzFloat.OmegaConstant
 import Azurite.AzFloat.Factorial
@@ -493,6 +494,9 @@ private def misc : List Entry :=
    F "omegaConstant: lambertW0 1" lambertW0PrecRound [a "1"],
    F "barnesG" barnesGPrecRound [a "1/2", a "-5/2", a "201/2", a "-41/2", a "5001/2"],
    R "barnesGRat" barnesGRatPrecRound [a "1/2", a "1/3", a "-7/3", a "301/3", a "15001/3"],
+   F "lnAbsBarnesG" (fun x p m => (lnAbsBarnesGPrecRound x p m).1)
+     [a "1/2", a "-5/2", a "201/2", a "5001/2"],
+   R "lnAbsBarnesGRat" (fun q p m => (lnAbsBarnesGRatPrecRound q p m).1) [a "1/3", a "301/3"],
    F "glaisherKinkelin" (fun _ => glaisherKinkelinPrecRound) [a "1"],
    F "glaisherKinkelin: products" (fun _ => enclFn gkProducts) [a "1"],
    F "glaisherKinkelin: table" (fun _ => enclFn gkTable) [a "1"],

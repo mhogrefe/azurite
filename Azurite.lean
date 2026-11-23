@@ -333,6 +333,7 @@ import Azurite.AzFloat.Equiv.Ln
 import Azurite.AzFloat.Equiv.Ln10Bracket
 import Azurite.AzFloat.Equiv.Ln2
 import Azurite.AzFloat.Equiv.Ln2Bracket
+import Azurite.AzFloat.Equiv.LnBarnesG
 import Azurite.AzFloat.Equiv.LnBeta
 import Azurite.AzFloat.Equiv.LnBetaRat
 import Azurite.AzFloat.Equiv.LnBracket
@@ -520,6 +521,7 @@ import Azurite.AzFloat.Ln
 import Azurite.AzFloat.Ln10Bracket
 import Azurite.AzFloat.Ln2
 import Azurite.AzFloat.Ln2Bracket
+import Azurite.AzFloat.LnBarnesG
 import Azurite.AzFloat.LnBeta
 import Azurite.AzFloat.LnBetaRat
 import Azurite.AzFloat.LnBracket

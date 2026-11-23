@@ -8809,7 +8809,12 @@ versions?"
   modes, all three functions) and with the rational functions at four pairs.
 * Benchmark rows `betaFloatRat x 5/2` (same values as `beta x 5/2`: the cost of the rational
   route), `betaFloatRat x 1/3`, `lnAbsBetaFloatRat x 5/2`, `lnBetaFloatRat x 5/2` in
-  `az_float_families family:gamma` — to be timed.
+  `az_float_families family:misc`.
+  TIMED 2026-11-23 (ms at 53 / 200 / 1000 / 4000 bits): `betaFloatRat x 5/2` at `1/3`
+  1.01 / 2.42 / 22.2 / 474 (`beta`: 1.04 / 2.43 / 21.6 / 470; `betaRat`: 0.95 / 2.40 / 22.4 /
+  472), at `150` 0.84 / 1.92 / 20.5 / 463 (`beta`: 0.89 / 1.88 / 19.1 / 437);
+  `lnAbsBetaFloatRat` 0.92 / 2.22 / 21.8 / 470.  The rational route costs what `betaRat`
+  costs, at most 6 % above the float bracket.
 
 ### Perf 17. Wright `ω`: very negative arguments (DONE 2026-11-18, measured)
 
@@ -10078,7 +10083,8 @@ User request: "implement the Barnes G function".  `barnesGPrecRound x p mode`, `
   11 to 6.2 ms at 1000 bits and from 200 to 105 at 4000 — halved, not quartered: the
   logarithm of `P` and the additions stay, and `W S` is a full product.  The shared table
   saved 0.9 ms at 1000 bits and 42 ms at 4000 (`G(5001/2)`).  Now about 2.4 constants.
-* **The rational argument (2026-11-22, user request, TIMED 2026-11-23).**  `barnesGRatPrecRound q p mode`,
+* **The rational argument (2026-11-22, user request, TIMED 2026-11-23).**
+  `barnesGRatPrecRound q p mode`,
   `barnesGRat q p`, `barnesGRatPrecRoundFuel` (`AzFloat/BarnesGRat.lean`).  The bracket was
   made generic first: it takes a `BarnesIn` (the enclosures `X V` of the argument, the shift,
   the factors `frac V k`, the bits `eb`) — `barnesGLnEnclOf`, `barnesGCoreOf`,
@@ -10110,6 +10116,29 @@ User request: "implement the Barnes G function".  `barnesGPrecRound x p mode`, `
   (the factor `|N + kD| · ⌊1/D⌋` is long where the float's exact `x + k` is short), nothing
   more where there is no shift.  The float rows are 2–3 % below the run of 2026-11-20: the
   generic bracket and the constant `16 N²` cost nothing.
+* **`ln |G|` and `ln G` (2026-11-23, user decision, TIMED 2026-11-23).**
+  Measured (ms at 53 / 200 / 1000 / 4000 bits): `lnAbsBarnesG 1/2` 1.43 / 2.84 / 18.8 / 370
+  (`barnesG`: 1.46 / 2.89 / 19.6 / 376),
+  `5001/2` 0.99 / 1.88 / 12.4 / 269, `lnAbsBarnesGRat 1/3` 1.42 / 2.91 / 20.2 / 387 — the
+  bracket without the final exponential, 2–9 % below `barnesG`.  `lnAbsBarnesGPrecRound`
+  (value, comparison, sign of `G`), `lnAbsBarnesG`, `lnBarnesGPrecRound`, `lnBarnesG`, and the
+  same for a rational (`…Rat…`), each with a `…Fuel` variant (`AzFloat/LnBarnesG.lean`).  The
+  enclosure of `ln |G|` of the bracket is rounded directly by `lnAbsLoop` (the loop of
+  `ln |B|`).  One driver for both argument types, `lnAbsBarnesGKind`, on a class of the
+  argument (`barnesKind`, `barnesRatKind`): a zero of `G` (`−∞`), a positive integer `≤ 64`
+  (`lnPrecRound` of the exact integer `G(n)`: `0` at `1, 2, 3`, no fuel), or general (the
+  loop).  `ln G` is `NaN` where `G < 0`.  Proofs (`Equiv/LnBarnesG.lean`): pointwise
+  `lnAbsBarnesGKind_exact/_main/_complete`, `lnBarnesGKind_main/_complete`
+  (`barnesGLnEnclOf_conv` gives the convergence), then the generic
+  `lnAbsBarnesG_zivSpec_of` / `lnBarnesG_zivSpec_of` and the four specifications
+  `lnAbsBarnesGPrecRoundFuel_zivSpec`, `lnBarnesGPrecRoundFuel_zivSpec`,
+  `lnAbsBarnesGRatPrecRoundFuel_zivSpec`, `lnBarnesGRatPrecRoundFuel_zivSpec` — `D`: not
+  finite, or an integer `≤ 3`; **`N`: the integers `4, …, 64`, where `ln G(n)` is irrational**
+  (`irrational_log_barnesGR_int`) — and the sign theorems.  Where `|G(x)| = 1` at a
+  non-integer the value `0` is a boundary and the fuel ends the loop.  Tests
+  `Tests/LnBarnesG.lean`; rows `lnAbsBarnesG`, `lnAbsBarnesGRat`.
+  Policy agreed with the user: `ln` forms where the function is computed as the exponential
+  of a log enclosure (Γ, Beta, Barnes `G`; Pochhammer still open), not elsewhere.
 * Not done: computing the shift products with a product tree (they are a sequential
   recurrence); a reflection formula (Clausen integral) for very negative `x`.
 
