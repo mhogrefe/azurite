@@ -128,6 +128,8 @@ import Azurite.AzFloat.DigammaRat
 import Azurite.AzFloat.PsiZero
 import Azurite.AzFloat.QGamma
 import Azurite.AzFloat.LnQGamma
+import Azurite.AzFloat.QBeta
+import Azurite.AzFloat.LnQBeta
 import Azurite.AzFloat.WrightOmega
 import Azurite.AzFloat.Conversion
 import Azurite.AzRat.Parse
@@ -516,6 +518,24 @@ private def misc : List Entry :=
    R "lnAbsQGammaRat 1/3 x"
      (fun x p m => (lnAbsQGammaRatPrecRound (AzRat.parse "1/3").get! x p m).1)
      [a "1/3", a "-7/3", a "20"],
+   F "qBeta 1/2 x 1/2" (fun x => qBetaPrecRound (qf "1/2") x (qf "1/2"))
+     [a "1/3", a "-7/3", a "301/3", a "20"],
+   F "qBeta 2 x 1/2" (fun x => qBetaPrecRound (qf "2") x (qf "1/2")) [a "1/3"],
+   F "qBeta 1/2 x 3" (fun x => qBetaPrecRound (qf "1/2") x (qf "3")) [a "20"],
+   R "qBetaRat 1/3 x 1/2"
+     (fun x => qBetaRatPrecRound (AzRat.parse "1/3").get! x (AzRat.parse "1/2").get!)
+     [a "1/3", a "-7/3"],
+   R "qBetaFloatFloatRat 1/2 1/2 x" (qBetaFloatFloatRatPrecRound (qf "1/2") (qf "1/2"))
+     [a "1/3"],
+   F "lnAbsQBeta 1/2 x 1/2" (fun x p m => (lnAbsQBetaPrecRound (qf "1/2") x (qf "1/2") p m).1)
+     [a "1/3", a "-7/3"],
+   F "lnAbsQBeta 1/2 x 3" (fun x p m => (lnAbsQBetaPrecRound (qf "1/2") x (qf "3") p m).1)
+     [a "20"],
+   F "lnQBeta 1/2 x 1/2" (fun x => lnQBetaPrecRound (qf "1/2") x (qf "1/2")) [a "1/3"],
+   R "lnAbsQBetaRat 1/3 x 1/2"
+     (fun x p m =>
+       (lnAbsQBetaRatPrecRound (AzRat.parse "1/3").get! x (AzRat.parse "1/2").get! p m).1)
+     [a "1/3"],
    F "glaisherKinkelin" (fun _ => glaisherKinkelinPrecRound) [a "1"],
    F "glaisherKinkelin: products" (fun _ => enclFn gkProducts) [a "1"],
    F "glaisherKinkelin: table" (fun _ => enclFn gkTable) [a "1"],

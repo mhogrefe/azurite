@@ -45,20 +45,20 @@ open Finset DLMF
 namespace Spec
 
 open Classical in
-/-- A function of a base `q` and an argument on the extended reals: undefined for a base
+/-- A function of a base `q` on the extended reals and an argument: undefined for a base
 `q ≤ 0` or `q = +∞`, `vΓ` at `q = 1`, and `vAt q` elsewhere. -/
-noncomputable def qBaseLift (vΓ : EReal → Option EReal) (vAt : ℝ → EReal → Option EReal)
-    (q x : EReal) : Option EReal :=
+noncomputable def qBaseLift {X : Type*} (vΓ : X → Option EReal) (vAt : ℝ → X → Option EReal)
+    (q : EReal) (x : X) : Option EReal :=
   if q ≤ 0 ∨ q = ⊤ then none else if q = 1 then vΓ x else vAt q.toReal x
 
-variable {vΓ : EReal → Option EReal} {vAt : ℝ → EReal → Option EReal}
+variable {X : Type*} {vΓ : X → Option EReal} {vAt : ℝ → X → Option EReal}
 
-theorem qBaseLift_none {q : EReal} (hq : q ≤ 0 ∨ q = ⊤) (x : EReal) :
+theorem qBaseLift_none {q : EReal} (hq : q ≤ 0 ∨ q = ⊤) (x : X) :
     qBaseLift vΓ vAt q x = none := by
   unfold qBaseLift
   rw [ite_eq_left hq]
 
-theorem qBaseLift_one (x : EReal) : qBaseLift vΓ vAt 1 x = vΓ x := by
+theorem qBaseLift_one (x : X) : qBaseLift vΓ vAt 1 x = vΓ x := by
   unfold qBaseLift
   rw [ite_eq_right (by
       rintro (h | h)
@@ -66,7 +66,7 @@ theorem qBaseLift_one (x : EReal) : qBaseLift vΓ vAt 1 x = vΓ x := by
         linarith
       · exact EReal.coe_ne_top 1 (by exact_mod_cast h)), ite_eq_left rfl]
 
-theorem qBaseLift_coe {qv : ℝ} (hq0 : 0 < qv) (hq1 : qv ≠ 1) (x : EReal) :
+theorem qBaseLift_coe {qv : ℝ} (hq0 : 0 < qv) (hq1 : qv ≠ 1) (x : X) :
     qBaseLift vΓ vAt (qv : EReal) x = vAt qv x := by
   unfold qBaseLift
   rw [ite_eq_right (by

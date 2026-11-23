@@ -125,6 +125,7 @@ import Azurite.AzFloat.Tests.LnBetaRat
 import Azurite.AzFloat.Tests.LnGamma
 import Azurite.AzFloat.Tests.LnGammaRat
 import Azurite.AzFloat.Tests.LnP1
+import Azurite.AzFloat.Tests.LnQBeta
 import Azurite.AzFloat.Tests.LnQGamma
 import Azurite.AzFloat.Tests.LnRat
 import Azurite.AzFloat.Tests.LnSmooth
@@ -173,6 +174,7 @@ import Azurite.AzFloat.Tests.PrimeConstant
 import Azurite.AzFloat.Tests.Product
 import Azurite.AzFloat.Tests.ProuhetThueMorse
 import Azurite.AzFloat.Tests.PsiZero
+import Azurite.AzFloat.Tests.QBeta
 import Azurite.AzFloat.Tests.QGamma
 import Azurite.AzFloat.Tests.Ramanujan
 import Azurite.AzFloat.Tests.RatPow

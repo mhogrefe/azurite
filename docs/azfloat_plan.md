@@ -10280,6 +10280,114 @@ the base and for the argument.
   powers of the base are full-width from the first step.  The exact `q`-factorials take
   about 0.03 ms.
 
+## The `q`-beta function (DONE 2026-11-23, fuel-based, TIMED)
+
+User request: "implement the q-beta function.  There should be 6 variants (not 8, since it's
+symmetric in the last 2 arguments)".  `B_q(a, b) = Γ_q(a) Γ_q(b) / Γ_q(a + b)` (DLMF 5.18.11),
+`Γ_q` as in the section above (so `B` at `q = 1`, and for `q > 1`
+`B_q(a, b) = B_{1/q}(a, b) q^(1 − ab)`).
+
+* **Six functions** (`AzFloat/QBeta.lean`), named by the kinds of `(q; a, b)`: `qBeta`
+  (all floats), `qBetaFloatFloatRat`, `qBetaFloatRatRat`, `qBetaRatFloatFloat`,
+  `qBetaRatFloatRat`, `qBetaRat` (all rationals); each `…PrecRound`, `…PrecRoundFuel`.
+* **One driver** `qBetaOf Q Sa Sb Ss` on a `QBase` and three `QArg`s (the arguments and
+  their sum): `NaN` at a pole of `a` or `b`, `+∞` at `a = 0` or `b = 0`, **`0` where
+  `a + b` is a non-positive integer**, the exact rational `Γ_q(m) Γ_q(n) / Γ_q(m + n)` at
+  positive integers where the three `q`-factorials are formed (`qBetaExact?`), else the loop.
+* **The bracket is a composition**, no new width proof: `qBetaLnEnclOf` adds the three
+  enclosures of `ln |Γ_q|` (`qGammaLnEnclOf`) with the signs, and the generic `lnCoreExp`
+  takes the exponential (`lnCoreExp_spec`, `lnCoreExp_coreConv`; `qGammaCoreOf` is the same
+  construction).  Cost: three `Γ_q`.  **Not done**: a bracket of its own, one product
+  `∏ (1 − p^(k+1)) (1 − p^(a+b+k)) / ((1 − p^(a+k)) (1 − p^(b+k)))` in which the powers of
+  `1 − p` cancel to `(1 − p)` — about 8 multiplications a step against 18, so twice as fast,
+  for a second width proof.
+* **The sum `a + b`** as an argument: for two floats `qArgSumFloat` (the enclosures are the
+  rounded sums; a non-positive integer is recognized exactly by `sumIsNonposInt` of `B`);
+  for two rationals the rational sum; **a float and a rational: the float as the rational it
+  is** (`toAzRat?`, as `betaFloatRat`) — the same limitation: an argument below `2^(−10⁸)`
+  is a long rational.
+* **At `+∞`**: for `q > 1`, `B_q(+∞, b) = 0` for `b > 0`, as for `B`.  **For `q < 1` the
+  limit is not `0`**: `Γ_q(a)/Γ_q(a + b) → (1 − q)^b`, so `B_q(a, b) → Γ_q(b) (1 − q)^b`;
+  the function answers `NaN` there (the value is computable — one `Γ_q` — and could be
+  added).
+* Specifications (`Equiv/QBeta.lean`): six `ZivSpec`s, instances of `qBeta_zivSpec_sides`;
+  dyadic set `QBetaD` (a base that is no positive real, arguments that are not both real,
+  `a`, `b` or `a + b` a non-positive integer), non-dyadic set empty; `qBetaOf_exact`:
+  correct at every fuel at positive integers whose value is formed, in every base.
+  `Spec.qBeta` through `Spec.qBaseLift` (now over any argument type).
+* **Known rounding boundaries off the integers**: `B_q(1, b) = (1 − q)/(1 − q^b)` is
+  rational where `q^b` is — `3/2` at `q = 1/4`, `b = 1/2` — and more generally `B_q(n, b)`
+  for a positive integer `n` is `Γ_q(n) (1 − q)^n / ∏_{k<n} (1 − q^(b+k))`, algebraic in
+  `q^b`.  Such values end with the fuel (`NaN`).  A closed-form path for an integer argument
+  (powers and one division, certified where `q^b` is rational) would close this; not done.
+* **`ln` forms (DONE 2026-11-23, TIMED)**: `AzFloat/LnQBeta.lean`, twelve functions —
+  `lnAbsQBeta…` (the rounding of `ln |B_q(a, b)|` and the sign of `B_q(a, b)`) and
+  `lnQBeta…`, for the six kinds of `(q; a, b)`.
+  * One driver `lnAbsQBetaOf`: `NaN` at a pole, `+∞` at `a = 0` or `b = 0`, **`−∞` at the
+    zeros** (`a + b` a non-positive integer), `lnRatPrecRound` of the exact rational at
+    positive integers, else `lnAbsLoop` on `qBetaLnEnclOf` — the enclosure behind the
+    bracket of `B_q`.  `ln B_q` is `lnOfSigned` of it (`NaN` where `B_q < 0`).
+  * **Conventions are those of `ln |B|`, `ln B`**, which the functions are at the base `1`:
+    the logarithm of the value of `B_q` (`Spec.lnAbsQBeta_eq`, `Spec.lnQBeta_eq`).  So at
+    `+∞`: `−∞` for `q > 1`, `NaN` for `q < 1`.  (Unlike `lnQGamma`, which follows `lnGamma`
+    and is `NaN` for every negative argument: here `ln B` itself is defined where `B > 0`.)
+  * Arguments that are not real: the logarithm of what `qBetaFloatArgs`/`qBetaMixedArgs`
+    answers (`lnOfZeroOrNan`), so the case analysis of `B_q` is reused, not repeated.
+  * Specifications (`Equiv/LnQBeta.lean`): twelve `ZivSpec`s and six sign theorems, all
+    through the new generic **`qBase2_zivSpec`** (a function of a base and two arguments:
+    `NaN` on a bad base, a given function at the base `1`, a given function on the real
+    class, with properties `PD`, `PN` for its exact sets — `QBase2D`, `QBase2N`).  Dyadic
+    set: the trivial classes, the poles and zeros, and `B_q(1, 1) = 1`.  **Non-dyadic set**:
+    positive integers whose value is formed and is not `1` (`ln` of a positive rational
+    `≠ 1` is irrational), in every base.
+  * Tests `Tests/LnQBeta.lean` (logarithms of the values checked for `B_q`).  Benchmark rows
+    `lnAbsQBeta 1/2 x 1/2`, `lnAbsQBeta 1/2 x 3`, `lnQBeta 1/2 x 1/2`,
+    `lnAbsQBetaRat 1/3 x 1/2`.
+  * **Timings (2026-11-23, second of two runs, ms at 53 / 200 / 1000 / 4000 bits).**
+
+    | function | argument | @53 | @200 | @1000 | @4000 |
+    |---|---|---|---|---|---|
+    | `lnAbsQBeta 1/2 x 1/2` | `1/3` | 5.30 | 11.0 | 71.8 | 1300 |
+    | `lnAbsQBeta 1/2 x 1/2` | `−7/3` | 5.38 | 10.6 | 72.5 | 1289 |
+    | `lnAbsQBeta 1/2 x 3` | `20` (exact) | 0.155 | 0.211 | 0.641 | 3.80 |
+    | `lnQBeta 1/2 x 1/2` | `1/3` | 5.27 | 10.9 | 73.7 | 1280 |
+    | `lnAbsQBetaRat 1/3 x 1/2` | `1/3` | 4.28 | 8.69 | 62.6 | 1363 |
+
+    Reading: the cost of `B_q` (5.41 / 11.4 / 72.9 / 1283 and 4.38 / 8.91 / 63.5 / 1360),
+    within 3 % either way — the three products dominate and the final exponential is
+    nothing against them.  The two runs agree within 4 %.  At exact integers: one `ln` of a
+    rational, 0.15–3.8 ms.
+* **This closes the list of Chapter 5 functions** (the order of 2026-11-17: Bernoulli
+  numbers, `ln Γ`, `Γ` and `1/Γ`, `ψ` and its zeros, Beta and Pochhammer, polygamma,
+  `Γ(1/3)`, `Γ(1/4)`, Barnes `G`, `q`-gamma — and `q`-beta), each with its `ln` forms where
+  the bracket is the exponential of a log enclosure.  Still open in the DLMF ledger for
+  Chapter 5, not functions: the decimals of §5.4 (5.4.6–5.4.10, Table 5.4.1) and of the
+  caption of Figure 5.3.1 are marked BACKFILL there and can now be done with `psiZero`,
+  `gammaExtremum` and the constants; 5.13.5 is deferred to Chapter 16.
+* Tests `Tests/QBeta.lean` (values checked against an independent 90-digit product).
+  Benchmark rows `qBeta 1/2 x 1/2`, `qBeta 2 x 1/2`, `qBeta 1/2 x 3`, `qBetaRat 1/3 x 1/2`,
+  `qBetaFloatFloatRat 1/2 1/2 x` in `az_float_families family:misc`.
+* **Timings (2026-11-23, ms at 53 / 200 / 1000 / 4000 bits).**
+
+  | function | argument | @53 | @200 | @1000 | @4000 |
+  |---|---|---|---|---|---|
+  | `qBeta 1/2 x 1/2` | `1/3` | 5.41 | 11.4 | 72.9 | 1283 |
+  | `qBeta 1/2 x 1/2` | `−7/3` | 5.53 | 10.7 | 72.9 | 1283 |
+  | `qBeta 1/2 x 1/2` | `301/3` | 5.35 | 11.1 | 73.1 | 1283 |
+  | `qBeta 1/2 x 1/2` | `20` | 5.44 | 11.0 | 73.1 | 1282 |
+  | `qBeta 2 x 1/2` | `1/3` | 5.88 | 12.9 | 94.3 | 2209 |
+  | `qBeta 1/2 x 3` | `20` (exact) | 0.066 | 0.060 | 0.061 | 0.064 |
+  | `qBetaRat 1/3 x 1/2` | `1/3` | 4.38 | 8.91 | 63.5 | 1360 |
+  | `qBetaRat 1/3 x 1/2` | `−7/3` | 4.47 | 9.01 | 63.3 | 1393 |
+  | `qBetaFloatFloatRat 1/2 1/2 x` | `1/3` | 5.41 | 11.2 | 72.1 | 1274 |
+
+  Reading: three `Γ_q` as built — 2.8–3.0 times `qGamma` at the same base (1.92 / 3.88 /
+  24.9 / 428 at base `1/2`).  The kind and the sign of the arguments do not matter; an
+  integer argument that is not paired with another integer goes through the loop at full
+  cost (`B_{1/2}(20, 1/2)`); the exact values take 0.06 ms.  (The `qBeta 1/2 x 1/2` rows
+  are from a second run: in the first, the first row of the run read 8.2 / 12.7 / 106 /
+  1383, a warm-up effect.)
+
 ## Timings of the elementary families (2026-11-17)
 
 Benchmark `az_float_families` (`Azurite/Benchmark/AzFloatFamilies.lean`): one table per family

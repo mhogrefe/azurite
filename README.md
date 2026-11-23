@@ -88,9 +88,9 @@ arguments:
   hyperbolic and inverse functions, including the forms with a period
   (`sin (π x)`, `atan2`, and so on).
 - **Special functions.** `Γ`, `1/Γ`, `ln Γ`, `ψ` and its zeros, polygamma, Beta,
-  Pochhammer symbols, the Barnes `G`-function, the `q`-gamma function, the
-  arithmetic–geometric mean, Lambert `W`, the Wright `ω` and tree functions,
-  the Gudermannian.
+  Pochhammer symbols, the Barnes `G`-function, the `q`-gamma and `q`-beta
+  functions, the arithmetic–geometric mean, Lambert `W`, the Wright `ω` and
+  tree functions, the Gudermannian.
 - **Constants.** `π`, `e`, `ln 2`, `φ`, Euler's `γ`, Catalan's constant, the
   Glaisher–Kinkelin, Gauss, lemniscate and omega constants, `e^π`, `2^√2`,
   `Γ(1/3)`, `Γ(1/4)` and others.
