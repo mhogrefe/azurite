@@ -10202,9 +10202,35 @@ the base and for the argument.
   `∑ ln(1 − q^(x+k))`) would be the way there.  A negative `x` adds `|x|` steps.  Possible
   speed-up, not done: lower bounds with a counted upper bound (as `barnesProdLo`) in place of
   enclosures, about half the multiplications.
-* **`ln` forms**: not written.  The bracket is the exponential of an enclosure of
-  `ln |Γ_q(x)|` (`qGammaLnEnclOf`, with `qGammaLnEnclOf_conv`), so by the policy of
-  2026-11-23 `lnAbsQGamma`/`lnQGamma` are natural and cheap to add (as `LnBarnesG`).
+* **`ln` forms (DONE 2026-11-23, UNTIMED)**: `AzFloat/LnQGamma.lean`, eight functions —
+  `lnAbsQGamma…` (the rounding of `ln |Γ_q(x)|` and the sign of `Γ_q(x)`) and `lnQGamma…`,
+  each for the four float/rational combinations (`…`, `…FloatRat`, `…RatFloat`, `…Rat`), with
+  `…PrecRound`, `…PrecRoundFuel` and to-nearest forms.
+  * One driver `lnAbsQGammaOf` on a `QBase` and a `QArg`: `+∞` at `0` and the poles,
+    `lnRatPrecRound` of the exact `q`-factorial where `qGammaExact?` forms it (no fuel),
+    else `lnAbsLoop` on `qGammaLnEnclOf` — the enclosure whose exponential is the bracket of
+    `Γ_q`, so no new bracket and no new width proof.
+  * **Conventions are those of `ln Γ`**, which the functions are at the base `1`
+    (`lnAbsGammaPrecRoundFuel`, `lnGammaPrecRoundFuel`, rational versions): `ln |Γ_q|` is
+    `+∞` at `x = ±∞`, `0` and the poles, with the sign `true`; `ln Γ_q` is `ln |Γ_q|` for
+    `x ≥ 0` and `NaN` for every `x < 0` (also where `Γ_q(x) > 0`), defined as such
+    (`if x < 0 then NaN else (lnAbs…).1`).  This differs from `lnBarnesG`, which is the
+    logarithm wherever `G ≥ 0`; here agreement with `lnGamma` across `q = 1` decided.
+  * Specifications (`Equiv/LnQGamma.lean`): eight `ZivSpec`s.  The four `lnAbs` ones are
+    instances of `lnAbsQGamma_zivSpec_sides`, an instance of the new generic
+    `qBaseLift_zivSpec` (a function of a base and an argument: `NaN` on a bad base, a given
+    function at the base `1`, a given function on the real class, with its exact sets); the
+    four `ln` ones follow by the new `ZivSpec.restrict` from `Spec.lnQGamma_eq`
+    (`ln Γ_q = ln |Γ_q|` off the negative arguments, in every base).  Dyadic set: the
+    trivial class, `0`, the poles, `n = 1, 2` (values `+∞`, `0`).  **Non-dyadic set, not
+    empty this time**: the integers `n ≥ 3` whose `q`-factorial is formed — `ln` of a
+    rational above `1` is irrational (`irrational_log_rat`, `one_lt_qFactorial`), in every
+    base, rational or float.  Sign theorems `lnAbsQGamma…PrecRoundFuel_sign`.
+  * Mathematics added (`Transcendental/QGamma.lean`): `qPochR_pos`, `qGammaR_pos`,
+    `qGammaReal_pos` (`Γ_q(x) > 0` for `x > 0`, every base), `one_lt_qFactorial`.
+  * Tests `Tests/LnQGamma.lean` (values checked against an independent 90-digit product).
+    Benchmark rows `lnAbsQGamma 1/2 x`, `lnAbsQGamma 2 x`, `lnQGamma 1/2 x`,
+    `lnAbsQGammaRat 1/3 x` in `az_float_families family:misc` — to be timed.
 * Tests `Tests/QGamma.lean` (values checked against an independent 60-digit product).
   Benchmark rows `qGamma 1/2 x`, `qGamma 2 x`, `qGamma 15/16 x`, `qGamma 1/1024 x`,
   `qGamma 1/3 x`, `qGammaRat 1/3 x`, `qGammaFloatRat 1/2 x`, `qGammaRatFloat 1/3 x` in

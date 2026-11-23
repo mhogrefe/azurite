@@ -125,6 +125,7 @@ import Azurite.AzFloat.Tests.LnBetaRat
 import Azurite.AzFloat.Tests.LnGamma
 import Azurite.AzFloat.Tests.LnGammaRat
 import Azurite.AzFloat.Tests.LnP1
+import Azurite.AzFloat.Tests.LnQGamma
 import Azurite.AzFloat.Tests.LnRat
 import Azurite.AzFloat.Tests.LnSmooth
 import Azurite.AzFloat.Tests.Log10

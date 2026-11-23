@@ -882,7 +882,14 @@ def main (args : List String) : IO UInt32 := do
   match args with
   | [name, path] =>
     match modes.lookup name with
-    | some m => runMode name m path
+    | some m =>
+      -- The Float and BigExponentFloat modes also read the demos of the in-place and borrowing
+      -- variants of their operations.
+      let m :=
+        if name.startsWith "az_float_" || name.startsWith "az_big_exponent_float_" then
+          { m with check := withOwnershipForms m.check }
+        else m
+      runMode name m path
     | none =>
       IO.eprintln s!"Unknown mode: '{name}'"
       IO.eprintln s!"Valid modes: {modes.map (·.1)}"

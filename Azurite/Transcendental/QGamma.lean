@@ -24,7 +24,8 @@ For the computation of `Γ_q(x)` (`DLMF.qGamma`, DLMF §5.18) at a real `x` and 
   `Γ_q(x) = Γ_{1/q}(x) q^((x−1)(x−2)/2)` for `q > 1` (the usual continuation in the base:
   it keeps `Γ_q(x + 1) = (q^x − 1)/(q − 1) Γ_q(x)`, `Γ_q(1) = 1`);
 * `qGammaReal_nat`: `Γ_q(n + 1) = ∏_{k<n} (1 + q + ⋯ + q^k)`, the `q`-factorial, for every
-  base `q > 0`, `q ≠ 1`.
+  base `q > 0`, `q ≠ 1`;
+* `qGammaReal_pos` (`Γ_q(x) > 0` for `x > 0`) and `one_lt_qFactorial`, for the logarithms.
 -/
 
 open Filter Topology Finset
@@ -110,6 +111,30 @@ theorem qPochR_bounds {a : ℝ} (ha0 : 0 ≤ a) (ha1 : a ≤ 1) :
     linarith
   · exact (prod_one_sub_bounds hp0 hp1.le ha0 ha1 n).2.1
 
+/-- `(a; p)_∞ > 0` for `0 ≤ a < 1`. -/
+theorem qPochR_pos {a : ℝ} (ha0 : 0 ≤ a) (ha1 : a < 1) : 0 < qPochR a p := by
+  have h1p : 0 < 1 - p := by linarith
+  obtain ⟨K, hK⟩ := exists_pow_lt_of_lt_one h1p hp1
+  have hpK : 0 < p ^ K := pow_pos hp0 K
+  have haK : a * p ^ K ≤ p ^ K := by nlinarith
+  rw [qPochR_split hp0 hp1 a K]
+  refine mul_pos (prod_pos fun k _ => ?_) ?_
+  · have : a * p ^ k ≤ a := by
+      have := pow_le_one₀ hp0.le hp1.le (n := k)
+      nlinarith
+    linarith
+  · have hb := (qPochR_bounds hp0 hp1 (a := a * p ^ K) (by positivity) (by linarith)).1
+    have : a * p ^ K / (1 - p) < 1 := by
+      rw [div_lt_one h1p]
+      linarith
+    linarith
+
+/-- `Γ_p(x) > 0` for `x > 0`. -/
+theorem qGammaR_pos {x : ℝ} (hx : 0 < x) : 0 < qGammaR p x := by
+  unfold qGammaR
+  exact div_pos (mul_pos (qPochR_pos hp0 hp1 hp0.le hp1) (Real.rpow_pos_of_pos (by linarith) _))
+    (qPochR_pos hp0 hp1 (Real.rpow_nonneg hp0.le x) (Real.rpow_lt_one hp0.le hp1 hx))
+
 /-- `(a; p)_∞` in the complex numbers, for real `a` and `p`. -/
 theorem qPochhammerInf_ofReal (a : ℝ) :
     qPochhammerInf (a : ℂ) (p : ℂ) = ((qPochR a p : ℝ) : ℂ) := by
@@ -194,5 +219,32 @@ theorem qGammaReal_nat {q : ℝ} (hq0 : 0 < q) (hq1 : q ≠ 1) (n : ℕ) :
     have hjk : j ≤ k := by have := Finset.mem_range.mp hj; omega
     rw [show k + 1 - 1 - j = k - j by omega, inv_pow, pow_sub₀ q hq0.ne' hjk]
     ring
+
+/-- **`Γ_q(x) > 0` for `x > 0`**, in every base `q > 0`. -/
+theorem qGammaReal_pos {q : ℝ} (hq0 : 0 < q) {x : ℝ} (hx : 0 < x) : 0 < qGammaReal q x := by
+  rcases lt_trichotomy q 1 with h | h | h
+  · rw [qGammaReal_of_lt_one h]
+    exact qGammaR_pos hq0 h hx
+  · unfold qGammaReal
+    rw [ite_eq_right (not_lt.mpr h.ge), ite_eq_left h]
+    exact Real.Gamma_pos_of_pos hx
+  · rw [qGammaReal_of_one_lt h]
+    exact mul_pos (qGammaR_pos (inv_pos.mpr hq0) (inv_lt_one_of_one_lt₀ h) hx)
+      (Real.rpow_pos_of_pos hq0 _)
+
+/-- The `q`-factorial of `n ≥ 2` is above `1` for `q > 0`. -/
+theorem one_lt_qFactorial {q : ℝ} (hq0 : 0 < q) {n : ℕ} (hn : 2 ≤ n) :
+    1 < ∏ k ∈ range n, ∑ j ∈ range (k + 1), q ^ j := by
+  induction n, hn using Nat.le_induction with
+  | base =>
+    simp [prod_range_succ, sum_range_succ]
+    linarith
+  | succ n _ ih =>
+    rw [prod_range_succ]
+    have h1 : 1 ≤ ∑ j ∈ range (n + 1), q ^ j := by
+      rw [sum_range_succ']
+      have : 0 ≤ ∑ j ∈ range n, q ^ (j + 1) := sum_nonneg fun j _ => by positivity
+      simpa using this
+    nlinarith
 
 end Azurite.DLMF

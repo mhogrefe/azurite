@@ -345,6 +345,7 @@ import Azurite.AzFloat.Equiv.LnGammaEventually
 import Azurite.AzFloat.Equiv.LnGammaRat
 import Azurite.AzFloat.Equiv.LnGammaWidth
 import Azurite.AzFloat.Equiv.LnP1
+import Azurite.AzFloat.Equiv.LnQGamma
 import Azurite.AzFloat.Equiv.LnRat
 import Azurite.AzFloat.Equiv.LnSmooth
 import Azurite.AzFloat.Equiv.LnSmoothWidth
@@ -533,6 +534,7 @@ import Azurite.AzFloat.LnGamma
 import Azurite.AzFloat.LnGammaBracket
 import Azurite.AzFloat.LnGammaRat
 import Azurite.AzFloat.LnP1
+import Azurite.AzFloat.LnQGamma
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.LnSmooth
 import Azurite.AzFloat.Log10

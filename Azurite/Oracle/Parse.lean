@@ -262,4 +262,90 @@ def parseLimbs (ss : List String) : Option (Array UInt64) := do
 def pairString {α : Type} [ToString α] (a : α) (o : Ordering) : String :=
   s!"({a}, {orderingName o})"
 
+/-- Whether `c` can be part of a Rust identifier. -/
+def isIdentChar (c : Char) : Bool := c.isAlphanum || c == '_'
+
+/-- A method name without the suffixes that name its ownership variant (`_val_ref`, `_ref_ref`,
+`_ref`, `_assign`, `_assign_ref`, …), which is the name of the operation itself. -/
+partial def stripOwnershipSuffixes (name : String) : String :=
+  match ["_val", "_ref", "_assign"].find? (name.endsWith ·) with
+  | some s => stripOwnershipSuffixes (dropRightChars name s.length)
+  | none => name
+
+/-- The line with every called method or associated function (`.name(` or `::name(`) renamed
+by `stripOwnershipSuffixes`. -/
+def stripCalledOwnershipSuffixes (line : String) : String := Id.run do
+  let cs := line.toList.toArray
+  let mut out := ""
+  let mut i := 0
+  while i < cs.size do
+    let c := cs[i]!
+    if isIdentChar c && (i == 0 || !isIdentChar cs[i - 1]!) then
+      let mut j := i
+      while j < cs.size && isIdentChar cs[j]! do
+        j := j + 1
+      let word := String.ofList (cs.extract i j).toList
+      let called :=
+        j < cs.size && cs[j]! == '(' && i > 0 && (cs[i - 1]! == '.' || cs[i - 1]! == ':')
+      out := out ++ (if called then stripOwnershipSuffixes word else word)
+      i := j
+    else
+      out := out.push c
+      i := i + 1
+  return out
+
+/-- An in-place demo line, `x := X; x.op(args) = o; x = Z`, `x := X; x.op(args); x = Z`, or
+`x := X; x op= Y; x = Z`, as the out-of-place line it stands for: `(X).op(args) = (Z, o)`,
+`(X).op(args) = Z` (`-(X) = Z` for `neg` and `|X| = Z` for `abs`, as their demos print them), or
+`(X) op Y = Z`. -/
+def assignmentAsCall (line : String) : Option String := do
+  let [a, b, c] := (line.splitOn "; ").map trim | none
+  let [v, x] := a.splitOn " := " | none
+  guard (c.startsWith s!"{v} = ")
+  let z := dropChars c (v.length + 3)
+  if b.startsWith s!"{v}." then
+    let call := dropChars b (v.length + 1)
+    match splitEquals call with
+    | some (lhs, o) => pure s!"({x}).{lhs} = ({z}, {o})"
+    | none =>
+      match stripOwnershipSuffixes ((call.splitOn "(").headD "") with
+      | "neg" => pure s!"-({x}) = {z}"
+      | "abs" => pure s!"|{x}| = {z}"
+      | _ => pure s!"({x}).{call} = {z}"
+  else
+    match b.splitOn " " with
+    | v' :: op :: rest =>
+      guard (v' == v && op.length ≥ 2 && op.endsWith "=")
+      pure s!"({x}) {dropRightChars op 1} {" ".intercalate rest} = {z}"
+    | _ => none
+
+/-- A line of a demo of an in-place or borrowing variant of an operation, rewritten as the lines
+the operation's own demos may print: in-place forms become out-of-place ones
+(`assignmentAsCall`), ownership suffixes are dropped from called names, and a borrowed `|&x|`
+becomes `|x|`. Since `Float` prints its absolute value and negation as `|x|` and `-(x)` and
+`BigExponentFloat` as `(x).abs()` and `(x).neg()`, a line of either kind comes in both forms. -/
+def normalizedOwnershipForms (line : String) : List String :=
+  let line := stripCalledOwnershipSuffixes (((assignmentAsCall line).getD line).replace "|&" "|")
+  match splitEquals line with
+  | some (lhs, z) =>
+    if lhs.startsWith "|" && lhs.endsWith "|" then
+      [line, s!"({dropRightChars (dropChars lhs 1) 1}).abs() = {z}"]
+    else if lhs.startsWith "-(" && lhs.endsWith ")" then
+      [line, s!"{dropChars lhs 1}.neg() = {z}"]
+    else [line]
+  | none => [line]
+
+/-- Lets a check read the lines of the demos of an operation's in-place and borrowing variants:
+a line the check cannot read is checked again in each form `normalizedOwnershipForms` gives,
+taking the first form the check can read. A line the check reads as printed is never
+rewritten. -/
+def withOwnershipForms (check : String → Verdict) (line : String) : Verdict :=
+  match check line with
+  | .error (.unreadable msg) =>
+    let forms := (normalizedOwnershipForms line).filter (· != line)
+    match forms.map check |>.find? (fun v => !(v matches .error (.unreadable _))) with
+    | some verdict => verdict
+    | none => .error (.unreadable msg)
+  | verdict => verdict
+
 end Azurite.Oracle

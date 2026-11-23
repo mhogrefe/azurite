@@ -127,6 +127,7 @@ import Azurite.AzFloat.Gamma
 import Azurite.AzFloat.DigammaRat
 import Azurite.AzFloat.PsiZero
 import Azurite.AzFloat.QGamma
+import Azurite.AzFloat.LnQGamma
 import Azurite.AzFloat.WrightOmega
 import Azurite.AzFloat.Conversion
 import Azurite.AzRat.Parse
@@ -508,6 +509,13 @@ private def misc : List Entry :=
    R "qGammaRat 1/3 x" (qGammaRatPrecRound (AzRat.parse "1/3").get!) [a "1/3", a "-7/3", a "20"],
    R "qGammaFloatRat 1/2 x" (qGammaFloatRatPrecRound (qf "1/2")) [a "1/3"],
    F "qGammaRatFloat 1/3 x" (qGammaRatFloatPrecRound (AzRat.parse "1/3").get!) [a "1/3"],
+   F "lnAbsQGamma 1/2 x" (fun x p m => (lnAbsQGammaPrecRound (qf "1/2") x p m).1)
+     [a "1/3", a "-7/3", a "301/3", a "20"],
+   F "lnAbsQGamma 2 x" (fun x p m => (lnAbsQGammaPrecRound (qf "2") x p m).1) [a "1/3"],
+   F "lnQGamma 1/2 x" (lnQGammaPrecRound (qf "1/2")) [a "1/3"],
+   R "lnAbsQGammaRat 1/3 x"
+     (fun x p m => (lnAbsQGammaRatPrecRound (AzRat.parse "1/3").get! x p m).1)
+     [a "1/3", a "-7/3", a "20"],
    F "glaisherKinkelin" (fun _ => glaisherKinkelinPrecRound) [a "1"],
    F "glaisherKinkelin: products" (fun _ => enclFn gkProducts) [a "1"],
    F "glaisherKinkelin: table" (fun _ => enclFn gkTable) [a "1"],
