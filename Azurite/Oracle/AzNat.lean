@@ -599,6 +599,11 @@ def checkToStringBase (line : String) : Verdict := do
 def checkIsSquare : String → Verdict :=
   checkPredicate " is a perfect square" " is not a perfect square" AzNat.isSquare
 
+/-- `n is prime` or `n is not prime`, decided by `isPrime` (a Miller–Rabin filter and a proven
+APR-CL certificate). -/
+def checkIsPrime : String → Verdict :=
+  checkPredicate " is prime" " is not prime" AzNat.isPrime
+
 /-- `primes_less_than(n) = [p, …]` or `primes_less_than_or_equal_to(n) = [p, …]`: the list must be
 exactly the primes in range, in increasing order, each one decided by `isPrime` (a Miller–Rabin
 filter and a proven APR-CL certificate). -/

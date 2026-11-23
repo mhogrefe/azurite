@@ -3177,6 +3177,11 @@ import Azurite.DLMF.Chapter6.Section7Aux
 import Azurite.DLMF.Chapter6.Section7Sine
 import Azurite.DLMF.Chapter6.Section8
 import Azurite.DLMF.Chapter6.Section9
+import Azurite.ECPP.Theory.Chain
+import Azurite.ECPP.Theory.Criterion
+import Azurite.ECPP.Theory.Hasse
+import Azurite.ECPP.Theory.Manin
+import Azurite.ECPP.Theory.ManinAlgebra
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
