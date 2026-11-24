@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzPolynomial.DivModByMonic
 import Azurite.AzPolynomial.FastMul
+import Azurite.AzPolynomial.Equiv.ModByMonicInv
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.ToString
 import Azurite.Algorithm.SlidingWindowPow
@@ -128,14 +129,102 @@ quotient-ring operations, so `a ^ n` costs `O(log n)` reduced multiplications. -
 def pow [AzPolynomial.AzPolynomialMulConfig R] (a : AzPolyMod f) (n : ℕ) : AzPolyMod f :=
   Azurite.slidingWindowPow a n
 
-instance [AzPolynomial.AzPolynomialMulConfig R] : Pow (AzPolyMod f) ℕ := ⟨pow⟩
-
 /-- **Exponentiation with an `AzNat` exponent** in `R[x] / (f)`.  The exponent is read at the
 limb level (never through `AzNat.toNat`), so huge exponents like `p^k` (used in factorization)
 stay limb-level.  Coexists with the `ℕ`-exponent `pow`; the `Monoid`/`CommRing` `npow` remains
 `ℕ`-indexed. -/
 def powAzNat [AzPolynomial.AzPolynomialMulConfig R] (a : AzPolyMod f) (n : AzNat) : AzPolyMod f :=
   Azurite.slidingWindowPowAzNat a n
+
+/-! ### Powers with the reduction by a precomputed inverse
+
+A power does many multiplications modulo the same `f`.  For monic `f` the inverse of the
+reversed `f` is computed once (`AzPolynomial.invRev`), and each product is then reduced by two
+polynomial products (`AzPolynomial.modByMonicInv`) instead of the quadratic division.  The
+fast powers are equal to `pow` and `powAzNat` for every `f`, and the compiler uses them in
+their place (`@[csimp]`). -/
+
+/-- The product of two classes, reduced with the inverse `g` of the reversed `f`. -/
+def mulInv [AzPolynomial.AzPolynomialMulConfig R] (g : AzPolynomial R) (a b : AzPolyMod f) :
+    AzPolyMod f :=
+  let r := AzPolynomial.modByMonicInv f g (a.val * b.val)
+  if h : r.coeffs.size < f.coeffs.size ∨ f.coeffs.size = 0 then ⟨r, h⟩ else ofPoly r
+
+theorem mulInv_invRev [AzPolynomial.AzPolynomialMulConfig R] (hmon : f.leadingCoeff = 1)
+    (a b : AzPolyMod f) : mulInv (AzPolynomial.invRev f) a b = a * b := by
+  unfold mulInv
+  simp only [AzPolynomial.modByMonicInv_eq f _ hmon]
+  rw [dite_eq_left_of_eq_true (eq_true (modByMonic_isReduced _))]
+  rfl
+
+/-- Powers reduce by the precomputed inverse: `f` is monic and has at least as many
+coefficients as the multiplication config of `R` asks for (`invThreshold`; never for a
+quadratic product). -/
+def useInv [AzPolynomial.AzPolynomialMulConfig R] (f : AzPolynomial R) : Bool :=
+  decide (f.leadingCoeff = 1) &&
+    (AzPolynomial.AzPolynomialMulConfig.invThreshold (R := R)).any fun t =>
+      decide (t ≤ f.coeffs.size)
+
+theorem leadingCoeff_of_useInv [AzPolynomial.AzPolynomialMulConfig R] {f : AzPolynomial R}
+    (h : useInv f = true) : f.leadingCoeff = 1 := by
+  unfold useInv at h
+  rw [Bool.and_eq_true] at h
+  exact of_decide_eq_true h.1
+
+/-- `powAzNat` with the reduction by the precomputed inverse when `useInv f`. -/
+def powAzNatFast [AzPolynomial.AzPolynomialMulConfig R] (a : AzPolyMod f) (n : AzNat) :
+    AzPolyMod f :=
+  if useInv f then
+    let g := AzPolynomial.invRev f
+    letI : Mul (AzPolyMod f) := ⟨mulInv g⟩
+    Azurite.slidingWindowPowAzNat a n
+  else Azurite.slidingWindowPowAzNat a n
+
+theorem powAzNatFast_eq [AzPolynomial.AzPolynomialMulConfig R] (a : AzPolyMod f) (n : AzNat) :
+    powAzNatFast a n = powAzNat a n := by
+  unfold powAzNatFast powAzNat
+  split
+  · next h =>
+    have hm : (⟨mulInv (AzPolynomial.invRev f)⟩ : Mul (AzPolyMod f)) = ⟨mul⟩ := by
+      congr 1
+      funext a b
+      exact mulInv_invRev (leadingCoeff_of_useInv h) a b
+    dsimp only
+    rw [hm]
+  · rfl
+
+@[csimp] theorem powAzNat_eq_powAzNatFast : @powAzNat = @powAzNatFast := by
+  funext R _ _ f _ a n
+  exact (powAzNatFast_eq a n).symm
+
+/-- `pow` with the reduction by the precomputed inverse. -/
+def powFast [AzPolynomial.AzPolynomialMulConfig R] (a : AzPolyMod f) (n : ℕ) : AzPolyMod f :=
+  if useInv f then
+    let g := AzPolynomial.invRev f
+    letI : Mul (AzPolyMod f) := ⟨mulInv g⟩
+    Azurite.slidingWindowPow a n
+  else Azurite.slidingWindowPow a n
+
+theorem powFast_eq [AzPolynomial.AzPolynomialMulConfig R] (a : AzPolyMod f) (n : ℕ) :
+    powFast a n = pow a n := by
+  unfold powFast pow
+  split
+  · next h =>
+    have hm : (⟨mulInv (AzPolynomial.invRev f)⟩ : Mul (AzPolyMod f)) = ⟨mul⟩ := by
+      congr 1
+      funext a b
+      exact mulInv_invRev (leadingCoeff_of_useInv h) a b
+    dsimp only
+    rw [hm]
+  · rfl
+
+@[csimp] theorem pow_eq_powFast : @pow = @powFast := by
+  funext R _ _ f _ a n
+  exact (powFast_eq a n).symm
+
+-- The `Pow` instances come after the `@[csimp]` theorems, so that they compile to the fast
+-- powers.
+instance [AzPolynomial.AzPolynomialMulConfig R] : Pow (AzPolyMod f) ℕ := ⟨pow⟩
 
 instance [AzPolynomial.AzPolynomialMulConfig R] : Pow (AzPolyMod f) AzNat := ⟨powAzNat⟩
 
@@ -239,5 +328,32 @@ private def r8 (s : String) : AzPolyMod f8 :=
 #guard render ((r8 "x+1") * (r8 "x+1")) == "2*x"
 -- `(3x)(3x) = 9x² ≡ x² ≡ 7 (mod 8)` (both degree and coefficient wrap).
 #guard render ((r8 "3*x") * (r8 "3*x")) == "7"
+
+/-! ### The fast powers against sliding-window powers with the plain product
+
+`pow`/`powAzNat` compile to `powFast`/`powAzNatFast`, so the comparison is with
+`slidingWindowPow`/`slidingWindowPowAzNat` over the plain `Mul` instance. -/
+
+private def fBig : AzPolynomial (AzZMod (AzNat.ofNat 1000003)) :=
+  AzPolynomial.monomial 20 1 + AzPolynomial.normalize ((Array.range 20).map fun i =>
+    AzZMod.ofAzNat _ (AzNat.ofNat (i * i * 977 + 5)))
+private def xBig : AzPolyMod fBig :=
+  ofPoly (AzPolynomial.normalize ((Array.range 20).map fun i =>
+    AzZMod.ofAzNat _ (AzNat.ofNat (i * 31337 + 7))))
+
+#guard useInv fBig
+#guard powAzNatFast xBig (AzNat.ofNat 1000003) =
+  Azurite.slidingWindowPowAzNat xBig (AzNat.ofNat 1000003)
+#guard powAzNatFast xBig ((AzNat.ofNat 3).pow 60) =
+  Azurite.slidingWindowPowAzNat xBig ((AzNat.ofNat 3).pow 60)
+#guard powFast xBig 12345 = Azurite.slidingWindowPow xBig 12345
+#guard powFast xBig 0 = Azurite.slidingWindowPow xBig 0
+#guard mulInv (AzPolynomial.invRev fBig) xBig xBig = xBig * xBig
+-- a non-monic modulus takes the plain path
+private def fNon : AzPolynomial (AzZMod (AzNat.ofNat 1000003)) :=
+  AzPolynomial.monomial 20 2 + fBig
+#guard !useInv fNon
+#guard powAzNatFast (ofPoly (f := fNon) xBig.val) (AzNat.ofNat 999) =
+  Azurite.slidingWindowPowAzNat (ofPoly (f := fNon) xBig.val) (AzNat.ofNat 999)
 
 end Tests

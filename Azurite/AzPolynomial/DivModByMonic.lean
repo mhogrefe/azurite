@@ -8,6 +8,8 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzPolynomial.FastMul
+import Azurite.AzPolynomial.Equiv.Monomial
+import Azurite.AzPolynomial.Equiv.Sub
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Sub
@@ -82,6 +84,119 @@ def modByMonic (P f : AzPolynomial R) : AzPolynomial R := (divModByMonic P f).2
 /-- The quotient of `P` divided by the monic polynomial `f`. -/
 def divByMonic (P f : AzPolynomial R) : AzPolynomial R := (divModByMonic P f).1
 
+/-! ### The remainder in place
+
+`divModByMonicAux` builds, at every step, the polynomial `c · Xᵏ · f` and a new remainder.
+`modByMonicFast` runs the same steps on the coefficient array of the remainder (one pass
+`b[k + i] -= c · f[i]`, then the trailing zeros are dropped) and builds no quotient.  It is
+equal to `modByMonic` for every `f`, monic or not (`modByMonic_eq_modByMonicFast`), and the
+compiler uses it in place of `modByMonic` (`@[csimp]`), so that the theory keeps talking about
+`modByMonic`. -/
+
+/-- `b[k + i'] -= c · f[i']` for `i ≤ i' < i + n`. -/
+def subScaledLoop (f : Array R) (c : R) (k : ℕ) : ℕ → ℕ → Array R → Array R
+  | 0, _, b => b
+  | n + 1, i, b =>
+    subScaledLoop f c k n (i + 1) (b.modify (k + i) (· - c * (f[i]?).getD 0))
+
+omit [DecidableEq R] in
+theorem subScaledLoop_getElem? (f : Array R) (c : R) (k : ℕ) :
+    ∀ (n i : ℕ) (b : Array R) (j : ℕ),
+      ((subScaledLoop f c k n i b)[j]?).getD 0 =
+        if k + i ≤ j ∧ j < k + i + n ∧ j < b.size then
+          (b[j]?).getD 0 - c * (f[j - k]?).getD 0
+        else (b[j]?).getD 0 := by
+  intro n
+  induction n with
+  | zero =>
+    intro i b j
+    have : ¬(k + i ≤ j ∧ j < k + i + 0 ∧ j < b.size) := by omega
+    simp only [subScaledLoop, this, ↓reduceIte]
+  | succ n ih =>
+    intro i b j
+    rw [subScaledLoop, ih, Array.size_modify, Array.getElem?_modify]
+    by_cases hj : k + i = j
+    · subst hj
+      have h1 : ¬(k + (i + 1) ≤ k + i ∧ k + i < k + (i + 1) + n ∧ k + i < b.size) := by omega
+      simp only [h1, ↓reduceIte]
+      by_cases hb : k + i < b.size
+      · have h2 : k + i ≤ k + i ∧ k + i < k + i + (n + 1) ∧ k + i < b.size := by omega
+        have hbs : b[k + i]? = some b[k + i] := Array.getElem?_eq_getElem hb
+        simp only [h2, and_self, ↓reduceIte, hbs, Option.map_some, Option.getD_some,
+          Nat.add_sub_cancel_left]
+      · have h2 : ¬(k + i ≤ k + i ∧ k + i < k + i + (n + 1) ∧ k + i < b.size) := by omega
+        have hbn : b[k + i]? = none := Array.getElem?_eq_none (by omega)
+        simp only [h2, ↓reduceIte, hbn, Option.map_none]
+    · have h1 : (k + (i + 1) ≤ j ∧ j < k + (i + 1) + n ∧ j < b.size) ↔
+          (k + i ≤ j ∧ j < k + i + (n + 1) ∧ j < b.size) := by omega
+      simp only [hj, ↓reduceIte, h1]
+
+/-- One step of the division, in place. -/
+theorem normalize_subScaledLoop (f rem : AzPolynomial R) (c : R)
+    (h : f.coeffs.size ≤ rem.coeffs.size) :
+    normalize (subScaledLoop f.coeffs c (rem.natDegree - f.natDegree) f.coeffs.size 0
+        rem.coeffs) =
+      rem - mulBasecaseFold (monomial (rem.natDegree - f.natDegree) c) f := by
+  apply toPoly_inj.mp
+  ext j
+  rw [coeff_toPoly_eq, coeff_normalize, subScaledLoop_getElem?, toPoly_sub,
+    toPoly_mulBasecaseFold, toPoly_monomial, Polynomial.coeff_sub,
+    ← Polynomial.C_mul_X_pow_eq_monomial, mul_assoc, Polynomial.coeff_C_mul,
+    Polynomial.coeff_X_pow_mul', coeff_toPoly_eq, coeff_toPoly_eq]
+  unfold natDegree coeff
+  by_cases hk : rem.coeffs.size - 1 - (f.coeffs.size - 1) ≤ j
+  · by_cases hin : j < rem.coeffs.size - 1 - (f.coeffs.size - 1) + 0 + f.coeffs.size ∧
+        j < rem.coeffs.size
+    · have hc : rem.coeffs.size - 1 - (f.coeffs.size - 1) + 0 ≤ j ∧
+          j < rem.coeffs.size - 1 - (f.coeffs.size - 1) + 0 + f.coeffs.size ∧
+          j < rem.coeffs.size := ⟨by omega, hin.1, hin.2⟩
+      simp only [hc, and_self, ↓reduceIte, hk]
+    · have hc : ¬(rem.coeffs.size - 1 - (f.coeffs.size - 1) + 0 ≤ j ∧
+          j < rem.coeffs.size - 1 - (f.coeffs.size - 1) + 0 + f.coeffs.size ∧
+          j < rem.coeffs.size) := fun hc => hin ⟨hc.2.1, hc.2.2⟩
+      have hfn : f.coeffs[j - (rem.coeffs.size - 1 - (f.coeffs.size - 1))]? = none :=
+        Array.getElem?_eq_none (by omega)
+      simp only [hc, ↓reduceIte, hk, hfn, Option.getD_none, mul_zero, sub_zero]
+  · have hc : ¬(rem.coeffs.size - 1 - (f.coeffs.size - 1) + 0 ≤ j ∧
+        j < rem.coeffs.size - 1 - (f.coeffs.size - 1) + 0 + f.coeffs.size ∧
+        j < rem.coeffs.size) := fun hc => hk (by omega)
+    simp only [hc, ↓reduceIte, hk, mul_zero, sub_zero]
+
+/-- The remainder of the division by a monic polynomial, computed in place; the fuel-driven
+core.  Equal to the second component of `divModByMonicAux` (`modByMonicAuxFast_eq`). -/
+def modByMonicAuxFast (f : AzPolynomial R) : ℕ → AzPolynomial R → AzPolynomial R
+  | 0, rem => if rem.coeffs.size < f.coeffs.size then rem else 0
+  | fuel + 1, rem =>
+    if rem.coeffs.size < f.coeffs.size then rem
+    else
+      let k := rem.natDegree - f.natDegree
+      let c := rem.leadingCoeff
+      modByMonicAuxFast f fuel
+        (normalize (subScaledLoop f.coeffs c k f.coeffs.size 0 rem.coeffs))
+
+theorem modByMonicAuxFast_eq (f : AzPolynomial R) :
+    ∀ (fuel : ℕ) (rem : AzPolynomial R),
+      modByMonicAuxFast f fuel rem = (divModByMonicAux f fuel rem).2 := by
+  intro fuel
+  induction fuel with
+  | zero => intro rem; rfl
+  | succ n ih =>
+    intro rem
+    rw [modByMonicAuxFast, divModByMonicAux]
+    split
+    · rfl
+    · next hlt =>
+      simp only []
+      rw [normalize_subScaledLoop f rem _ (by omega), ih]
+
+/-- **The remainder modulo a monic polynomial, in place.**  What `modByMonic` compiles to. -/
+def modByMonicFast (P f : AzPolynomial R) : AzPolynomial R :=
+  modByMonicAuxFast f (P.coeffs.size + 1) P
+
+@[csimp] theorem modByMonic_eq_modByMonicFast : @modByMonic = @modByMonicFast := by
+  funext R _ _ P f
+  exact (modByMonicAuxFast_eq f _ P).symm
+
 /-- The remainder produced by `divModByMonicAux` always has size (hence degree)
 strictly below `f`, for **any** `f` with `0 < f.coeffs.size`.  This is the
 `AzPolyMod` reduced-invariant lemma; it needs no monic hypothesis because the
@@ -149,5 +264,24 @@ private def reconstructs (P f : String) : Bool :=
 #guard reconstructs "5*x^5-4*x^3+2*x-9" "x^3-x-1"
 #guard reconstructs "x^2+2*x+1" "x+1"
 #guard reconstructs "7" "x^2+1"
+
+-- The in-place remainder against the second component of `divModByMonic` (which the compiler
+-- does not replace), for monic, non-monic and zero divisors.
+private def fastAgrees (P f : String) : Bool :=
+  let p := (parseAzPolynomial (R := AzInt) P).get!
+  let g := (parseAzPolynomial (R := AzInt) f).get!
+  modByMonicFast p g == (divModByMonic p g).2
+
+#guard fastAgrees "x^4+3*x^2+7" "x^2+1"
+#guard fastAgrees "5*x^5-4*x^3+2*x-9" "x^3-x-1"
+#guard fastAgrees "x^9-x^8+5*x^3-2" "x^4+7*x^3-x+3"
+#guard fastAgrees "x^2+2*x+1" "x+1"
+#guard fastAgrees "7" "x^2+1"
+#guard fastAgrees "0" "x^2+1"
+#guard fastAgrees "x^5+x+1" "1"
+#guard fastAgrees "x^5+x+1" "2*x^2+1"
+#guard fastAgrees "4*x^5+x+1" "2*x^2-x"
+#guard fastAgrees "x^5+x+1" "3"
+#guard fastAgrees "x^5+x+1" "0"
 
 end Tests

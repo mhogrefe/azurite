@@ -107,6 +107,9 @@ instance {m : AzNat} [NeZero m.toNat] : AzPolynomialMulConfig (AzZMod m) where
     split
     · rfl
     · exact eq_mulBasecaseFold_of_toPoly (toPoly_mulKronecker p q)
+  -- measured 2026-11-24 (`benchmark poly_default 1 "parts:1"`): slower at degree 4, 1.2 times
+  -- faster at degree 8, 1.4–1.7 at 16, 3.2–3.4 at 128
+  invThreshold := some 9
 
 /-- Karatsuba multiplication for Mathlib's `ℤ` and `ℚ`. -/
 instance : AzPolynomialMulConfig ℤ := .karatsuba

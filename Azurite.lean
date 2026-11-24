@@ -1187,6 +1187,7 @@ import Azurite.AzPolynomial.Equiv.Kronecker
 import Azurite.AzPolynomial.Equiv.KroneckerInt
 import Azurite.AzPolynomial.Equiv.LenstraTest
 import Azurite.AzPolynomial.Equiv.Map
+import Azurite.AzPolynomial.Equiv.ModByMonicInv
 import Azurite.AzPolynomial.Equiv.Monomial
 import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.MulXPow
@@ -1231,6 +1232,7 @@ import Azurite.AzPolynomial.IrreducibleOrFactor
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.Kronecker
 import Azurite.AzPolynomial.LenstraTest
+import Azurite.AzPolynomial.ModByMonicInv
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.MulXPow

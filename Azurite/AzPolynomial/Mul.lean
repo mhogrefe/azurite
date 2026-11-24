@@ -66,6 +66,12 @@ class AzPolynomialMulConfig (R : Type _) [Semiring R] [DecidableEq R] where
   dmul : AzPolynomial R → AzPolynomial R → AzPolynomial R
   /-- It is the schoolbook product. -/
   dmul_eq : ∀ p q, dmul p q = mulBasecaseFold p q
+  /-- From this many coefficients of a monic modulus `f` on, a power in `AzPolyMod f` reduces
+  its products by a precomputed inverse (two polynomial products per reduction,
+  `ModByMonicInv.lean`) instead of the in-place quadratic division.  `none` (the default):
+  never — right when `dmul` is itself quadratic, since two schoolbook products cost more than
+  the division. -/
+  invThreshold : Option ℕ := none
 
 /-- The schoolbook product as a multiplication config, for coefficient types without a tuned
     one: `instance : AzPolynomialMulConfig T := .basecase`. -/

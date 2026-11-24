@@ -138,9 +138,38 @@ def runDefault (limit : Nat) (_cfg : Std.HashMap String String) : IO Unit := do
     if h : m.toNat ≠ 0 then
       have : NeZero m.toNat := ⟨h⟩
       IO.println s!"AzZMod, {bits}-bit modulus: x^(m) modulo a monic f (ms: default / schoolbook)"
-      for d in [4, 8, 16, 32, 64, 128] do
+      for d in [4, 8, 12, 16, 24, 32, 64, 128] do
         let f : AzPolynomial (AzZMod m) := AzPolynomial.monomial d 1 + testPoly m d 7
         let a : AzPolynomial (AzZMod m) := testPoly m d 3
+        if _cfg.contains "parts" then
+          -- one product and its reduction, piece by piece
+          let b : AzPolynomial (AzZMod m) := testPoly m d 5
+          let (ab, tP) ← timeOne fun _ => a * b
+          let (r0, t0) ← timeOne fun _ => (divModByMonic ab f).2
+          let (r1, t1) ← timeOne fun _ => modByMonic (ab + 0) f
+          let (r2, t2) ← timeOne fun _ => modByMonicFast (ab + 0 + 0) f
+          IO.println s!"   deg {d}: product {us tP}µs, divModByMonic.2 {us t0}µs, modByMonic {
+            us t1}µs, modByMonicFast {us t2}µs  ({decide (r0 = r1) && decide (r1 = r2)})"
+          let (_, t3) ← timeOne fun _ => (AzPolyMod.ofPoly (f := f) (ab + 0 + 0 + 0)).val
+          let x : AzPolyMod f := AzPolyMod.ofPoly a
+          let y : AzPolyMod f := AzPolyMod.ofPoly b
+          let (_, t4) ← timeOne fun _ => (x * y).val
+          let (_, t5) ← timeOne fun _ => (y * y).val
+          let (_, t6) ← timeOne fun _ => (y ^ (AzNat.ofNat 2)).val
+          let (_, t7) ← timeOne fun _ => (y ^ (AzNat.ofNat 1024)).val
+          IO.println s!"      ofPoly {us t3}µs, x*y {us t4}µs, square {us t5}µs, y^2 {
+            us t6}µs, y^1024 {us t7}µs"
+          -- the power: plain (in-place reduction) against the precomputed inverse, whatever
+          -- the threshold says
+          let (g, tG) ← timeOne fun _ => AzPolynomial.invRev f
+          let (p1, t8) ← timeOne fun _ => (Azurite.slidingWindowPowAzNat y m).val
+          let (p2, t9) ← timeOne fun _ =>
+            (@Azurite.slidingWindowPowAzNat (AzPolyMod f) ⟨AzPolyMod.mulInv g⟩ _
+              (@instSquare _ ⟨AzPolyMod.mulInv g⟩) y m).val
+          let (_, t10) ← timeOne fun _ => (AzPolyMod.mulInv g x y).val
+          IO.println s!"      power: plain {us (t8 / 1000)}ms, by inverse {us (t9 / 1000)}ms ({
+            decide (p1 = p2)}); invRev {us tG}µs, one mulInv {us t10}µs"
+          continue
         let (r1, t1) ← timeOne fun _ => powModByMonic a m f
         let (r2, t2) ← timeOne fun _ =>
           @powModByMonic (AzZMod m) _ _ .basecase a (m + 1 - 1) f
