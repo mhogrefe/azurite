@@ -245,4 +245,5 @@ import Azurite.AzRat.Tests.FromSci
 import Azurite.AzRat.Tests.LogBase
 import Azurite.AzRat.Tests.Pow2
 import Azurite.AzRat.Tests.ToSci
+import Azurite.ECPP.Tests.Check
 import Azurite.Sci.Tests.Number

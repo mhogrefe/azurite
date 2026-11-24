@@ -66,18 +66,20 @@ is the one formalized.)
 
 | Item | Content | Status |
 |---|---|---|
-| the curve | in Weierstrass form over `K`: `y′² = x′³ + aλ² x′ + bλ³` with `λ = x³ + ax + b`, `x′ = λX`, `y′ = λ²Y`, so that Mathlib's group law applies | to do |
-| Lemma 10.7 | `d_0 = p`, `d_{−1} − d_0 − 1 = #E(𝔽_p) − p − 1`: (10.16) `X_{−1} = −x − x^p + (1 + λ^((p−1)/2))² λ/(x − x^p)²`; the numerator has degree `2p + 1`; `x^p − x = ∏ (x − j)`; the factor `x − j` survives in the denominator twice, once or not at all as `λ(j)` is a residue, `0` or a non-residue | to do |
-| Lemma 10.8 | **Basic Identity** `d_{n−1} + d_{n+1} = 2 d_n + 2`.  Degenerate cases: `Z_n = ∞` (`1 + 1 = 0 + 2`), `Z_{n∓1} = ∞` (`0 + 4 = 2 + 2`, with `X(2(x, 1)) = ((x² − a)² − 8bx)/(4λ)`).  Generic case: (10.18)–(10.20) | formulas from the group law: to do |
+| the curve | in Weierstrass form over `K`: `y′² = x′³ + aλ² x′ + bλ³` with `λ = x³ + ax + b`, `x′ = λX`, `y′ = λ²Y`, so that Mathlib's group law applies | **DONE** `twist`, `lam`, `basePt`, `negBasePt`, `ptHeight` (`Theory/ManinCurve.lean`, over any field with `2 ≠ 0`, `4a³ + 27b² ≠ 0`) |
+| Lemma 10.7 | `d_0 = p`, `d_{−1} − d_0 − 1 = #E(𝔽_p) − p − 1`: (10.16) `X_{−1} = −x − x^p + (1 + λ^((p−1)/2))² λ/(x − x^p)²`; the numerator has degree `2p + 1`; `x^p − x = ∏ (x − j)`; the factor `x − j` survives in the denominator twice, once or not at all as `λ(j)` is a residue, `0` or a non-residue | **DONE 2026-11-23** `Theory/ManinCount.lean` (`countNum`, `expG`, `expR`, `pow_expG_dvd`, `not_pow_succ_dvd`, `prod_X_sub_C_eq`, `natDegree_countNum`, **`rfHeight_countNum`**) and `Theory/ManinHasse.lean` (`startPt`, `ptHeight_startPt`, `ptHeight_startPt_sub`, `card_sq_eq`, `card_point`) |
+| Lemma 10.8 | **Basic Identity** `d_{n−1} + d_{n+1} = 2 d_n + 2`.  Degenerate cases: `Z_n = ∞` (`1 + 1 = 0 + 2`), `Z_{n∓1} = ∞` (`0 + 4 = 2 + 2`, with `X(2(x, 1)) = ((x² − a)² − 8bx)/(4λ)`).  Generic case: (10.18)–(10.20) | **DONE 2026-11-23** **`ptHeight_sub_add`** — for *every* point `Z` of the twisted curve, `h(Z − (x, 1)) + h(Z + (x, 1)) = 2 h(Z) + 2`.  Pieces: `twist_sum_prod` ((10.19), (10.20) as field identities), `rfHeight_add_of_relations` (`Theory/ManinHeight.lean`: the identity for rational functions, no curve), `twist_dbl`, `isCoprime_dbl`, `ptHeight_dbl_basePt`, `rfHeight_div_of_coprime` |
 | (10.21)–(10.22) | `BD = (Qx − P)²` up to a unit | **DONE** `exists_unit_of_relations`, `isUnit_of_dvd_forms` (`Theory/ManinAlgebra.lean`).  **Knapp's text has a gap here**: it writes `AC = S N₁`, `BD = S M` with `S = gcd(AC, BD)`, which presumes `gcd(N₁, M) = 1`; a common prime factor of `Qx − P` and `(x² − a)² − 8bx` is not excluded.  The formalized argument uses `N₂` as well: no prime divides `N₁`, `N₂` and `M`, because modulo a prime factor of `Qx − P` they are `Q² g` and `2Q² f`, and `(3x² + 4a) g − (3x³ − 5ax − 27b) f = 4a³ + 27b²` |
 | cases (a)–(d) | the degrees | **DONE**, differently: `height_add_height` (`max(deg A, deg B) + max(deg C, deg D) = max(deg AC, deg BD, deg(AD + BC))`) and `max_natDegree_forms` (the largest degree of `N₁`, `N₂`, `M` is `2 max(deg P, deg Q) + 2`) |
 | (10.25) | `d_n = n² − (d_{−1} − d_0 − 1) n + d_0` | **DONE** `degree_quadratic` (`Theory/Manin.lean`) |
+| **Theorem 10.5** | **the Hasse bound** | **DONE 2026-11-23: `hasseBound : HasseBound`** (`Theory/ManinHasse.lean`, `hasse_short`) |
 | conclusion | discriminant `≤ 0` | **DONE** `sq_le_of_quadratic_nonneg`, `sq_le_of_degree`, `prime_ne_mul_succ` (Knapp argues with two consecutive `d_n` not both `0`; here: `p ≠ n(n + 1)`) |
 
 ## Layers
 
 1. **Theory** (Mathlib objects only): `Azurite/ECPP/Theory/`, namespace `Azurite.ECPP`.
-   **Criterion DONE 2026-11-23, conditional on the Hasse bound** (a hypothesis, not an axiom).
+   **DONE 2026-11-23: the criterion and the Hasse bound, so soundness is unconditional**
+   (`Theory/Soundness.lean`: `EcppStep.isPrime`, `EcppProof.isPrime`).
    * `Theory/Chain.lean`: `MulChain W U k T` — the Jacobian triple `T` over a commutative
      ring is obtained from `U` along a computation of `k · U` by Mathlib's formulas
      `dblXYZ`, `addXYZ`, with **the `Z`-coordinate `addZ` of every addition a unit**, up to
@@ -87,7 +89,8 @@ is the one formalized.)
      formula is complete; the addition formula is right exactly when `addZ ≠ 0`.
    * `Theory/Hasse.lean`: `shortW a b` (`y² = x³ + ax + b`), `HasseBound : Prop` —
      `(#E(𝔽_p) − (p + 1))² ≤ 4p` for every such curve with `4a³ + 27b² ≠ 0` over `𝔽_p`,
-     `p ≥ 5` (the setting of Chahal–Osserman); `finite_point`.  **Statement only.**
+     `p ≥ 5` (the setting of Chahal–Osserman); `finite_point`.  The statement; proven as
+     `hasseBound` in `Theory/ManinHasse.lean`.
    * `Theory/Manin.lean`: the arithmetic end of the proof; `Theory/ManinAlgebra.lean`: the
      polynomial algebra of the Basic Identity (see the inventory above).
    * `Theory/Criterion.lean`: **`prime_of_point_of_order`** — `N > 1` coprime to `6`, a curve
@@ -100,13 +103,24 @@ is the one formalized.)
      carries `(u, v)` itself.  The checker then does one scalar multiplication by `q − 1`
      and compares with `−(u, v)` — no "`[m]P = O` by the formulas", which the incomplete
      addition formula cannot certify (a zero `Z` may also come from adding equal points).
-   * Still to do here: the Hasse bound.
-2. **Implementation on `Az*` types** (not started): curve arithmetic over `AzZMod N`, the
-   certificate type, `ecppCheck`, with `ecppCheck_sound` by the bridge to layer 1.  What the
-   theory asks of it: a computation of `(q − 1)·(u, v)` whose steps are Mathlib's formulas
-   up to unit scalings, and the unit conditions — **one gcd with `N` of the product of the
-   `Z`-coordinates of all additions and of the final `Z`** (the standard Jacobian
-   `Z₃ = Z₁Z₂H` accumulates that product by itself).
+   * Nothing is left to do in this layer.
+2. **Implementation on `Az*` types** — **done 2026-11-23**.
+   * `Theory/Ladder.lean` (still Mathlib objects only): the specification of the scalar
+     multiplication — `dblShort`, `addShort`, `addZShort` (Mathlib's `dblXYZ`, `addXYZ`,
+     `addZ` on the short curve with second point `(u, v, 1)`, as explicit expressions),
+     `ladder` (halving `k`, with the product of the additions' `Z`), `ladder_chain`,
+     `ecppStep_of_ladder`.
+   * `Curve.lean`: `JacPoint`, `jacDbl`, `jacAddAffine`, `jacMulAcc` over `AzZMod n`;
+     `Equiv/Curve.lean`: they are the specification through `AzZMod.toZMod`.
+   * `Check.lean`: `StepCert`, `checkStep`, `check`; the chain ends with `AzNat.isPrime`.
+     `Equiv/Check.lean`: **`check_prime : check n cert = true → Nat.Prime n.toNat`**.
+   * The addition is Mathlib's representative (`Z₃ = X − uZ²`, 12 terms in `Y₃`), not the
+     usual mixed addition: the usual one agrees with it only on the curve, and its use would
+     need the curve equation carried along the chain.  A cheaper addition (and a windowed or
+     NAF multiplication) is a later optimization of the checker; the `scale` constructor of
+     `MulChain` is there for it.
+   * Tests `Tests/Check.lean`: certificates made outside the library (point counting for a
+     small curve; curves `y² = x³ + ax` for 12, 30 and 60 digits), and rejections.
 3. **Generator** (unproven, not started): Step 1′ loop, Cornacchia, class polynomial, root
    mod `N`, curve and point, recursion; then the upgrades of Morain §5.3.
 
@@ -116,4 +130,16 @@ is the one formalized.)
 
 ## New functions on `Az*` types (reported to the user as they land)
 
-None yet.
+All in namespace `Azurite.ECPP`, over `AzZMod n` (2026-11-23):
+
+| Function | Type | What it is |
+|---|---|---|
+| `JacPoint n` | `Type` | `AzZMod n × AzZMod n × AzZMod n`: `(X, Y, Z)` for `(X/Z², Y/Z³)` |
+| `jacDbl a P` | `JacPoint n` | doubling on `y² = x³ + ax + b` |
+| `jacAddAffine a b u v P` | `JacPoint n` | `P + (u, v)`, incomplete, `Z₃ = X − uZ²` |
+| `jacMulAcc a b u v fuel k` | `Option (JacPoint n × AzZMod n)` | `k · (u, v)` and the product of the additions' `Z` |
+| `StepCert` | structure | `a b u v q : AzNat` |
+| `checkStep n c` | `Bool` | one step of a certificate for `n` |
+| `check n cert` | `Bool` | the chain, ending with `AzNat.isPrime` |
+
+No new function on `AzNat` or `AzZMod` themselves was needed.
