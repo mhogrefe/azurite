@@ -17,8 +17,8 @@ import Azurite.AzNat.Equiv.ShiftRight
 # Equivalence: curve arithmetic over `AzZMod n`
 
 Through `AzZMod.toZMod : AzZMod n → ZMod n.toNat` the functions of `ECPP/Curve.lean` are the
-specification functions of `Theory/Ladder.lean`: `mapPt_jacDbl`, `mapPt_jacAddAffine`,
-`jacMulAcc_map`.
+specification functions of `Theory/Ladder.lean`: `mapPt_jacDbl`, `mapPt_jacAddMixed`,
+`jacMul_map`.
 -/
 
 namespace Azurite.ECPP
@@ -37,21 +37,18 @@ theorem mapPt_jacDbl (a : AzZMod n) (P : JacPoint n) :
   simp only [jacDbl, mapPt, dblShort, toZMod_add, toZMod_sub, toZMod_mul, toZMod_square]
   refine Prod.ext ?_ (Prod.ext ?_ ?_) <;> simp only <;> ring
 
-/-- **`jacAddAffine` is the addition of the specification.** -/
-theorem mapPt_jacAddAffine (a b u v : AzZMod n) (P : JacPoint n) :
-    mapPt (jacAddAffine a b u v P)
-      = addShort (toZMod a) (toZMod b) (toZMod u) (toZMod v) (mapPt P) := by
-  simp only [jacAddAffine, mapPt, addShort, addZShort, toZMod_add, toZMod_sub, toZMod_mul,
-    toZMod_square, toZMod_neg]
+/-- **`jacAddMixed` is the mixed addition of the specification.** -/
+theorem mapPt_jacAddMixed (u v : AzZMod n) (P : JacPoint n) :
+    mapPt (jacAddMixed u v P) = addMixed (toZMod u) (toZMod v) (mapPt P) := by
+  simp only [jacAddMixed, mapPt, addMixed, toZMod_add, toZMod_sub, toZMod_mul, toZMod_square]
   refine Prod.ext ?_ (Prod.ext ?_ ?_) <;> simp only <;> ring
 
-/-- **`jacMulAcc` is the ladder of the specification.** -/
-theorem jacMulAcc_map (a b u v : AzZMod n) : ∀ (fuel : ℕ) (k : AzNat),
-    (jacMulAcc a b u v fuel k).map (fun s => (mapPt s.1, toZMod s.2))
-      = ladder (toZMod a) (toZMod b) (toZMod u) (toZMod v) fuel k.toNat
+/-- **`jacMul` is the ladder of the specification.** -/
+theorem jacMul_map (a u v : AzZMod n) : ∀ (fuel : ℕ) (k : AzNat),
+    (jacMul a u v fuel k).map mapPt = ladder (toZMod a) (toZMod u) (toZMod v) fuel k.toNat
   | 0, _ => rfl
   | fuel + 1, k => by
-    rw [jacMulAcc, ladder]
+    rw [jacMul, ladder]
     have h1 : k = AzNat.ofNat 1 ↔ k.toNat = 1 := by
       constructor
       · rintro rfl
@@ -64,37 +61,20 @@ theorem jacMulAcc_map (a b u v : AzZMod n) : ∀ (fuel : ℕ) (k : AzNat),
     · rw [ite_eq_right hk, ite_eq_right (mt h1.mpr hk)]
       have hshift : (k.shiftRight 1).toNat = k.toNat / 2 := by
         rw [AzNat.toNat_shiftRight, pow_one]
-      have ih := jacMulAcc_map a b u v fuel (k.shiftRight 1)
+      have ih := jacMul_map a u v fuel (k.shiftRight 1)
       rw [hshift] at ih
       rw [← ih]
       have hbit : k.testBit 0 = decide (k.toNat % 2 = 1) := by
         rw [AzNat.testBit_eq_toNat_testBit, Nat.testBit_zero]
-      cases jacMulAcc a b u v fuel (k.shiftRight 1) with
+      cases jacMul a u v fuel (k.shiftRight 1) with
       | none => rfl
-      | some s =>
+      | some T =>
         simp only [Option.map_some]
         congr 1
         by_cases hodd : k.toNat % 2 = 1
         · have ht : k.testBit 0 = true := by rw [hbit]; exact decide_eq_true hodd
-          rw [ite_eq_left ht, ite_eq_left hodd]
-          refine Prod.ext ?_ ?_
-          · show mapPt (jacAddAffine a b u v (jacDbl a s.1)) = _
-            rw [mapPt_jacAddAffine, mapPt_jacDbl]
-          · show toZMod (s.2 * (jacAddAffine a b u v (jacDbl a s.1)).2.2) = _
-            rw [toZMod_mul]
-            have h := mapPt_jacAddAffine a b u v (jacDbl a s.1)
-            rw [mapPt_jacDbl] at h
-            have h3 : toZMod (jacAddAffine a b u v (jacDbl a s.1)).2.2
-                = (addShort (toZMod a) (toZMod b) (toZMod u) (toZMod v)
-                  (dblShort (toZMod a) (mapPt s.1))).2.2 := by
-              rw [← h]
-              rfl
-            rw [h3]
-            rfl
+          rw [ite_eq_left ht, ite_eq_left hodd, mapPt_jacAddMixed, mapPt_jacDbl]
         · have ht : ¬ k.testBit 0 = true := by rw [hbit]; simpa using hodd
-          rw [ite_eq_right ht, ite_eq_right hodd]
-          refine Prod.ext ?_ rfl
-          show mapPt (jacDbl a s.1) = _
-          rw [mapPt_jacDbl]
+          rw [ite_eq_right ht, ite_eq_right hodd, mapPt_jacDbl]
 
 end Azurite.ECPP

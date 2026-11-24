@@ -319,6 +319,7 @@ theorem Polynomial.resultant_scaleRoots_reverse_eq_zero_iff {K : Type _} [Field 
 namespace Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-- `CRingHom` is injective. -/
 theorem CRingHom_injective : Function.Injective (CRingHom : R →+* AzPolynomial R) := by
@@ -328,6 +329,7 @@ theorem CRingHom_injective : Function.Injective (CRingHom : R →+* AzPolynomial
   exact Polynomial.C_injective h2
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-- Map the coefficients by `f` and evaluate at `z`, as a ring homomorphism
 `AzPolynomial R →+* K`. Pushing this through a resultant over `R[x]` evaluates

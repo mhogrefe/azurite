@@ -48,7 +48,8 @@ open Azurite.BPR (ExtendedPoint)
     BPR Theorem 2.61 contains the SRemS termination bound internally. -/
 theorem tarskiQueryOnSRem_eq_BPR
     {K : Type _} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
-    [DecidableEq K] [PolynomialDerivative K]
+    [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K] [PolynomialDerivative K]
     (hIVP : Azurite.BPR.HasIntermediateValueProperty K)
     (Q P : AzPolynomial K) (hP : AzPolynomial.toPoly P ≠ 0)
     (a b : ExtendedPoint K) (hab : ExtendedPoint.Lt a b)
@@ -83,6 +84,7 @@ theorem tarskiQueryOnSRem_eq_BPR
 section WholeLine
 
 variable {R : Type _} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
     [PolynomialDerivative R] [IsRealClosed R]
 
 /-- **Whole-line correctness of `tarskiQueryOnSRem`.** Over a real closed coefficient

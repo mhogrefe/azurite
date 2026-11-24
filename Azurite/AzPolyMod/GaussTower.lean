@@ -60,7 +60,8 @@ instance azZMod_nontrivial {m : AzNat} [hm : Fact (1 < m.toNat)] :
 
 namespace AzPolynomial
 
-variable (R : Type _) [Semiring R] [DecidableEq R] [Nontrivial R]
+variable (R : Type _) [Semiring R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Nontrivial R]
 
 /-- The `p`-th cyclotomic polynomial for PRIME `p`:
 `Φ_p = 1 + x + ⋯ + x^(p−1)`, the all-ones polynomial of length
@@ -79,6 +80,7 @@ omit [DecidableEq R] in
     (cyclotomicPrime R p).coeffs.size = p := by
   simp [cyclotomicPrime]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 theorem leadingCoeff_cyclotomicPrime {p : ℕ} (hp : p ≠ 0) :
     (cyclotomicPrime R p).leadingCoeff = 1 := by
   cases p with
@@ -88,6 +90,7 @@ theorem leadingCoeff_cyclotomicPrime {p : ℕ} (hp : p ≠ 0) :
       AzPolynomial.natDegree]
     simp [cyclotomicPrime]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- `Φ_p` is monic (as a Mathlib polynomial) for `p ≠ 0` — the
 gate of the proven `AzPolyMod` machinery. -/
 theorem monic_toPoly_cyclotomicPrime {p : ℕ} (hp : p ≠ 0) :
@@ -107,6 +110,7 @@ namespace AzPolyMod
 open _root_.Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R] [Nontrivial R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-- `R[x]/(Φ_p)` is nontrivial for `p > 1`: the classes of `0` and
 `1` have distinct reduced representatives. -/

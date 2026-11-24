@@ -36,6 +36,7 @@ compute `P(X - c)`.
 namespace Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-- The polynomial `X - c`, constructed directly from coefficients `#[-c, 1]`.
     In the zero ring (`1 = 0`), this reduces to `0`. -/
@@ -47,7 +48,7 @@ def xSubC (c : R) : AzPolynomial R :=
     with the linear polynomial `X - c`.
 
     The roots of the result are the roots of `P`, each shifted by `+c`. -/
-def translate [AzPolynomialMulConfig R] (p : AzPolynomial R) (c : R) : AzPolynomial R :=
+def translate (p : AzPolynomial R) (c : R) : AzPolynomial R :=
   p.comp (xSubC c)
 
 -- ═══════════════════════════════════════════════════════════════════

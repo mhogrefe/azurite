@@ -43,7 +43,9 @@ open Azurite.BPR (ExtendedPoint)
 
 section Transport
 variable {K L : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     [Field L] [LinearOrder L] [IsStrictOrderedRing L] [DecidableEq L]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig L]
 
 omit [LinearOrder K] [IsStrictOrderedRing K] [LinearOrder L] [IsStrictOrderedRing L] in
 /-- The signed remainder `.rem` commutes with a field homomorphism. -/
@@ -92,6 +94,8 @@ theorem coeffs_size_eq_zero_iff (S : AzPolynomial K) : S.coeffs.size = 0 ↔ S =
   ⟨fun h => AzPolynomial.ext (by rw [Array.size_eq_zero_iff.mp h]; rfl), fun h => by rw [h]; rfl⟩
 
 omit [LinearOrder K] [IsStrictOrderedRing K] [LinearOrder L] [IsStrictOrderedRing L] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig L] in
 theorem coeffs_size_map (g : K →+* L) (hg : Function.Injective g) (P : AzPolynomial K) :
     (P.map g).coeffs.size = P.coeffs.size := by
   by_cases hP : P = 0
@@ -118,6 +122,8 @@ theorem varNonzero_map (g : K →+* L) (hg : StrictMono g) : ∀ l : List K,
     exact if_congr hlt rfl rfl
 
 omit [IsStrictOrderedRing K] [IsStrictOrderedRing L] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig L] in
 /-- `Var` (sign-variation count) is invariant under a strictly monotone hom. -/
 theorem Var_map (g : K →+* L) (hg : StrictMono g) (l : List K) :
     Azurite.BPR.Var (l.map g) = Azurite.BPR.Var l := by
@@ -129,12 +135,15 @@ theorem Var_map (g : K →+* L) (hg : StrictMono g) (l : List K) :
   rw [hfilter, varNonzero_map g hg]
 
 omit [LinearOrder K] [IsStrictOrderedRing K] [DecidableEq K] [LinearOrder L] [IsStrictOrderedRing L] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig L] in
 /-- `evalPolyExt` at `+∞` (the leading coefficient) commutes with an injective hom. -/
 theorem evalPolyExt_map_posInf (g : K →+* L) (hg : Function.Injective g) (P : AzPolynomial K) :
     evalPolyExt (P.map g) .posInf = g (evalPolyExt P .posInf) := by
   simp only [evalPolyExt, leadingCoeff_map_of_injective g hg]
 
 omit [LinearOrder K] [IsStrictOrderedRing K] [LinearOrder L] [IsStrictOrderedRing L] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig L] in
 /-- `evalPolyExt` at `−∞` (`±` leading coefficient by parity) commutes with an injective hom. -/
 theorem evalPolyExt_map_negInf (g : K →+* L) (hg : Function.Injective g) (P : AzPolynomial K) :
     evalPolyExt (P.map g) .negInf = g (evalPolyExt P .negInf) := by
@@ -142,6 +151,8 @@ theorem evalPolyExt_map_negInf (g : K →+* L) (hg : Function.Injective g) (P : 
   split_ifs <;> simp [map_neg]
 
 omit [IsStrictOrderedRing K] [IsStrictOrderedRing L] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig L] in
 /-- `varAt` at an extended point transported by a strictly monotone hom, provided the
 endpoint evaluations commute (holds at `±∞`). -/
 theorem varAt_map (g : K →+* L) (hg : StrictMono g) (L' : List (AzPolynomial K))
@@ -229,7 +240,8 @@ theorem coeff_mapAzIntToAzRat (Q : AzPolynomial AzInt) (n : ℕ) :
   · simp [AzPolynomial.coeff, h, h0]
   · simp [AzPolynomial.coeff, h]
 
-variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq R] [IsRealClosed R]
+variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [IsRealClosed R]
 
 omit [DecidableEq R] [IsRealClosed R] in
 /-- Pushing the `AzInt → AzRat` lift into `R` along `AzRat → ℚ → R` is the same as

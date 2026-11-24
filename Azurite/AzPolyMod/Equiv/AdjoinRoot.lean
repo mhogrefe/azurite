@@ -41,7 +41,8 @@ namespace AzPolyMod
 
 open Polynomial _root_.Azurite.AzPolynomial
 
-variable {R : Type _} [CommRing R] [DecidableEq R] {f : AzPolynomial R}
+variable {R : Type _} [CommRing R] [DecidableEq R] [AzPolynomialMulConfig R]
+  {f : AzPolynomial R}
 
 /-- Forward map to Mathlib's `R[x]/(f) = AdjoinRoot (toPoly f)`. -/
 noncomputable def toAdjoin (a : AzPolyMod f) : AdjoinRoot (AzPolynomial.toPoly f) :=

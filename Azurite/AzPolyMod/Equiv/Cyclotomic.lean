@@ -120,7 +120,8 @@ open _root_.Azurite.AzPolynomial
 
 section General
 
-variable {R : Type _} [CommRing R] [DecidableEq R] [Nontrivial R] {f : AzPolynomial R}
+variable {R : Type _} [CommRing R] [DecidableEq R] [Nontrivial R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] {f : AzPolynomial R}
   (hf : (AzPolynomial.toPoly f).Monic)
 include hf
 

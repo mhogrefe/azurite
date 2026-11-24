@@ -103,6 +103,7 @@ namespace AzPolyMod
 open _root_.Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R] [Nontrivial R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-- `R[x]/(Φ_{p^k})` is nontrivial for `p > 1`. -/
 instance instNontrivialCyclotomicPrimePow {p k : ℕ} [hp : Fact (1 < p)] :

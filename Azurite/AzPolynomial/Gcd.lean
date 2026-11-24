@@ -54,7 +54,8 @@ constant.
 
 namespace Azurite.AzPolynomial
 
-variable {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDiv R]
+variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R]
 
 /-- The degree of the gcd: the smallest index `j` with `sResP_j ≠ 0`, from
 the ascending subresultant array. -/

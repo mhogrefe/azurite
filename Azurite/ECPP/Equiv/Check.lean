@@ -22,7 +22,7 @@ import Azurite.AzNat.Equiv.Compare
 **`check_prime`**: `check n cert = true → Nat.Prime n.toNat`.
 
 `checkStep_sound`: a step that passes gives `EcppStep n.toNat q.toNat`
-(`ecppStep_of_ladder`, through `jacMulAcc_map`); `check_sound`: a certificate that passes
+(`ecppStep_of_ladder`, through `jacMul_map`); `check_sound`: a certificate that passes
 gives an `EcppProof`, which proves primality by the criterion of Goldwasser and Kilian and
 the Hasse bound (`EcppProof.isPrime`, `Theory/Soundness.lean`).
 -/
@@ -49,7 +49,7 @@ theorem checkStep_sound {n : AzNat} {c : StepCert} (h : checkStep n c = true) :
     obtain ⟨⟨⟨⟨⟨h6, hs1⟩, hs2⟩, hd⟩, hE⟩, hm⟩ := h
     split at hm
     · exact absurd hm (by simp)
-    · next V acc hl =>
+    · next V hl =>
       simp only [Bool.and_eq_true, decide_eq_true_eq] at hm
       obtain ⟨⟨hu, hx⟩, hy⟩ := hm
       -- the conditions on the sizes
@@ -76,12 +76,10 @@ theorem checkStep_sound {n : AzNat} {c : StepCert} (h : checkStep n c = true) :
         simp only [toZMod_add, toZMod_mul, toZMod_square] at this
         linear_combination this
       -- the ladder
-      have hl' := jacMulAcc_map (ofAzNat n c.a) (ofAzNat n c.b) (ofAzNat n c.u) (ofAzNat n c.v)
+      have hl' := jacMul_map (ofAzNat n c.a) (ofAzNat n c.u) (ofAzNat n c.v)
         (c.q.size + 1) (c.q - AzNat.ofNat 1)
       rw [hl, Option.map_some, AzNat.toNat_sub, AzNat.toNat_ofNat] at hl'
-      have hunit : IsUnit (toZMod acc * (mapPt V).2.2) := by
-        have := isUnit_toZMod_of_gcd hu
-        rwa [toZMod_mul] at this
+      have hunit : IsUnit (mapPt V).2.2 := isUnit_toZMod_of_gcd hu
       have hx' : (mapPt V).1 = toZMod (ofAzNat n c.u) * (mapPt V).2.2 ^ 2 := by
         have := congrArg toZMod hx
         simp only [toZMod_mul, toZMod_square] at this

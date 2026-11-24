@@ -38,6 +38,8 @@ import Azurite.Benchmark.AzRatBernoulli
 import Azurite.Benchmark.AzFloatLnGamma
 import Azurite.Benchmark.AzFloatGamma
 import Azurite.Benchmark.AzFloatFamilies
+import Azurite.Benchmark.Ecpp
+import Azurite.Benchmark.PolyKronecker
 import Azurite.Benchmark.AzFloatPow
 import Azurite.Benchmark.AzFloatLambert
 import Azurite.Benchmark.AzFloatSinCos
@@ -91,7 +93,7 @@ def validBenchmarks : List String :=
    "uint64_sqrt_rem", "az_nat_sqrt_rem_algorithms", "az_nat_sqrt_vs_nat",
    "az_nat_square_vs_mul", "az_nat_square_algorithms",
    "az_nat_square_algorithms_toomcook3", "az_nat_square_vs_nat",
-   "az_nat_pow_algorithms", "aprcl",
+   "az_nat_pow_algorithms", "aprcl", "ecpp", "poly_kronecker", "poly_default",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all",
    "tune_karatsuba_aznat", "tune_karatsuba_aznat_2d",
    "tune_aznat_square", "tune_aznat_mul_toomcook3", "tune_aznat_square_toomcook3",
@@ -137,6 +139,9 @@ def main (args : List String) : IO Unit := do
       | "az_polynomial_karatsuba" => runAzPolynomialKaratsuba limit cfg seed
       | "cauchy_index_algorithms" => runCauchyIndexAlgorithms limit cfg seed
       | "aprcl" => Azurite.Benchmark.Aprcl.run limit cfg
+      | "ecpp" => Azurite.Benchmark.Ecpp.run limit cfg
+      | "poly_kronecker" => Azurite.Benchmark.PolyKronecker.run limit cfg
+      | "poly_default" => Azurite.Benchmark.PolyKronecker.runDefault limit cfg
       | "az_nat_add" => runAzNatAdd limit cfg seed
       | "az_nat_add_mod_pow2" => runAzNatAddModPow2 limit cfg seed
       | "az_nat_add_mod_pow2_residue" => runAzNatAddModPow2Residue limit cfg seed

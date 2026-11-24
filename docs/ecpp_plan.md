@@ -108,21 +108,87 @@ is the one formalized.)
    * `Theory/Ladder.lean` (still Mathlib objects only): the specification of the scalar
      multiplication — `dblShort`, `addShort`, `addZShort` (Mathlib's `dblXYZ`, `addXYZ`,
      `addZ` on the short curve with second point `(u, v, 1)`, as explicit expressions),
-     `ladder` (halving `k`, with the product of the additions' `Z`), `ladder_chain`,
-     `ecppStep_of_ladder`.
-   * `Curve.lean`: `JacPoint`, `jacDbl`, `jacAddAffine`, `jacMulAcc` over `AzZMod n`;
+     `OnCurve`, `addMixed` (the usual mixed addition), `addMixed_eq_smul` (on the curve it
+     is Mathlib's representative scaled by the unit `−Z`), `onCurve_dblShort`,
+     `onCurve_addMixed`, `ladder`, `ladder_chain`, `ecppStep_of_ladder`.
+   * `Curve.lean`: `JacPoint`, `jacDbl`, `jacAddMixed`, `jacMul` over `AzZMod n`;
      `Equiv/Curve.lean`: they are the specification through `AzZMod.toZMod`.
    * `Check.lean`: `StepCert`, `checkStep`, `check`; the chain ends with `AzNat.isPrime`.
      `Equiv/Check.lean`: **`check_prime : check n cert = true → Nat.Prime n.toNat`**.
-   * The addition is Mathlib's representative (`Z₃ = X − uZ²`, 12 terms in `Y₃`), not the
-     usual mixed addition: the usual one agrees with it only on the curve, and its use would
-     need the curve equation carried along the chain.  A cheaper addition (and a windowed or
-     NAF multiplication) is a later optimization of the checker; the `scale` constructor of
-     `MulChain` is there for it.
+   * **The addition (changed 2026-11-23, after the first timings).**  The first version used
+     Mathlib's representative (`Z₃ = X − uZ²`, some 35 multiplications) with a separate
+     product of the additions' `Z`.  Now the usual mixed addition (11 multiplications,
+     `Z₃ = ZH`): the three polynomial identities it needs hold modulo the curve equation,
+     with small cofactors (`linear_combination`), the ladder carries `OnCurve` along, and
+     the final `Z` is itself the product of all the steps' `Z`-factors, so one gcd of it
+     certifies everything.  A windowed or NAF multiplication is still open.
    * Tests `Tests/Check.lean`: certificates made outside the library (point counting for a
      small curve; curves `y² = x³ + ax` for 12, 30 and 60 digits), and rejections.
-3. **Generator** (unproven, not started): Step 1′ loop, Cornacchia, class polynomial, root
-   mod `N`, curve and point, recursion; then the upgrades of Morain §5.3.
+3. **Generator** (unproven) — **first version done 2026-11-23**, in `ECPP/Gen/`.
+   * `Forms.lean`: reduced forms, class numbers, fundamental discriminants and their prime
+     discriminants, `discriminantTable` (small `Nat` arithmetic).
+   * `ClassPoly.lean`: `hilbertClassPoly D` by `AzComplexFloat` — `q = e^(2πiτ)`, the
+     pentagonal series for `∏ (1 − qⁿ)`, `f = Δ(2τ)/Δ(τ)`, `j = (256f + 1)³/f`, conjugate
+     roots paired into real quadratic factors, coefficients accepted only near integers.
+   * `Modular.lean`: `AzZMod.inv?`, `sqrtSmall?`, `cornacchia4`, `smallPrimes`,
+     `trialDivide`, `polyOfInts`, `rootOfSplitPoly`.
+   * `Search.lean`: `findStep` (Morain's Step 1′ with a cache of `√q*` shared by all `D`,
+     Cornacchia, trial division, curve from `j` or the `D = 3, 4` families, point and
+     `checkStep`), `genChain` (down to `baseBits` bits, with backtracking),
+     **`ecppCertificate`**, **`provePrime`**; `Equiv/Search.lean`: **`provePrime_sound`**.
+   * `GenParams` defaults: `dMax 2000`, `hMax 24`, `trialBound 16384`, `baseBits 64`, and
+     `tiers 2` — when no step is found for some `n` the discriminant set and the trial bound
+     are enlarged (×4, class number ×2) up to twice (`GenParams.tierTables`,
+     `findStepTiers`).  Without the tiers about one prime in three of 100–200 digits got no
+     certificate (a level with some 70 smooth orders and no prime cofactor).
+   * **Timed 2026-11-23** (`benchmark ecpp <limit> "digits:D"`, three probable primes above
+     `10^D`, compiled; `"…,parts:1"` times the pieces, `"…,trace:1"` follows the chain):
+
+     | digits | steps | generator | checker | `AzNat.isPrime` (APR-CL) |
+     |---|---|---|---|---|
+     | 20 | 1 | 5 ms | 2–5 ms | 3–15 ms |
+     | 30 | 2–4 | 11–17 ms | 3–14 ms | 5–33 ms |
+     | 50 | 6–13 | 45–91 ms | 9–15 ms | 192–274 ms |
+     | 75 | 9–12 | 100–153 ms | 19–29 ms | 540–1061 ms |
+     | 100 | 16–22 | 0.29–0.54 s | 52–83 ms | 1.02–2.02 s |
+     | 150 | 23–30 | 0.92–4.2 s | 0.18–0.27 s | 5.3–6.1 s |
+     | 200 | 40–44 | 2.4–5.1 s | 0.51–0.57 s | 12.0–13.5 s |
+     | 250 | 54–64 | 10.0–21.9 s | 1.4–1.5 s | 26.7–27.7 s |
+     | 300 | 55–67 | 20.1–28.7 s | 2.0–2.3 s | 48.5–51.8 s |
+
+     This is the third run (packed powers in the root finding, shared square-root cache,
+     twists for `D = 3, 4`; APR-CL column from the second run).  The second run had the
+     generator at 26.8–35.7 s for 300 digits, the first at 34–44 s.  Profile of the third
+     run at 300 digits (20.0 and 23.4 s): square roots 23 / 32 %, roots of class
+     polynomials 35 / 26 %, curves 20 / 18 %, probable-prime tests 16 / 18 %.
+     About the second run:
+     It had the mixed addition, one Miller–Rabin round in
+     `probablePrime` and `tryCurve` giving up at the first failed check.  The first run
+     (Mathlib's addition, five rounds) had the checker at 3.4–3.7 s and the generator at
+     34–44 s for 300 digits: the checker gained a factor 1.4–1.8, the generator 1.2–2.
+     Generator + checker is ahead of APR-CL from 50 digits on (about 1.5 times at 300
+     digits); its variance is large (the search), APR-CL's is small.  Checking a certificate
+     is 15–25 times cheaper than APR-CL.  Pieces at 100 / 300 digits: `probablePrime`
+     0.5 / 7.6 ms, trial division of one `m` 0.3 / 0.6 ms (1900 primes), one `checkStep`
+     8 / 118 ms, the first `findStep` 31 / 607 ms; `H_{−431}` (h = 21) 25 ms.
+     The chain at 300 digits (`trace:1`): 57 steps, a median step near 1000 bits costs
+     0.3–0.6 s, and a few steps cost far more (8.8 s, 2.3 s, 2.2 s, 1.5 s, 1.2 s — half of
+     the total); what those spend their time on is not measured yet.
+   * **Profile (2026-11-23, `"digits:300,profile:1"`, two primes, 27.1 and 27.9 s)**: root
+     of the class polynomial modulo `n` 45 / 33 %, square roots of prime discriminants
+     19 / 30 %, curves 20 / 18 %, probable-prime tests 12 / 15 %, trial division 3 %,
+     Cornacchia and the class polynomials themselves under 1 % each.  Single roots cost up
+     to 7.5 s (`D = 1615`).
+   * **After the profile (2026-11-23, timed in the third run):** (1) the power `(X + r)^((n−1)/2)`
+     modulo `g` in `rootOfSplitPoly` by packed multiplication (`PackedMod`: Kronecker
+     substitution, three large products per modular product instead of `2h²` modular
+     multiplications); (2) the square-root cache is kept from one tier to the next
+     (`findStepWith`); (3) for `D = 3` and `D = 4` the six and four twists by powers of a
+     non-residue instead of `b = 1, 2, 3, …`.
+   * Not yet done from the paper: the simultaneous smoothness test of all the `m` (now trial
+     division of each `m`), early abort, fast Cornacchia (half-gcd), Weber or other small
+     class invariants (now `j`, whose polynomials are much larger), root finding by fast
+     polynomial arithmetic, a larger discriminant set with caching of `H_D` across steps.
 
 ## Open decisions
 
@@ -136,10 +202,83 @@ All in namespace `Azurite.ECPP`, over `AzZMod n` (2026-11-23):
 |---|---|---|
 | `JacPoint n` | `Type` | `AzZMod n × AzZMod n × AzZMod n`: `(X, Y, Z)` for `(X/Z², Y/Z³)` |
 | `jacDbl a P` | `JacPoint n` | doubling on `y² = x³ + ax + b` |
-| `jacAddAffine a b u v P` | `JacPoint n` | `P + (u, v)`, incomplete, `Z₃ = X − uZ²` |
-| `jacMulAcc a b u v fuel k` | `Option (JacPoint n × AzZMod n)` | `k · (u, v)` and the product of the additions' `Z` |
+| `jacAddMixed u v P` | `JacPoint n` | `P + (u, v)`, the usual mixed addition (incomplete), `Z₃ = Z·(uZ² − X)` |
+| `jacMul a u v fuel k` | `Option (JacPoint n)` | `k · (u, v)`; the final `Z` is the product of all the steps' `Z`-factors |
 | `StepCert` | structure | `a b u v q : AzNat` |
 | `checkStep n c` | `Bool` | one step of a certificate for `n` |
 | `check n cert` | `Bool` | the chain, ending with `AzNat.isPrime` |
 
 No new function on `AzNat` or `AzZMod` themselves was needed.
+
+### Generator (2026-11-23)
+
+| Function | Type | What it is |
+|---|---|---|
+| `AzZMod.inv? a` | `Option (AzZMod m)` | inverse, `none` for a non-unit (no coprimality proof needed) |
+| `ECPP.resOfInt n d` | `AzZMod n` | a small `Int` as a residue |
+| `ECPP.sqrtSmall? n d` | `Option (AzZMod n)` | `√d` modulo `n` for a small integer `d` (Jacobi symbol, then `AzZMod.sqrt?`) |
+| `ECPP.cornacchia4 n D r` | `Option (AzNat × AzNat)` | `x² + D y² = 4n` from `r² ≡ −D` |
+| `ECPP.trialDivide m primes` | `AzNat × AzNat` | cofactor and removed part |
+| `ECPP.polyOfInts n c` | `AzPolynomial (AzZMod n)` | integer coefficients reduced modulo `n` |
+| `ECPP.rootOfSplitPoly n h` | `Option (AzZMod n)` | a root of a polynomial that splits into distinct linear factors |
+| `ECPP.unpackCoeffs n w k x` | `Array AzNat` | the first `k` coefficients of a packed number, reduced modulo `n` |
+| `ECPP.PackedMod`, `PackedMod.make n g` | structure | arithmetic modulo `n` and a monic `g`: `g` packed, inverse of the reversed `g` packed |
+| `PackedMod.reduce`, `sqr`, `mulLinear r`, `powLinear r e` | `Array AzNat` | reduction of a packed product, square, times `X + r`, `(X + r)^e` modulo `g` |
+| `AzNat.kroneckerPack w a` | `AzNat` | `∑ aᵢ · 2^(64 w i)` for an `Array AzNat` of coefficients below `2^(64 w)` (**proven**, `kroneckerPack_toNat`) |
+| `AzNat.kroneckerCoeff w x k` | `AzNat` | `⌊x / 2^(64 w k)⌋ mod 2^(64 w)` (**proven**, `kroneckerCoeff_toNat`) |
+| `AzNat.maxLimbs a`, `AzNat.sumLimbs a` | `Nat` | the largest and the total limb count of an `Array AzNat` |
+| `AzPolynomial.mulKronecker p q` | `AzPolynomial (AzZMod m)` | product by Kronecker substitution (**proven**, `toPoly_mulKronecker`); the multiplication of `AzPolynomial (AzZMod m)` from 3 coefficients on |
+| `AzPolynomial.mulKroneckerNat p q` | `AzPolynomial AzNat` | the same over `AzNat` (**proven**, `toPoly_mulKroneckerNat`); used when `useKroneckerNat p q` |
+| `AzPolynomial.mulKroneckerInt p q` | `AzPolynomial AzInt` | the same over `AzInt` (**proven**, `toPoly_mulKroneckerInt`); used when `useKroneckerInt p q` |
+| `AzPolynomial.posParts a`, `negParts a` | `Array AzNat` | the nonnegative coefficients / absolute values of the negative ones of an `Array AzInt` |
+| `AzPolynomial.kroneckerPackInt w a` | `AzInt` | `∑ aᵢ · 2^(64 w i)` for signed coefficients |
+| `AzPolynomial.kroneckerWidth m n` | `Nat` | limbs per coefficient over `AzZMod m`: `2^(64 w) > n · m²` |
+| `AzPolynomial.kroneckerDense a s`, `useKroneckerNat p q`, `useKroneckerInt p q` | `Bool` | the dispatch rules |
+| `AzPolynomialMulConfig R` (`dmul`, law `dmul_eq`), `.basecase`, `.karatsuba`, `.karatsubaWith t` | class / values | the multiplication of `AzPolynomial R`: `*` is `dmul`, **proven** the schoolbook product (`mul_eq_mulBasecaseFold`); one instance per coefficient type |
+| `ECPP.cpow z k p` | `AzComplexFloat` | `z^k` by binary powering at precision `p` |
+| `ECPP.eulerProduct q bits p` | `AzComplexFloat` | `∏ (1 − qⁿ)` by the pentagonal series |
+| `ECPP.jOfForm D A B p` | `AzComplexFloat` | `j((−B + √−D)/(2A))` |
+| `ECPP.mulLinear`, `mulQuadratic` | `List AzFloat` | a real polynomial times `X − r`, `X² + sX + t` |
+| `ECPP.nearInteger? x` | `Option AzInt` | a float within `2^(−8)` of an integer, as that integer |
+| `ECPP.hilbertClassPolyAt D p`, `hilbertClassPoly D` | `Option (List AzInt)` | `H_{−D}`, constant term first |
+| `ECPP.candidateOrders n D x y` | `List AzNat` | `n + 1 ± x` (and the extra orders for `D = 3, 4`) |
+| `ECPP.aboveBound n q`, `probablePrime q` | `Bool` | the size condition; one Miller–Rabin round (base 2) |
+| `ECPP.tryCurve a b c q tries` | `Option StepCert` | point, cofactor multiple, `checkStep` |
+| `ECPP.cmCurves n D tries` | `List (AzZMod n × AzZMod n)` | the curves to try for `−D` (the six or four twists for `D = 3, 4`) |
+| `ECPP.smallSexticNonResidue n` | `Option Nat` | a small number that is neither a square nor a cube modulo `n` |
+| `ECPP.powersOf g k` | `List (AzZMod n)` | `g⁰, …, g^(k−1)` |
+| `ECPP.findStep P T n skip` | `Option StepCert` | one step of a certificate |
+| `ECPP.findStepWith P T n skip cache` | `Option StepCert × SqrtCache n` | the same, with the square roots found given and returned |
+| `ECPP.findStepTiers P tiers n skip` | `Option StepCert` | the first tier of tables that gives a step |
+| `ECPP.genChain`, `ecppCertificate n P` | `Option (List StepCert)` | the certificate |
+| `ECPP.provePrime n P` | `Bool` | search and check; `true` proves primality |
+
+Small-number helpers on `Nat`/`Int` (not `Az*`): `reducedForms`, `classNumber`,
+`isFundamental`, `primeDiscriminants`, `discriminantTable`, `smallPrimes`,
+`smallNonResidue`, `classPolyBits`; records `RedForm`, `GenParams` (with `tables`, `tierTables`),
+`GenTables`, `SqrtCache`.
+
+### `AzComplexFloat` (2026-11-23)
+
+A new type, namespace `Azurite.AzComplexFloat`: a pair `re`, `im` of `AzFloat`s.  Every
+rounded function takes `(pRe pIm : Nat) (mRe mIm : RoundingMode)` — a pair of precisions
+and a pair of modes for the real and imaginary parts, as in MPC and rug — and returns `Rounded = AzComplexFloat × Ordering × Ordering`.  Proven: for finite operands each
+component is the correct rounding of the exact complex value (`Equiv/Arith.lean`).
+
+| Function | What it is |
+|---|---|
+| `ofFloat x`, `zero`, `one`, `i`, `nan` | constructors and constants |
+| `isFinite`, `isNaN`, `isZero` | predicates |
+| `neg` (`-z`), `conj` | exact |
+| `addPrecRound z w pRe pIm mRe mIm`, `subPrecRound` | componentwise |
+| `mulPrecRound z w pRe pIm mRe mIm` | `ac − bd`, `ad + bc`, one rounding each |
+| `sqrPrecRound z pRe pIm mRe mIm` | `a² − b²`, `2ab` |
+| `mulFloatPrecRound z x pRe pIm mRe mIm`, `divFloatPrecRound` | by a real float |
+| `normSqrPrecRound z p mode` | `a² + b²` as an `AzFloat × Ordering` |
+| `divPrecRound z w pRe pIm mRe mIm` | finite operands, nonzero divisor; `NaN` otherwise |
+| `cisPrecRound x pRe pIm mRe mIm` | `cos x + i sin x` for a real float `x` |
+
+Open for the full type (not needed by the generator): the conventions for infinities and
+division by zero in `divPrecRound` (to follow MPC), precision-less variants (`add`, `mul`, …), `abs`/`arg`, `sqrt`, `exp`, `ln`, string
+conversion.  `divPrecRound` forms exact sums, whose precision grows with the gap between
+the exponents of the terms.

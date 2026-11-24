@@ -80,6 +80,7 @@ namespace AzPolynomial
 open Azurite.ExhaustiveGenerator
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-! ### The deterministic candidate sweep -/
 

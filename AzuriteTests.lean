@@ -11,6 +11,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -- test suites, kept out of the main `Azurite` library target.
 -- Built (and thereby run, since `#guard` checks at elaboration time)
 -- via `lake test`.
+import Azurite.AzComplexFloat.Tests.Arith
 import Azurite.AzFloat.Tests.Acos
 import Azurite.AzFloat.Tests.AcosPi
 import Azurite.AzFloat.Tests.AcosRat
@@ -246,4 +247,5 @@ import Azurite.AzRat.Tests.LogBase
 import Azurite.AzRat.Tests.Pow2
 import Azurite.AzRat.Tests.ToSci
 import Azurite.ECPP.Tests.Check
+import Azurite.ECPP.Tests.Gen
 import Azurite.Sci.Tests.Number

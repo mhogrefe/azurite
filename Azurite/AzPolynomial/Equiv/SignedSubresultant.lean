@@ -65,7 +65,8 @@ theorem toPoly_divByRingElt {K : Type _} [Field K] [DecidableEq K] (c : K) (p : 
 /-- **`remExact` is a Euclidean remainder:** `A = quo · B + remExact A B` at the `Polynomial`
     level, where `quo = (exactDivQuoRem A B).1`.  (Immediate from `toPoly_exactDivQuoRem_eq`, since
     `remExact A B = (exactDivQuoRem A B).2`.) -/
-theorem toPoly_remExact_add {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDiv R]
+theorem toPoly_remExact_add {R : Type _} [CommRing R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R]
     (A B : AzPolynomial R) :
     AzPolynomial.toPoly A
       = AzPolynomial.toPoly (exactDivQuoRem A B).1 * AzPolynomial.toPoly B
@@ -78,7 +79,8 @@ theorem remExact_eq_rem {K : Type _} [Field K] [DecidableEq K] (A B : AzPolynomi
     remExact A B = rem A B := rfl
 
 /-- **`remExact` bridge (field):** `toPoly (remExact A B) = toPoly A % toPoly B`. -/
-theorem toPoly_remExact {K : Type _} [Field K] [DecidableEq K] (A B : AzPolynomial K)
+theorem toPoly_remExact {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K] (A B : AzPolynomial K)
     (hB : AzPolynomial.toPoly B ≠ 0) :
     AzPolynomial.toPoly (remExact A B) = AzPolynomial.toPoly A % AzPolynomial.toPoly B := by
   rw [remExact_eq_rem]; exact toPoly_rem A B hB
@@ -143,7 +145,8 @@ theorem C_mul_toPoly_divByRingElt {D : Type _} [CommRing D] [DecidableEq D] [Azu
     (`map A = QK·map B + map R`), then by uniqueness of Euclidean division over `Frac D` and
     injectivity of `Polynomial.map`, `toPoly (remExact A B) = R` over `D`.  This is the boundary
     counterpart of the cofactor-recurrence route (`sResP_cofactor_recurrence`), used where `i-1 > q`. -/
-theorem toPoly_remExact_descent {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem toPoly_remExact_descent {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (A B : AzPolynomial D) (R : Polynomial D) (QK : Polynomial (FractionRing D))
     (hB : AzPolynomial.toPoly B ≠ 0) (hsize : B.coeffs.size ≤ A.coeffs.size)
     (hpow : ∀ idx, B.leadingCoeff ^ (A.coeffs.size - B.coeffs.size + 1) ∣ A.coeff idx)
@@ -181,7 +184,8 @@ theorem toPoly_remExact_descent {D : Type _} [CommRing D] [DecidableEq D] [Azuri
     and the exactness witness `C c · S = −R` (`c = s_j·t_{i-1}`, `S = sResP_{k-1}`), the algorithm's
     `Skm1 = divByRingElt c (−remExact (d•Si) Sj)` realizes `S` over the domain — fraction-free, no
     inverse.  Composes the two M5 linchpins. -/
-theorem toPoly_Skm1_eq_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem toPoly_Skm1_eq_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (Si Sj : AzPolynomial D) (c d : D) (QD R S : Polynomial D)
     (hc : c ≠ 0) (hSj_ne : AzPolynomial.toPoly Sj ≠ 0)
     (hdiv : Polynomial.C d * AzPolynomial.toPoly Si = QD * AzPolynomial.toPoly Sj + R)
@@ -202,7 +206,8 @@ open Polynomial in
     and `toPoly_Skm1_eq_domain` (the linchpins): with `C c = det(B_{i,j})`, `C d = det(B_{j,k})`
     (the caller discharges these via `det_cofactorMat_domain` from the coefficient invariants), the
     recursion's `Skm1 = divByRingElt c (−remExact (d•Si) Sj)` realizes `sResP_{k-1}` over `D`. -/
-theorem toPoly_Skm1_eq_sResP_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem toPoly_Skm1_eq_sResP_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : D[X]) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree)
     (Si Sj : AzPolynomial D) (c d : D) {i j k : ℕ}
     (hSi : AzPolynomial.toPoly Si = sResP P Q (i - 1))
@@ -472,6 +477,7 @@ open Polynomial in
     and the scalar-image facts tying the carried `D`-scalars `c`, `d` to the field `sBPR`/`tBPR` of
     the mapped polynomials. -/
 theorem toPoly_Skm1_eq_sResP_domain_boundary {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
     (Si Sj : AzPolynomial D) (c d : D) {i j k : ℕ}
@@ -568,6 +574,7 @@ open Polynomial in
     fraction-free linchpin `toPoly_exactDivQuoRem_snd_of_euclidean` — no pseudo-division scaling, which
     is insufficient when `sResP_{q-1}` is itself defective — and `sResU_sub_one_eq` to clear `c`. -/
 theorem toPoly_Skm1_eq_sResP_domain_ip {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (Si Sj : AzPolynomial D) (c d : D) {k : ℕ}
     (hSi : AzPolynomial.toPoly Si = Q)
@@ -613,6 +620,7 @@ open Polynomial in
     with `sResU_sub_one_eq` (`sResU_{q-1} = -C(s_q·lcof Q)`), fed to the fraction-free linchpin — no
     pseudo-division scaling needed. -/
 theorem toPoly_Skm1_eq_sResP_domain_first {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) (Si Sj : AzPolynomial D) (c d : D)
     (hSi : AzPolynomial.toPoly Si = P) (hSj : AzPolynomial.toPoly Sj = Q)
@@ -654,7 +662,8 @@ open Azurite.BPR.Chapter8 in
 /-- **Step bridge for `sResP_{k-1}`.**  The algorithm's `divByRingElt (s_j t_{i-1})
     (-(remExact (d • Si) Sj))` with `d = s_k t_{j-1}` maps (via `toPoly`) to `sResP_{k-1}`.  Used by
     both branches of `ssAux`. -/
-theorem toPoly_Skm1_eq {K : Type _} [Field K] [DecidableEq K] (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
+theorem toPoly_Skm1_eq {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K] (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) {i j k : ℕ} (hj1 : 1 ≤ j) (hji : j < i)
     (hip : i ≤ P.natDegree + 1) (Si Sj : AzPolynomial K) {sj ti d : K}
     (hSi : AzPolynomial.toPoly Si = sResP P Q (i - 1))
@@ -859,7 +868,8 @@ theorem targetList_reverse {K : Type _} [CommRing K] (P Q : K[X]) (n : ℕ) :
 open Azurite.BPR.Chapter8 in
 /-- **Assembly (M3).**  Under the loop invariant, the `ssAux` output (mapped through `toPoly`)
     equals the abstract spec `targetList`. -/
-theorem ssAux_spec {K : Type _} [Field K] [DecidableEq K] (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
+theorem ssAux_spec {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K] (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) :
     ∀ (fuel i j : ℕ) (Si Sj : AzPolynomial K) (sj ti : K),
       j ≤ fuel → 1 ≤ j → j < i → i ≤ P.natDegree + 1 → (j ≤ Q.natDegree ∨ j = P.natDegree) →
@@ -997,7 +1007,8 @@ open Azurite.BPR.Chapter8 in
 /-- **Field-level correctness of `signedSubresultant`.**  For `P, Q ∈ AzPolynomial K` with
     `1 ≤ deg Q < deg P`, the output arrays are (after `toPoly`) exactly the signed subresultant
     polynomials `sResP_ℓ` and coefficients `sRes_ℓ` for `ℓ = 0, …, p`. -/
-theorem signedSubresultant_toPoly {K : Type _} [Field K] [DecidableEq K] (P Q : AzPolynomial K)
+theorem signedSubresultant_toPoly {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K] (P Q : AzPolynomial K)
     (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) :
     (signedSubresultant P Q).1.toList.map AzPolynomial.toPoly
         = (List.range (P.natDegree + 1)).map (sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q))
@@ -1056,7 +1067,8 @@ open Azurite.BPR.Chapter8 in
     `sBPR`/`tBPR`, and the per-step bridges are the fraction-free domain versions.  Restricted to
     `i ≤ q+1` (so `j ≤ q`), where every cofactor determinant applies; the first call `j=p` is handled
     separately at the top level. -/
-theorem ssAux_spec_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D] [IsDomain D]
+theorem ssAux_spec_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D] [IsDomain D]
     (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) :
     ∀ (fuel i j : ℕ) (Si Sj : AzPolynomial D) (sj ti : D),
       j ≤ fuel → 1 ≤ j → j < i → j ≤ Q.natDegree → (i ≤ Q.natDegree + 1 ∨ i = P.natDegree) →
@@ -1248,7 +1260,8 @@ open Azurite.BPR.Chapter8 in
     (which requires `j ≤ q`): the `j = p` step emits the head `(Q, …)` (and, in the gap case, the
     closed-form `(Spk, s_q)`), computes the first remainder `Skm1 = sResP_{q-1}` via the fraction-free
     first-call bridge, and the recursion (now at `i = p, j = q`) is closed by `ssAux_spec_domain`. -/
-theorem ssAux_first_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem ssAux_first_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : AzPolynomial D) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) :
     (ssAux (P.natDegree + 1) P.natDegree P Q 1 1).map (Prod.map AzPolynomial.toPoly id)
@@ -1392,6 +1405,7 @@ open Azurite.BPR.Chapter8 in
     signed subresultant polynomials `sResP_ℓ` and coefficients `sRes_ℓ` for `ℓ = 0, …, p`.  The
     fraction-free mirror of `signedSubresultant_toPoly`. -/
 theorem signedSubresultant_toPoly_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : AzPolynomial D) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) :
     (signedSubresultant P Q).1.toList.map AzPolynomial.toPoly
@@ -1441,7 +1455,8 @@ open Azurite.BPR.Chapter8 in
     coefficient is `s_ℓ`.  (The per-element form of `signedSubresultant_toPoly_domain`'s list
     equalities; for the full list the index `ℓ` coincides with the array position, which is why the
     natural statement is position-indexed rather than tuple-intrinsic.) -/
-theorem signedSubresultant_toPoly_get {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem signedSubresultant_toPoly_get {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : AzPolynomial D) (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree)
     (hq1 : 1 ≤ Q.natDegree) {ℓ : ℕ} (hℓ : ℓ ≤ P.natDegree) :
     ((signedSubresultant P Q).1.toList[ℓ]?).map AzPolynomial.toPoly
@@ -1459,7 +1474,8 @@ theorem signedSubresultant_toPoly_get {D : Type _} [CommRing D] [DecidableEq D] 
     `C(denom)·X_{k-1} = (toPoly Cp)·(toPoly Xj) − C(d)·(toPoly Xi)`, this realizes `X_{k-1}`.  Each
     track instantiates `hrec` from its cofactor recurrence (`sResP`/`sResU`/`sResV_cofactor_recurrence`)
     together with `toPoly Cp = β`, `toPoly Xi`, `toPoly Xj`. -/
-theorem toPoly_cofactor_step {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem toPoly_cofactor_step {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (Cp Xi Xj : AzPolynomial D) (d denom : D) (Xkm1 : Polynomial D) (hdenom : denom ≠ 0)
     (hrec : Polynomial.C denom * Xkm1
         = AzPolynomial.toPoly Cp * AzPolynomial.toPoly Xj
@@ -1477,6 +1493,7 @@ open Polynomial in
     `toPoly C = sResU_{i-1}·sResV_{k-1} − sResV_{i-1}·sResU_{k-1} = det(cofactorMat i k)`, via the
     quotient linchpin and the `sResP` cofactor recurrence (the same Euclidean division). -/
 theorem toPoly_quotient_eq_cofactor_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : D[X]) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (Si Sj : AzPolynomial D) (c d : D) {i j k : ℕ}
     (hSi : AzPolynomial.toPoly Si = sResP P Q (i - 1))
@@ -1516,7 +1533,8 @@ open Polynomial in
     (C·Uj − d•Ui)` realizes `sResU_{k-1}`: `toPoly C = β` (`toPoly_quotient_eq_cofactor_domain`),
     `C(denom) = det(cofactorMat i j)`, `C(d) = det(cofactorMat j k)`, and the cleared recurrence is
     exactly `sResU_cofactor_recurrence` rearranged. -/
-theorem toPoly_Ukm1_eq_sResU_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem toPoly_Ukm1_eq_sResU_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : D[X]) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree)
     (Si Sj Ui Uj : AzPolynomial D) (c d : D) {i j k : ℕ}
     (hSi : AzPolynomial.toPoly Si = sResP P Q (i - 1))
@@ -1539,7 +1557,8 @@ open Azurite.BPR.Chapter8 in
 open Polynomial in
 /-- **`sResV` step bridge** (interior, `i - 1 ≤ q`).  The `Q`-cofactor analogue of
     `toPoly_Ukm1_eq_sResU_domain`, via `sResV_cofactor_recurrence`. -/
-theorem toPoly_Vkm1_eq_sResV_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem toPoly_Vkm1_eq_sResV_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : D[X]) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree)
     (Si Sj Vi Vj : AzPolynomial D) (c d : D) {i j k : ℕ}
     (hSi : AzPolynomial.toPoly Si = sResP P Q (i - 1))
@@ -1565,6 +1584,7 @@ open Polynomial in
     `d = s_k·lcof(sResP_{q-1})`) equals `−sResU_{k-1}` (the `i=p` value of the cofactor minor `β`,
     since `sResU_{p-1}=0, sResV_{p-1}=1`).  Via the quotient linchpin and `boundary_recurrence`. -/
 theorem toPoly_quotient_eq_cofactor_domain_ip {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (Si Sj : AzPolynomial D) (d : D) {k : ℕ}
     (hSi : AzPolynomial.toPoly Si = Q)
@@ -1598,6 +1618,7 @@ open Polynomial in
     of `β`, since `sResU_p=1, sResV_p=0`).  Via the quotient linchpin and the Bézout
     `sResP_{q-1} = sResU_{q-1}·P + sResV_{q-1}·Q` with `sResU_sub_one_eq`. -/
 theorem toPoly_quotient_eq_cofactor_domain_first {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) (Si Sj : AzPolynomial D) (d : D)
     (hSi : AzPolynomial.toPoly Si = P) (hSj : AzPolynomial.toPoly Sj = Q)
@@ -1624,7 +1645,8 @@ open Polynomial in
 /-- **`sResU` step bridge, `i = p` boundary.**  With `toPoly Ui = 0` (`sResU_{p-1}` convention),
     `toPoly Uj = sResU_{q-1}`, the boundary quotient `toPoly C = −sResU_{k-1}`, and
     `C(c) = −sResU_{q-1}` (`sResU_sub_one_eq`), the step realizes `sResU_{k-1}`. -/
-theorem toPoly_Ukm1_eq_sResU_domain_ip {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem toPoly_Ukm1_eq_sResU_domain_ip {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree)
     (hq1 : 1 ≤ Q.natDegree) (Si Sj Ui Uj : AzPolynomial D) (c d : D) {k : ℕ}
     (hSi : AzPolynomial.toPoly Si = Q)
@@ -1652,7 +1674,8 @@ open Polynomial in
 /-- **`sResV` step bridge, `i = p` boundary.**  With `toPoly Vi = 1` (`sResV_{p-1}` convention),
     `toPoly Vj = sResV_{q-1}`, the boundary quotient `toPoly C = −sResU_{k-1}`, and
     `C(d) = det(cofactorMat q k)`, the step realizes `sResV_{k-1}`. -/
-theorem toPoly_Vkm1_eq_sResV_domain_ip {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem toPoly_Vkm1_eq_sResV_domain_ip {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree)
     (hq1 : 1 ≤ Q.natDegree) (Si Sj Vi Vj : AzPolynomial D) (c d : D) {k : ℕ}
     (hSi : AzPolynomial.toPoly Si = Q)
@@ -1685,6 +1708,7 @@ open Polynomial in
     `toPoly Uj = 0` (`sResU_{p-1}`), `c = 1`, the first quotient `toPoly C = sResV_{q-1}`, and
     `C(d) = −sResU_{q-1}` (`sResU_sub_one_eq`), the step realizes `sResU_{q-1}`. -/
 theorem toPoly_Ukm1_eq_sResU_domain_first {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) (Si Sj Ui Uj : AzPolynomial D) (c d : D)
     (hSi : AzPolynomial.toPoly Si = P) (hSj : AzPolynomial.toPoly Sj = Q)
@@ -1707,6 +1731,7 @@ open Polynomial in
 /-- **`sResV` step bridge, first call (`i = p+1`).**  With `toPoly Vi = 0` (`sResV_p`),
     `toPoly Vj = 1` (`sResV_{p-1}`), `c = 1`, and `toPoly C = sResV_{q-1}`, realizes `sResV_{q-1}`. -/
 theorem toPoly_Vkm1_eq_sResV_domain_first {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) (Si Sj Vi Vj : AzPolynomial D) (c d : D)
     (hSi : AzPolynomial.toPoly Si = P) (hSj : AzPolynomial.toPoly Sj = Q)
@@ -1727,7 +1752,8 @@ theorem toPoly_Vkm1_eq_sResV_domain_first {D : Type _} [CommRing D] [DecidableEq
 /-- `ssAuxExt` (Algorithm 8.22) projects onto `ssAux` (Algorithm 8.21) on the `sResP`/`sRes`
     components: the cofactor state never affects them, since `sResP`/`sRes` are computed by the
     identical recurrence. -/
-theorem ssAuxExt_proj {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDiv R]
+theorem ssAuxExt_proj {R : Type _} [CommRing R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R]
     (fuel j : ℕ) (Si Sj : AzPolynomial R) (sj ti : R) (Ui Vi Uj Vj : AzPolynomial R) :
     (ssAuxExt fuel j Si Sj sj ti Ui Vi Uj Vj).map (fun t => (t.1, t.2.1))
       = ssAux fuel j Si Sj sj ti := by
@@ -1747,7 +1773,8 @@ theorem ssAuxExt_proj {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDi
 
 /-- The `sResP` (first) component of `extendedSignedSubresultant` equals that of
     `signedSubresultant`. -/
-theorem extendedSignedSubresultant_fst {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDiv R]
+theorem extendedSignedSubresultant_fst {R : Type _} [CommRing R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R]
     (P Q : AzPolynomial R) :
     (extendedSignedSubresultant P Q).1 = (signedSubresultant P Q).1 := by
   unfold extendedSignedSubresultant signedSubresultant
@@ -1760,6 +1787,7 @@ theorem extendedSignedSubresultant_fst {R : Type _} [CommRing R] [DecidableEq R]
 /-- The `sRes` (second) component of `extendedSignedSubresultant` equals that of
     `signedSubresultant`. -/
 theorem extendedSignedSubresultant_snd_fst {R : Type _} [CommRing R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R]
     [Azurite.ExactDiv R] (P Q : AzPolynomial R) :
     (extendedSignedSubresultant P Q).2.1 = (signedSubresultant P Q).2 := by
   unfold extendedSignedSubresultant signedSubresultant
@@ -1777,7 +1805,8 @@ open Azurite.BPR.Chapter8 in
     `i ≤ q+1`, the convention values `0, 1` at the boundary `i = p`); the `j`-side cofactors are
     always abstract (`j ≤ q`).  The step uses the interior bridges (`toPoly_Ukm1_eq_sResU_domain`)
     in the abstract case and the `_ip` bridges at the boundary. -/
-theorem ssAuxExt_spec_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem ssAuxExt_spec_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree)
     (hq1 : 1 ≤ Q.natDegree) :
     ∀ (fuel i j : ℕ) (Si Sj : AzPolynomial D) (sj ti : D) (Ui Vi Uj Vj : AzPolynomial D),
@@ -2064,7 +2093,8 @@ open Azurite.BPR.Chapter8 in
     `ssAuxExt` computes are exactly the `Notation_8_41` cofactor determinants:
     `toPoly t.2.2.1 = sResU P Q (deg t.1)` and `toPoly t.2.2.2 = sResV P Q (deg t.1)`.
     The `.2` projection of `ssAuxExt_spec_domain`. -/
-theorem ssAuxExt_cofactor_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem ssAuxExt_cofactor_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree)
     (hq1 : 1 ≤ Q.natDegree) (fuel i j : ℕ) (Si Sj : AzPolynomial D) (sj ti : D)
     (Ui Vi Uj Vj : AzPolynomial D) (hfuel : j ≤ fuel) (hj1 : 1 ≤ j) (hji : j < i)
@@ -2090,7 +2120,8 @@ open Azurite.BPR.Chapter8 in
     cofactors are the `Notation_8_41` determinants `sResU`/`sResV`.  Peels the `j = p` step (via the
     `_first` bridges), then applies `ssAuxExt_spec_domain` to the tail at `(i, j) = (p, q)`; the
     boundary tuples (index `≥ q`) are excluded by the `t.1.natDegree < q` guard. -/
-theorem ssAuxExt_bezout_first_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem ssAuxExt_bezout_first_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : AzPolynomial D) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) :
     ∀ t ∈ ssAuxExt (P.natDegree + 1) P.natDegree P Q 1 1 1 0 0 1,
@@ -2262,6 +2293,7 @@ theorem ssAuxExt_bezout_first_domain {D : Type _} [CommRing D] [DecidableEq D] [
     tuple list `((P, lcof P, 1, 0) :: ssAuxExt …).reverse` — so a statement about the public output
     can be reduced to one about that list (and hence to the recursion). -/
 theorem extendedSignedSubresultant_tuples_eq {R : Type _} [CommRing R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R]
     [Azurite.ExactDiv R] (P Q : AzPolynomial R) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree) :
     (extendedSignedSubresultant P Q).1.toList.zip
         ((extendedSignedSubresultant P Q).2.1.toList.zip
@@ -2280,6 +2312,7 @@ open Azurite.BPR.Chapter8 in
     `extendedSignedSubresultant P Q` as a tuple `t = (sResP_ℓ, s_ℓ, sResU_ℓ, sResV_ℓ)` (zipping the
     four output arrays), the cofactors satisfy `sResU_ℓ · P + sResV_ℓ · Q = sResP_ℓ`. -/
 theorem extendedSignedSubresultant_toPoly_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : AzPolynomial D) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) :
     ∀ t ∈ (extendedSignedSubresultant P Q).1.toList.zip
@@ -2306,6 +2339,7 @@ open Azurite.BPR.Chapter8 in
     input `P`) are excluded by the `t.1.natDegree < q` guard; the faithful all-index statement there
     is the Bézout relation `extendedSignedSubresultant_toPoly_domain`. -/
 theorem extendedSignedSubresultant_cofactor_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D] (P Q : AzPolynomial D) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) :
     ∀ t ∈ (extendedSignedSubresultant P Q).1.toList.zip

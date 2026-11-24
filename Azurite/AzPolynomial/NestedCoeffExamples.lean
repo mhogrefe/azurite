@@ -19,6 +19,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
   The companion file `MvCoeffExamples.lean` covers the
   `AzMvPolynomial` coefficient case.
 -/
+import Azurite.AzPolynomial.FastMul
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Sub
@@ -137,6 +138,10 @@ The outer indeterminate is again written `T`. -/
 
 /-- Coefficient ring: `M₂(AzInt)`. -/
 abbrev Mat22 := AzMatrix AzInt 2 2
+
+/-- Polynomials over square matrices: the schoolbook product. -/
+instance {R : Type _} {n : ℕ} [Semiring (AzMatrix R n n)] [DecidableEq (AzMatrix R n n)] :
+    AzPolynomialMulConfig (AzMatrix R n n) := .basecase
 
 /-- The identity `2 × 2` matrix. -/
 private def I2 : Mat22 := 1

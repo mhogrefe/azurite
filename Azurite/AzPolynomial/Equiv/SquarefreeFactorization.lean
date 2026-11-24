@@ -34,6 +34,7 @@ open Polynomial
 attribute [local instance 0] Azurite.BPR.gcdMonoidPolynomial
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-- Abstract mirror of the Yun loop on `Polynomial K`: Mathlib's normalized
 (monic) gcd and Euclidean division `/`. -/
@@ -272,6 +273,7 @@ private theorem YunFamily.not_dvd_ysum [CharZero K] {A : ℕ → K[X]} {m : ℕ}
     obtain ⟨k, hk, hpk⟩ := hprime.exists_mem_finset_dvd hd
     exact hF.coprime (Finset.mem_erase.mp hk).1 hp hpk hpj₀
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- The gcd of the classes' product with a Yun sum with all-nonzero coefficients
 is `1`. -/
 private theorem YunFamily.gcd_prod_ysum [CharZero K] {A : ℕ → K[X]} {m : ℕ}
@@ -306,13 +308,16 @@ private theorem YunFamily.ysum_ne_zero [CharZero K] {A : ℕ → K[X]} {m : ℕ}
 
 /-! #### The loop invariant -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 private theorem yunLoopPoly_zero (i : ℕ) (w z : K[X]) (acc : List (K[X] × ℕ)) :
     yunLoopPoly 0 i w z acc = acc ++ [(w, i)] := rfl
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 private theorem yunLoopPoly_succ_zero (fuel i : ℕ) (w : K[X]) (acc : List (K[X] × ℕ)) :
     yunLoopPoly (fuel + 1) i w 0 acc = acc ++ [(w, i)] := by
   rw [yunLoopPoly, ite_eq_left rfl]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 private theorem yunLoopPoly_succ_ne_zero (fuel i : ℕ) (w z : K[X])
     (acc : List (K[X] × ℕ)) (hz : z ≠ 0) :
     yunLoopPoly (fuel + 1) i w z acc =
@@ -333,6 +338,7 @@ private theorem YunFamily.out_top {A : ℕ → K[X]} {m : ℕ} (hF : YunFamily A
   rw [h1]
   simp [List.range', hF.top_natDegree_ne_zero]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- **The Yun loop invariant**: started at counter `i ≤ m` on
 `w = ∏_{j ∈ [i, m]} A j` and the corresponding Yun sum (with enough fuel), the
 loop emits exactly the nontrivial classes `(A j, j)`, `j ∈ [i, m]`, in order. -/
@@ -402,6 +408,7 @@ private theorem YunFamily.yunLoopPoly_eq [CharZero K] {A : ℕ → K[X]} {m : �
 
 /-! #### Existence of the squarefree class decomposition -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- **Squarefree multiplicity decomposition** of a nonconstant monic polynomial:
 grouping the (monic) normalized irreducible factors by multiplicity yields
 `a = ∏_{j ∈ [1, m]} (A j)^j` with `A j` monic, squarefree, pairwise coprime and
@@ -508,6 +515,7 @@ private theorem exists_yunFamily {a : K[X]} (ha : a.Monic) (h0 : a.natDegree ≠
 
 /-! #### The closed form of `yunPoly` -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- **Closed form**: for nonconstant monic `a` over a characteristic-zero field,
 `yunPoly a` is exactly the list of nontrivial multiplicity classes
 `(A j, j)`, `j ∈ [1, m]`, in increasing order of `j`. -/
@@ -619,6 +627,7 @@ private theorem filter_map_pow_prod {A : ℕ → K[X]} (hmono : ∀ j, (A j).Mon
 
 /-! #### The three correctness theorems -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- **Yun's algorithm, product identity**: the emitted powers multiply back to
 the (monic) input. -/
 theorem yunPoly_prod [CharZero K] {a : K[X]} (ha : a.Monic) :
@@ -632,6 +641,7 @@ theorem yunPoly_prod [CharZero K] {a : K[X]} (ha : a.Monic) :
         from rfl,
       filter_map_pow_prod hF.monic m 1, Ico_one_succ_eq_Icc, ← hprodid]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- **Yun's algorithm, squarefreeness**: every emitted factor is squarefree,
 monic and nonconstant. -/
 theorem yunPoly_squarefree [CharZero K] {a : K[X]} (ha : a.Monic) :
@@ -646,6 +656,7 @@ theorem yunPoly_squarefree [CharZero K] {a : K[X]} (ha : a.Monic) :
     obtain ⟨-, hdeg⟩ := List.mem_filter.mp hj
     exact ⟨hF.squarefree j, hF.monic j, by simpa using hdeg⟩
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- **Yun's algorithm, exponents (pairwise form)**: the emitted multiplicities
 are strictly increasing. -/
 theorem yunPoly_exponents_pairwise [CharZero K] {a : K[X]} (ha : a.Monic) :
@@ -658,6 +669,7 @@ theorem yunPoly_exponents_pairwise [CharZero K] {a : K[X]} (ha : a.Monic) :
       show (Prod.snd ∘ fun j => (A j, j)) = @id ℕ from rfl, List.map_id]
     exact List.Pairwise.filter _ List.pairwise_lt_range'
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- **Yun's algorithm, exponents**: the emitted multiplicities form a strictly
 increasing chain. -/
 theorem yunPoly_exponents [CharZero K] {a : K[X]} (ha : a.Monic) :
@@ -667,6 +679,7 @@ theorem yunPoly_exponents [CharZero K] {a : K[X]} (ha : a.Monic) :
 
 /-! ### The computable algorithm's correctness (through the bridge) -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- Coprimality of distinct Yun classes, as `IsCoprime` over the field. -/
 private theorem YunFamily.isCoprime' {A : ℕ → K[X]} {m : ℕ} (hF : YunFamily A m)
     {j k : ℕ} (hjk : j ≠ k) : IsCoprime (A j) (A k) := by
@@ -678,6 +691,7 @@ private theorem YunFamily.isCoprime' {A : ℕ → K[X]} {m : ℕ} (hF : YunFamil
   exact hF.coprime hjk hp (hpdvd.trans (EuclideanDomain.gcd_dvd_left _ _))
     (hpdvd.trans (EuclideanDomain.gcd_dvd_right _ _))
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- **Pairwise coprimality of the abstract output**: distinct multiplicity
 classes share no factor — in particular the output polynomials are pairwise
 distinct (never `[(p, 2), (p, 3)]` for `p⁵`). -/
@@ -695,6 +709,7 @@ theorem yunPoly_pairwise_coprime [CharZero K] {a : K[X]} (ha : a.Monic) :
 
 variable [LinearOrder K] [PolynomialDerivative K]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- The sorted output is a permutation of the core run. -/
 private theorem sf_perm (a : AzPolynomial K) :
     List.Perm (squarefreeFactorization a) (squarefreeFactorizationCore a) :=

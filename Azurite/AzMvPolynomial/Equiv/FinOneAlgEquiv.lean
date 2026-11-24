@@ -39,6 +39,7 @@ namespace Azurite
 open AzMvPolynomial
 
 variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
     {ord : MonomialOrder}
 
 /-- The unique element of `Fin 1`. -/
@@ -79,6 +80,7 @@ private lemma polynomial_roundtrip (p : Polynomial R) :
 /-! ### Forward and backward bridges through `toMvPoly` / `toPoly` -/
 
 omit [NoZeroDivisors R] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 lemma toAzPolynomial_toAzMvPolynomial_roundtrip
     (p : AzMvPolynomial 1 R ord) :
     (p.toAzPolynomial).toAzMvPolynomial finOneZero ord = p :=
@@ -87,6 +89,7 @@ lemma toAzPolynomial_toAzMvPolynomial_roundtrip
         mvPolyFinOne_roundtrip])
 
 omit [NoZeroDivisors R] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 lemma toAzMvPolynomial_toAzPolynomial_roundtrip (q : AzPolynomial R) :
     (AzPolynomial.toAzMvPolynomial finOneZero ord q :
         AzMvPolynomial 1 R ord).toAzPolynomial = q := by
@@ -96,6 +99,7 @@ lemma toAzMvPolynomial_toAzPolynomial_roundtrip (q : AzPolynomial R) :
 /-! ### Ring-hom axioms via the `toPoly` bridge -/
 
 omit [NoZeroDivisors R] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 private lemma toAzPolynomial_add (p q : AzMvPolynomial 1 R ord) :
     (p + q).toAzPolynomial = p.toAzPolynomial + q.toAzPolynomial := by
   apply toPoly_inj.mp
@@ -109,6 +113,7 @@ private lemma toAzPolynomial_mul (p q : AzMvPolynomial 1 R ord) :
       toPoly_toAzPolynomial, toMvPoly_mul, MvPolynomial.eval₂_mul]
 
 omit [NoZeroDivisors R] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 private lemma toAzPolynomial_C_eq (r : R) :
     (AzMvPolynomial.C r : AzMvPolynomial 1 R ord).toAzPolynomial =
       (AzPolynomial.C r : AzPolynomial R) := by

@@ -47,6 +47,7 @@ path); over domains use `gcd`/`gcdGcdFreePart`.
 namespace Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-- Entry generator of the Sylvester–Habicht matrix `SyHa_j(P, Q)`: the
 coefficient at degree `d` of the `i`-th family polynomial

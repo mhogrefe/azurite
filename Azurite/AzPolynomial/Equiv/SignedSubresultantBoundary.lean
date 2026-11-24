@@ -165,7 +165,8 @@ open Azurite.BPR.Chapter8 in
     `hUj`/`hVj`).  All other branches have `sResP_{j-1} ≠ 0`, so `j₀ ≤ deg(sResP_{j-1})`
     (`boundary_le_natDegree_sResP`: the fraction-field gcd divides every nonzero subresultant)
     and the boundary position lands strictly inside the recursive call. -/
-theorem ssAuxExt_boundary {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem ssAuxExt_boundary {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree)
     (hq1 : 1 ≤ Q.natDegree) {j₀ : ℕ} (hj₀1 : 1 ≤ j₀) (hj₀q : j₀ ≤ Q.natDegree)
     (h0 : sResP P Q (j₀ - 1) = 0) (hnd : (sResP P Q j₀).natDegree = j₀)
@@ -421,7 +422,8 @@ open Azurite.BPR.Chapter8 in
     `sResU_{j₀-1}`/`sResV_{j₀-1}`.  Peels the `j = p` step with the `_first` bridges, then
     applies `ssAuxExt_boundary` to the tail at `(i, j) = (p, q)`, exactly as
     `ssAuxExt_bezout_first_domain` does. -/
-theorem ssAuxExt_boundary_first {D : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+theorem ssAuxExt_boundary_first {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
     [IsDomain D] (P Q : AzPolynomial D) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) {j₀ : ℕ} (hj₀1 : 1 ≤ j₀)
     (hj₀q : j₀ ≤ Q.natDegree)
@@ -577,7 +579,8 @@ open Azurite.BPR.Chapter8 in
     exactly the abstract cofactor determinants `sResU_{j₀-1}` and `sResV_{j₀-1}` of
     Notation 8.41. -/
 theorem extendedSignedSubresultant_boundary_cofactors_domain {D : Type _} [CommRing D]
-    [DecidableEq D] [Azurite.ExactDiv D] [IsDomain D]
+    [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D] [IsDomain D]
     (P Q : AzPolynomial D) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
     {j₀ : ℕ} (hj₀1 : 1 ≤ j₀) (hj₀q : j₀ ≤ Q.natDegree)
@@ -629,6 +632,7 @@ open Azurite.BPR.Chapter8 in
     `AzInt` run of the algorithm).  The boundary index `j₀` is characterized by the
     domain-transferable package; over the fraction field it is the gcd degree. -/
 theorem extendedSignedSubresultant_boundary_domain {D : Type _} [CommRing D] [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [IsDomain D]
     (P Q : AzPolynomial D) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
@@ -645,7 +649,8 @@ open Azurite.BPR.Chapter8 in
 /-- **BPR Algorithm 8.22, boundary `sResU` correctness over an integral domain.**  The
     `U`-component companion of `extendedSignedSubresultant_boundary_domain`. -/
 theorem extendedSignedSubresultant_boundary_sResU_domain {D : Type _} [CommRing D]
-    [DecidableEq D] [Azurite.ExactDiv D] [IsDomain D]
+    [DecidableEq D]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D] [IsDomain D]
     (P Q : AzPolynomial D) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
     {j₀ : ℕ} (hj₀1 : 1 ≤ j₀) (hj₀q : j₀ ≤ Q.natDegree)
@@ -664,6 +669,7 @@ open Azurite.BPR.Chapter8 in
     abstract cofactor determinants of Notation 8.41.  Corollary of the domain version: over a
     field the gcd hypothesis supplies the boundary package via Theorem 8.34's gcd branch. -/
 theorem extendedSignedSubresultant_boundary_cofactors {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (P Q : AzPolynomial K) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
     {j₀ : ℕ} (hj₀1 : 1 ≤ j₀)
@@ -704,6 +710,7 @@ open Azurite.BPR.Chapter8 in
     `toPoly`) the abstract `sResV_{j₀-1}` — the gcd-free part of `P` with respect to `Q` up to a
     multiplicative constant (Proposition 10.14). -/
 theorem extendedSignedSubresultant_boundary {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (P Q : AzPolynomial K) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
     {j₀ : ℕ} (hj₀1 : 1 ≤ j₀)
@@ -717,6 +724,7 @@ open Azurite.BPR.Chapter8 in
 /-- **BPR Algorithm 8.22, boundary `sResU` correctness.**  The `U`-component companion of
     `extendedSignedSubresultant_boundary`. -/
 theorem extendedSignedSubresultant_boundary_sResU {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (P Q : AzPolynomial K) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
     {j₀ : ℕ} (hj₀1 : 1 ≤ j₀)
@@ -735,6 +743,7 @@ route's correctness — the first output was already identified with
 `sResP_{j₀}` via the Algorithm 8.21 bridge; this identifies the second with
 the boundary cofactor of Algorithm 8.22. -/
 theorem gcdGcdFreePartRaw_snd {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (P Q : AzPolynomial K) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
     {j₀ : ℕ} (hj₀1 : 1 ≤ j₀)
@@ -806,6 +815,7 @@ field: the second output times the gcd is associated to `P` — it *is* the
 gcd-free part of `P` with respect to `Q` up to a multiplicative constant
 (BPR Proposition 10.14 via `sResV_gcdFree_associated`). -/
 theorem gcdGcdFreePartRaw_snd_gcdFree {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (P Q : AzPolynomial K) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
     {j₀ : ℕ} (hj₀1 : 1 ≤ j₀)

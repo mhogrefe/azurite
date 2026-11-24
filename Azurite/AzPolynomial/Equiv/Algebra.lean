@@ -43,7 +43,7 @@ namespace Azurite.AzPolynomial
 
 section NatData
 
-variable {R : Type _} [Semiring R] [DecidableEq R]
+variable {R : Type _} [Semiring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
 /-- Computable `ℕ`-cast: returns the constant polynomial `(k : R)`. O(1). -/
 @[irreducible] def natCastAz (k : ℕ) : AzPolynomial R :=
@@ -69,7 +69,7 @@ end NatData
 
 section PowData
 
-variable {R : Type _} [Semiring R] [DecidableEq R]
+variable {R : Type _} [Semiring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
 /-- Computable `npow` for `AzPolynomial` via sliding-window exponentiation.
     O(log n) polynomial multiplications. -/
@@ -84,7 +84,7 @@ end PowData
 
 section IntData
 
-variable {R : Type _} [Ring R] [DecidableEq R]
+variable {R : Type _} [Ring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
 /-- Computable `ℤ`-cast: returns the constant polynomial `(k : R)`. O(1). -/
 @[irreducible] def intCastAz (k : ℤ) : AzPolynomial R :=
@@ -107,8 +107,9 @@ end IntData
 
 section EquivLemmasSemiring
 
-variable {R : Type _} [Semiring R] [DecidableEq R]
+variable {R : Type _} [Semiring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 theorem toPoly_nsmul (k : ℕ) (p : AzPolynomial R) :
     AzPolynomial.toPoly (k • p) = k • AzPolynomial.toPoly p := by
   show AzPolynomial.toPoly (nsmulAz k p) = _
@@ -117,6 +118,7 @@ theorem toPoly_nsmul (k : ℕ) (p : AzPolynomial R) :
   rw [toPoly_smul]
   exact Nat.cast_smul_eq_nsmul (R := R) _ _
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 theorem toPoly_natCast (k : ℕ) :
     AzPolynomial.toPoly ((k : AzPolynomial R)) = (k : Polynomial R) := by
   show AzPolynomial.toPoly (natCastAz k) = _
@@ -136,8 +138,9 @@ end EquivLemmasSemiring
 
 section EquivLemmasRing
 
-variable {R : Type _} [Ring R] [DecidableEq R]
+variable {R : Type _} [Ring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 theorem toPoly_zsmul (k : ℤ) (p : AzPolynomial R) :
     AzPolynomial.toPoly (k • p) = k • AzPolynomial.toPoly p := by
   show AzPolynomial.toPoly (zsmulAz k p) = _
@@ -146,6 +149,7 @@ theorem toPoly_zsmul (k : ℤ) (p : AzPolynomial R) :
   rw [toPoly_smul]
   exact Int.cast_smul_eq_zsmul (R := R) _ _
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 theorem toPoly_intCast (k : ℤ) :
     AzPolynomial.toPoly ((k : AzPolynomial R)) = (k : Polynomial R) := by
   show AzPolynomial.toPoly (intCastAz k) = _
@@ -159,7 +163,7 @@ end EquivLemmasRing
 
 section SemiringSection
 
-variable {R : Type _} [Semiring R] [DecidableEq R]
+variable {R : Type _} [Semiring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
 instance : AddMonoid (AzPolynomial R) := fast_instance%
   Function.Injective.addMonoid AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
@@ -217,7 +221,7 @@ end SemiringSection
 
 section CommSemiringSection
 
-variable {R : Type _} [CommSemiring R] [DecidableEq R]
+variable {R : Type _} [CommSemiring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
 instance : CommMonoid (AzPolynomial R) := fast_instance%
   Function.Injective.commMonoid AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
@@ -300,7 +304,7 @@ end CommSemiringSection
 
 section RingSection
 
-variable {R : Type _} [Ring R] [DecidableEq R]
+variable {R : Type _} [Ring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
 instance : AddGroup (AzPolynomial R) := fast_instance%
   Function.Injective.addGroup AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
@@ -343,7 +347,7 @@ end RingSection
 
 section CommRingSection
 
-variable {R : Type _} [CommRing R] [DecidableEq R]
+variable {R : Type _} [CommRing R] [DecidableEq R] [AzPolynomialMulConfig R]
 
 instance : NonUnitalCommRing (AzPolynomial R) := fast_instance%
   Function.Injective.nonUnitalCommRing AzPolynomial.toPoly

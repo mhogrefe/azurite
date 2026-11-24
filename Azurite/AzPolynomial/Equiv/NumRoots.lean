@@ -49,7 +49,8 @@ open Azurite.BPR (ExtendedPoint)
     `toPoly P` in the open interval `(a, b)`. -/
 theorem numRootsOn_eq_BPR
     {K : Type _} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
-    [DecidableEq K] [PolynomialDerivative K]
+    [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K] [PolynomialDerivative K]
     (hIVP : Azurite.BPR.HasIntermediateValueProperty K)
     (P : AzPolynomial K) (hP : AzPolynomial.toPoly P ≠ 0)
     (a b : ExtendedPoint K) (hab : ExtendedPoint.Lt a b)
@@ -88,7 +89,8 @@ theorem numRootsOn_eq_BPR
     leading coefficient, which is nonzero for `P ≠ 0`. -/
 theorem numRoots_eq_BPR
     {K : Type _} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
-    [DecidableEq K] [PolynomialDerivative K]
+    [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K] [PolynomialDerivative K]
     (hIVP : Azurite.BPR.HasIntermediateValueProperty K)
     (P : AzPolynomial K) (hP : AzPolynomial.toPoly P ≠ 0)
     (h_n_zero : Azurite.BPR.SRemS (AzPolynomial.toPoly P)
@@ -121,7 +123,8 @@ theorem numRoots_eq_BPR
     polynomial `P` has a real root iff `numRoots P > 0`. -/
 theorem numRoots_pos_iff_exists_root
     {K : Type _} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
-    [DecidableEq K] [PolynomialDerivative K]
+    [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K] [PolynomialDerivative K]
     (hIVP : Azurite.BPR.HasIntermediateValueProperty K)
     (P : AzPolynomial K) (hP : AzPolynomial.toPoly P ≠ 0)
     (h_n_zero : Azurite.BPR.SRemS (AzPolynomial.toPoly P)

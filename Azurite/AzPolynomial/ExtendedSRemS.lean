@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzPolynomial.FastMul
 import Azurite.AzPolynomial.SRemS
 import Azurite.AzPolynomial.Mul
 
@@ -34,6 +35,7 @@ the full extended sequence.
 namespace Azurite.AzPolynomial
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-- The `U`-cofactor of the extended signed remainder sequence (BPR Definition
     1.10), mirroring `Azurite.BPR.SRemU` after `toPoly`. -/

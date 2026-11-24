@@ -27,8 +27,10 @@ open Polynomial
 
 namespace Azurite.AzPolynomial
 
-variable {K : Type _} [Field K] [DecidableEq K] [PolynomialDerivative K]
+variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K] [PolynomialDerivative K]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 private theorem sturmSequence_eq_sRemS (P : AzPolynomial K) (n : ℕ) :
     sturmSequence P n = sRemS P (derivative P) n := by
   induction n using Nat.strong_induction_on with

@@ -128,10 +128,12 @@ lemma mulBasecaseFold_eq_mulBasecase (p q : AzPolynomial R) :
 
 /-! ### Lift to `mul` -/
 
+variable [AzPolynomialMulConfig R]
+
 @[simp] lemma toPoly_mul (p q : AzPolynomial R) :
     AzPolynomial.toPoly (p * q) = AzPolynomial.toPoly p * AzPolynomial.toPoly q := by
-  show AzPolynomial.toPoly (AzPolynomialMulConfig.dmul p q) = _
-  simp [AzPolynomialMulConfig.dmul, toPoly_mulBasecaseFold]
+  rw [mul_eq_mulBasecaseFold]
+  exact toPoly_mulBasecaseFold p q
 
 @[simp] lemma coeff_mul (p q : AzPolynomial R) (n : ℕ) :
     coeff (p * q) n = ∑ x ∈ Finset.antidiagonal n, coeff p x.1 * coeff q x.2 := by

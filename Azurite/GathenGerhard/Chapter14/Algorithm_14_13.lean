@@ -43,19 +43,23 @@ attribute [local instance 0] Azurite.BPR.gcdMonoidPolynomial
 section Spec
 
 variable {F : Type*} [Field F] [DecidableEq F]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig F]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- A product over a subset of the prime factors divides the polynomial
 (it divides the radical). -/
 theorem prod_subset_primeFactors_dvd {w : F[X]} {S : Finset F[X]}
     (hS : S ⊆ primeFactors w) : S.prod id ∣ w :=
   (Finset.prod_dvd_prod_of_subset _ _ id hS).trans radical_dvd_self
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- A product over a subset of the prime factors is monic. -/
 theorem monic_prod_subset_primeFactors {w : F[X]} {S : Finset F[X]}
     (hS : S ⊆ primeFactors w) : (S.prod id).Monic :=
   Polynomial.monic_prod_of_monic _ _
     (fun _ hp => monic_of_mem_primeFactors (hS hp))
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- The prime factors of a product over a subset of the prime factors are
 exactly that subset (the `mem_primeFactors_ddTail` argument, for an
 arbitrary subset). -/
@@ -80,6 +84,7 @@ theorem mem_primeFactors_prod_subset {w : F[X]} (hw0 : w ≠ 0)
     have hpf' := (mem_primeFactors_iff'' hw0).mp (hS hpS)
     exact ⟨hpf'.1, hpf'.2.1, Finset.dvd_prod_of_mem id hpS⟩
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- **The generalized crux** (the 14.3 crux without squarefreeness of the
 target): for monic `v` all of whose prime factors have degree `≥ i`,
 `gcd(x^(qⁱ) − x, v)` is the product of the DISTINCT degree-`i` prime
@@ -126,13 +131,15 @@ theorem gcd_X_pow_card_pow_sub_X_eq_prod_filter [Fintype F] {v : F[X]}
     _ = ((primeFactors v).filter (fun p => p.natDegree = i)).prod id := by
         rw [hset]
 
-omit [DecidableEq F] in
+omit [DecidableEq F]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- Monic non-one polynomials have positive degree — via a prime factor. -/
 theorem one_le_natDegree_of_monic_ne_one {g : F[X]} (hm : g.Monic)
     (h1 : g ≠ 1) : 1 ≤ g.natDegree := by
   by_contra h
   exact h1 ((hm.natDegree_eq_zero).mp (by omega))
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- A monic `g ≠ 1` whose prime factors all have degree `d` has degree at
 least `d`. -/
 theorem natDegree_ge_of_factors_natDegree_eq {g : F[X]} (hm : g.Monic)
@@ -147,6 +154,7 @@ theorem natDegree_ge_of_factors_natDegree_eq {g : F[X]} (hm : g.Monic)
   calc d = p.natDegree := hpd.symm
     _ ≤ g.natDegree := Polynomial.natDegree_le_of_dvd hdvd hm.ne_zero
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- **The leaf criterion**: a monic `g ≠ 1` whose prime factors all have
 degree `d` and whose own degree is `d` is itself irreducible (it IS its
 single prime factor). -/

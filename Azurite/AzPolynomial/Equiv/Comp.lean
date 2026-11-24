@@ -39,6 +39,7 @@ Requires `CommSemiring R` because `Polynomial.mul_comp` requires commutativity.
 open Azurite Azurite.AzPolynomial
 
 variable {R : Type _} [CommSemiring R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-- `toPoly` distributes through the Horner `foldr` defining `comp`. -/
 private theorem toPoly_foldr_comp (l : List R) (q : AzPolynomial R) :

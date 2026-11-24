@@ -121,6 +121,7 @@ open Azurite.BPR.Chapter8 in
 /-- **`sResVDet` represents the abstract `V`-cofactor** — over any
 commutative ring. -/
 theorem toPoly_sResVDet {R : Type _} [CommRing R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R]
     (P Q : AzPolynomial R) (j : ℕ) :
     AzPolynomial.toPoly (sResVDet P Q j)
       = sResV (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) j := by
@@ -198,6 +199,7 @@ gcd, and the second output **is** the abstract `sResV_{j−1}` — the gcd-free
 part of `P` with respect to `Q` up to a multiplicative constant
 (Proposition 10.14). -/
 theorem gcdGcdFreePartDet_spec {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (P Q : AzPolynomial K) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) {j : ℕ} (hj1 : 1 ≤ j)
     (hj : (@GCDMonoid.gcd _ _ Azurite.BPR.gcdMonoidPolynomial
@@ -252,6 +254,7 @@ the second output times the gcd is associated to `P` — i.e. it *is* the
 gcd-free part of `P` with respect to `Q`, up to a multiplicative constant
 (BPR Proposition 10.14 via `sResV_gcdFree_associated`). -/
 theorem gcdGcdFreePartDet_snd_gcdFree {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (P Q : AzPolynomial K) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) {j : ℕ} (hj1 : 1 ≤ j)
     (hj : (@GCDMonoid.gcd _ _ Azurite.BPR.gcdMonoidPolynomial

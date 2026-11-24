@@ -36,6 +36,7 @@ namespace Azurite
 open AzMvPolynomial
 
 variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-! ### Forward direction -/
 

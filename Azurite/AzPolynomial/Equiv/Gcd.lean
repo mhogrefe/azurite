@@ -86,6 +86,7 @@ theorem firstNonzero_eq_some {R : Type _} [CommRing R] [DecidableEq R]
     simpa [Array.getElem_toList] using this
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-! ### The core: `subresGcd` is associated to the gcd -/
 
@@ -170,6 +171,7 @@ theorem toPoly_subresGcd_associated (P Q : AzPolynomial K) (hP : P ≠ 0)
 
 /-! ### Monic normalization -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- `monicize` computes Mathlib's `normalize` (the monic associate). -/
 theorem toPoly_monicize (q : AzPolynomial K) (hq : q ≠ 0) :
     AzPolynomial.toPoly (monicize q) = _root_.normalize (AzPolynomial.toPoly q) := by
@@ -194,20 +196,24 @@ theorem toPoly_monicize (q : AzPolynomial K) (hq : q ≠ 0) :
 
 /-! ### gcd identities in `K[X]` for the wrapper branches -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 theorem gcd_isUnit_left {A B : K[X]} (hA : IsUnit A) : GCDMonoid.gcd A B = 1 := by
   rw [← normalize_gcd A B]
   exact normalize_eq_one.mpr (isUnit_of_dvd_unit (gcd_dvd_left A B) hA)
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 theorem gcd_isUnit_right {A B : K[X]} (hB : IsUnit B) : GCDMonoid.gcd A B = 1 := by
   rw [gcd_comm]
   exact gcd_isUnit_left hB
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 theorem gcd_eq_normalize_left {A B : K[X]} (h : A ∣ B) :
     GCDMonoid.gcd A B = _root_.normalize A := by
   apply dvd_antisymm_of_normalize_eq (normalize_gcd A B) (normalize_idem A)
   · exact (gcd_dvd_left A B).trans (associated_normalize A).dvd
   · exact dvd_gcd (normalize_associated A).dvd ((normalize_associated A).dvd.trans h)
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- The `p = q` pre-step preserves the gcd: `gcd A (C c·B − C d·A) = gcd A B`
 for `c ≠ 0`. -/
 theorem gcd_pre_step (A B : K[X]) {c d : K} (hc : c ≠ 0) :
@@ -234,6 +240,7 @@ theorem toPoly_ne_zero {R : Type _} [Semiring R] [DecidableEq R] {T : AzPolynomi
     (hT : T ≠ 0) : AzPolynomial.toPoly T ≠ 0 :=
   fun h => hT (toPoly_inj.mp (h.trans toPoly_zero.symm))
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 theorem isUnit_toPoly_of_natDegree_eq_zero {T : AzPolynomial K} (hT : T ≠ 0)
     (hd : T.natDegree = 0) : IsUnit (AzPolynomial.toPoly T) := by
   have hT' := toPoly_ne_zero hT

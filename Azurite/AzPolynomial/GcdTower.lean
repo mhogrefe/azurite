@@ -56,7 +56,8 @@ import Azurite.AzPolynomial.Equiv.ExactDiv
 
 namespace Azurite.AzPolynomial
 
-variable {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDiv R]
+variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R]
   [NormalizedGcd R]
 
 /-- **Generalized content**: the `R`-normalized gcd of the coefficients

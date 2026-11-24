@@ -163,26 +163,6 @@ where
 def mulKaratsubaWithThreshold (threshold : Nat) (p q : AzPolynomial R) : AzPolynomial R :=
   normalize (rawKaratsubaWithThreshold threshold p.coeffs q.coeffs)
 
--- ── Karatsuba-based MulConfig instances ──────────────────────────────────────
-
-/-- Karatsuba multiplication for any `CommRing` with default threshold.
-    Overrides the basecase instance from `Mul.lean`. -/
-instance (priority := 200) instAzPolynomialMulConfigKaratsuba
-    {R : Type _} [CommRing R] [DecidableEq R] : AzPolynomialMulConfig R where
-  dmul p q := mulKaratsubaWithThreshold karatsubaThreshold p q
-
-/-- Karatsuba multiplication for `AzInt`, threshold tuned to 29. -/
-instance (priority := 300) : AzPolynomialMulConfig AzInt where
-  dmul p q := mulKaratsubaWithThreshold 29 p q
-
-/-- Karatsuba multiplication for `AzRat`, threshold tuned to 14. -/
-instance (priority := 300) : AzPolynomialMulConfig AzRat where
-  dmul p q := mulKaratsubaWithThreshold 14 p q
-
-/-- Karatsuba multiplication for `AzZMod m`, threshold tuned to 8. -/
-instance (priority := 300) {m : AzNat} [NeZero m.toNat] : AzPolynomialMulConfig (AzZMod m) where
-  dmul p q := mulKaratsubaWithThreshold 8 p q
-
 -- ── Tests ───────────────────────────────────────────────────────────────────
 
 -- Basic correctness tests
@@ -203,9 +183,5 @@ instance (priority := 300) {m : AzNat} [NeZero m.toNat] : AzPolynomialMulConfig 
 
 #guard toChars (mulKaratsuba (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!)
     == toChars (mulBasecaseFold (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!)
-
--- Verify that * uses Karatsuba for AzInt (threshold 29)
-#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get! * (parseAzPolynomial (R := AzInt) "x+2").get!)
-    == toChars (mulKaratsuba (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!)
 
 end Azurite.AzPolynomial

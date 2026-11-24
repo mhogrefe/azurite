@@ -96,6 +96,7 @@ def modes : List (String × Mode) := [
   ("az_nat_from_power_of_2_digits", mode checkFromPowerOf2Digits),
   ("az_nat_is_square", mode checkIsSquare),
   ("az_nat_is_prime", mode checkIsPrime),
+  ("az_nat_is_probable_prime", mode checkIsProbablePrime),
   ("az_nat_primes_less_than", mode checkPrimesLessThan),
   ("az_nat_to_float", mode checkNatToFloat),
   ("az_nat_from_f32", mode checkNatFromF32),

@@ -30,7 +30,7 @@ open Polynomial
 
 namespace Azurite.AzPolynomial
 
-variable {R : Type _} [Semiring R] [DecidableEq R]
+variable {R : Type _} [Semiring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
 /-- Forward direction: `toPoly` preserves `pow`. -/
 @[simp] theorem toPoly_pow (p : AzPolynomial R) (n : ℕ) :

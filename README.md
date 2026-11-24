@@ -151,6 +151,7 @@ Azurite/
   UInt64/                        limb-level helpers with toNat semantics
   AzNat/ AzInt/ AzRat/           multi-precision naturals, integers, rationals
   AzFloat/                       arbitrary-precision floats, correctly rounded functions
+  AzComplexFloat/                complex floats (arithmetic, components correctly rounded)
   AzZMod/ AzZModPow2/ AzPolyMod/ residue rings ℤ/m, ℤ/2^k, R[x]/(f)
   AzPolynomial/ AzMvPolynomial/  polynomials in one and several variables
   AzPolynomialQ/ AzRationalFunction/ AzMvRationalFunction/
@@ -161,6 +162,7 @@ Azurite/
   BrentZimmermann/ DLMF/         formalized texts behind the float functions
   Transcendental/ Chudnovsky/ Feldman/ CatalanIrrational/   irrationality and transcendence proofs
   APRCL/                         the APR-CL primality test (certificate checker and generator)
+  ECPP/                          elliptic curve primality proving (theory, certificate checker, generator)
   Benchmark/                     the benchmark harness
 docs/                 module map and design notes
 benchmarks/           benchmark configurations, raw results and charts

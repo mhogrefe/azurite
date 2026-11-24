@@ -114,7 +114,8 @@ namespace Azurite.AzPolynomial
 open Azurite.BPR.Chapter4 (PmV sResSeq theorem_4_32)
 
 variable {R : Type _} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R]
-    [DecidableEq R] [Azurite.ExactDiv R]
+    [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R]
 
 /-- **Subresultant → Cauchy index bridge.** For `deg B < deg A`,
 `PmV(sRes(A, B)) = Ind(B/A)`. This is exactly `cauchyIndex B A` unfolded

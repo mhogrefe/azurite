@@ -59,10 +59,12 @@ exponentiation with reduction mod `f` at every multiplication (`ofPoly`
 reduces the base on entry).  Meaningful for monic `f` (the reduction
 primitive's contract). -/
 def powModByMonic {R : Type _} [CommRing R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R]
     (a : AzPolynomial R) (q : AzNat) (f : AzPolynomial R) : AzPolynomial R :=
   ((AzPolyMod.ofPoly (f := f) a) ^ q).val
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-- The loop of Algorithm 14.3: given `h = hᵢ` (congruent to `x^(qⁱ)` mod
 `fᵢ`) and `fi = fᵢ`, run steps `i+1, i+2, …` until `fᵢ = 1` or the early

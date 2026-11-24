@@ -58,6 +58,7 @@ open Azurite.BPR (ExtendedPoint)
 theorem cauchyIndexOnSRem_eq_BPR
     {K : Type _} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
     [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (hIVP : Azurite.BPR.HasIntermediateValueProperty K)
     (Q P : AzPolynomial K) (hP : AzPolynomial.toPoly P ≠ 0)
     (a b : ExtendedPoint K) (hab : ExtendedPoint.Lt a b)
@@ -79,6 +80,7 @@ theorem cauchyIndexOnSRem_eq_BPR
 section WholeLine
 
 variable {R : Type _} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 omit [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq R] in
 /-- Evaluating the zero polynomial at any extended point gives `0`. -/
@@ -87,6 +89,7 @@ theorem evalPolyExt_zero (x : ExtendedPoint R) : evalPolyExt (0 : AzPolynomial R
     AzPolynomial.natDegree]
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- A signed-remainder step from `0` gives `0` (the remainder of `0` is `0`). -/
 theorem sRemSStep_zero_left (Q : AzPolynomial R) : sRemSStep 0 Q = 0 := by
   have hrem : (0 : AzPolynomial R).rem Q = 0 := by
@@ -98,11 +101,13 @@ theorem sRemSStep_zero_left (Q : AzPolynomial R) : sRemSStep 0 Q = 0 := by
   · rw [hrem]; exact toPoly_inj.mp (by rw [toPoly_neg, toPoly_zero, neg_zero])
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- A signed-remainder step with second argument `0` gives `0`. -/
 theorem sRemSStep_zero_right (P : AzPolynomial R) : sRemSStep P 0 = 0 := by
   unfold sRemSStep; simp
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- The remainder sequence from `(0, 0)` is all zeros. -/
 theorem sRemSBuild_zero_zero (m : ℕ) : sRemSBuild m (0 : AzPolynomial R) 0 = List.replicate m 0 := by
   induction m with
@@ -111,6 +116,7 @@ theorem sRemSBuild_zero_zero (m : ℕ) : sRemSBuild m (0 : AzPolynomial R) 0 = L
 
 omit [IsStrictOrderedRing R] in
 set_option linter.unusedSimpArgs false in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- With a zero denominator the sign-variation count vanishes: the remainder
 sequence `sRemSList 0 Q n` is `[0, Q, 0, …, 0]`, so at most one entry is
 nonzero. -/

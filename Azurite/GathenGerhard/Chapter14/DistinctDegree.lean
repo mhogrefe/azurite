@@ -36,6 +36,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
   generator of the coefficient field — degree ≤ 3 plus no roots forces
   irreducibility).
 -/
+import Azurite.AzPolynomial.FastMul
 import Azurite.GathenGerhard.Chapter14.Theorem_14_2
 import Azurite.ExhaustiveGenerator.Polynomials
 import Azurite.AzPolynomial.Parse
@@ -167,7 +168,7 @@ zeros in `F_3` (checked over the EXHAUSTIVE generator of the field). -/
 
 namespace Azurite
 
-open ExhaustiveGenerator AzPolynomial
+open ExhaustiveGenerator Azurite.AzPolynomial
 
 private def p3 (s : String) : AzPolynomial (AzZMod (AzNat.ofNat 3)) :=
   (parseAzPolynomial s).get!

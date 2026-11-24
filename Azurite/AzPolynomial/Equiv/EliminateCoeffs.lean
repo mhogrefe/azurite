@@ -95,8 +95,10 @@ theorem Polynomial.resultant_eq_zero_of_isRoot_isRoot {K : Type _} [Field K]
 
 namespace Azurite.AzPolynomial
 
-variable {R : Type _} [CommRing R] [DecidableEq R] {K : Type _} [Field K]
+variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] {K : Type _} [Field K]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- Scaling roots by a ring element `s`, seen through `f`: if `v` is a root of
 the mapped `Q`, then `f s · v` is a root of the mapped `scaleRoots Q s 1`. -/
 theorem isRoot_map_toPoly_scaleRoots_of (f : R →+* K) (s : R) (Q : AzPolynomial R)

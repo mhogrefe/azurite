@@ -33,7 +33,8 @@ namespace Azurite.AzPolynomial
 
 open Azurite.BPR.Chapter4 Polynomial _root_.AzPolynomial
 
-variable {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDiv R] [IsDomain R]
+variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R] [IsDomain R]
 
 /-- Correctness of `resultantGt` (when `deg Q < deg P`). -/
 theorem resultantGt_eq (P Q : AzPolynomial R) (hpq : Q.natDegree < P.natDegree) :

@@ -33,11 +33,13 @@ namespace Azurite
 open AzMvPolynomial BPR
 
 variable {k : ℕ} {D : Type*} [CommRing D] [IsDomain D] [DecidableEq D]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig D]
          {ord : MonomialOrder}
 
 /-! ### QF preservation for smart constructors and list combinators -/
 
 omit [IsDomain D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 theorem azSmartAnd_isQF {n : ℕ}
     (Φ₁ Φ₂ : Formula (Fin n) (AzFieldAtom n D ord))
     (h₁ : Φ₁.IsQuantifierFree) (h₂ : Φ₂.IsQuantifierFree) :
@@ -50,6 +52,7 @@ theorem azSmartAnd_isQF {n : ℕ}
   · exact ⟨h₁, h₂⟩
 
 omit [IsDomain D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 theorem azSmartOr_isQF {n : ℕ}
     (Φ₁ Φ₂ : Formula (Fin n) (AzFieldAtom n D ord))
     (h₁ : Φ₁.IsQuantifierFree) (h₂ : Φ₂.IsQuantifierFree) :
@@ -62,6 +65,7 @@ theorem azSmartOr_isQF {n : ℕ}
   · exact ⟨h₁, h₂⟩
 
 omit [IsDomain D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 theorem azConjList_isQF
     (Φs : List (Formula (Fin k) (AzFieldAtom k D ord)))
     (h : ∀ Φ ∈ Φs, Φ.IsQuantifierFree) :
@@ -76,6 +80,7 @@ theorem azConjList_isQF
       exact ih (fun φ hφ => h φ (List.mem_cons_of_mem _ hφ))
 
 omit [IsDomain D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 theorem azDisjList_isQF
     (Φs : List (Formula (Fin k) (AzFieldAtom k D ord)))
     (h : ∀ Φ ∈ Φs, Φ.IsQuantifierFree) :
@@ -91,6 +96,7 @@ theorem azDisjList_isQF
 
 /-! ### QF preservation for degree / leaf / posgcd / projection formulas -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 theorem azDegFormula_isQF
     (Q : AzPolynomial (AzMvPolynomial k D ord)) (i : WithBot ℕ) :
     (azDegFormula Q i).IsQuantifierFree := by
@@ -109,6 +115,7 @@ theorem azDegFormula_isQF
     obtain ⟨j, _, rfl⟩ := hΦ
     trivial
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 theorem azDegEqFormula_isQF
     (Q₁ Q₂ : AzPolynomial (AzMvPolynomial k D ord)) :
     (azDegEqFormula Q₁ Q₂).IsQuantifierFree := by
@@ -119,11 +126,13 @@ theorem azDegEqFormula_isQF
   · exact azSmartAnd_isQF _ _ (azDegFormula_isQF _ _) (azDegFormula_isQF _ _)
   · exact azSmartAnd_isQF _ _ (azDegFormula_isQF _ _) (azDegFormula_isQF _ _)
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 theorem azDegNeqFormula_isQF
     (Q₁ Q₂ : AzPolynomial (AzMvPolynomial k D ord)) :
     (azDegNeqFormula Q₁ Q₂).IsQuantifierFree :=
   azDegEqFormula_isQF Q₁ Q₂
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 theorem azLeafFormulaAux_isQF
     (parent cur : AzPolynomial (AzMvPolynomial k D ord))
     (rest : List (AzPolynomial (AzMvPolynomial k D ord))) :
@@ -136,6 +145,7 @@ theorem azLeafFormulaAux_isQF
     · exact azDegFormula_isQF _ _
     · exact azSmartAnd_isQF _ _ (azDegFormula_isQF _ _) (ih _ _)
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 theorem azLeafFormula_isQF
     (P Q : AzPolynomial (AzMvPolynomial k D ord))
     (path : List (AzPolynomial (AzMvPolynomial k D ord))) :
@@ -150,6 +160,7 @@ theorem azLeafFormula_isQF
     · exact azDegFormula_isQF _ _
     · exact azSmartAnd_isQF _ _ (azDegFormula_isQF _ _) (azLeafFormulaAux_isQF _ _ _)
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- Every formula appearing as the second component of an element of
 `azPosgcd Ps` is quantifier-free. -/
 theorem azPosgcd_snd_isQF
@@ -168,6 +179,7 @@ theorem azPosgcd_snd_isQF
     subst hC_eq
     exact azSmartAnd_isQF _ _ (ih hQC_mem) (azLeafFormula_isQF _ _ _)
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- `azProjBasic Ps Qs` is quantifier-free. -/
 theorem azProjBasic_isQF
     (Ps Qs : List (AzMvPolynomial (k+1) D ord)) :
@@ -182,6 +194,7 @@ theorem azProjBasic_isQF
 /-! ### QF preservation for simplification -/
 
 omit [IsDomain D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 private theorem azSimplifyNot_isQF {n : ℕ}
     (Φ' : Formula (Fin n) (AzFieldAtom n D ord))
     (h : Φ'.IsQuantifierFree) :
@@ -199,6 +212,7 @@ private theorem azSimplifyNot_isQF {n : ℕ}
   | .exists_ _ _ | .forall_ _ _ => exact h.elim
 
 omit [IsDomain D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- `azSimplify` preserves quantifier-freeness. -/
 theorem azSimplify_isQF {n : ℕ}
     (Φ : Formula (Fin n) (AzFieldAtom n D ord))
@@ -234,6 +248,7 @@ theorem azSimplify_isQF {n : ℕ}
 
 /-! ### Main QF theorems -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- `azProjectQF` produces a quantifier-free formula. -/
 theorem azProjectQF_isQF
     (Φ : Formula (Fin (k+1)) (AzFieldAtom (k+1) D ord))
@@ -248,6 +263,7 @@ theorem azProjectQF_isQF
   obtain ⟨Ps, Qs, _, rfl⟩ := hΨ
   exact azProjBasic_isQF _ _
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- `azProjectQFAt` produces a quantifier-free formula. -/
 theorem azProjectQFAt_isQF
     (i : Fin (k+1))
@@ -267,6 +283,7 @@ among the output's free variables: embedding `Finset (Fin k)` into
 `azProjectQFAt i` generalizes this: embedding via `Fin.succAbove i`
 never produces `i`. -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- The projected variable `0 : Fin (k+1)` does not appear in the free
 variables of `azProjectQF Φ hqf` when embedded back into the input
 variable space via `Fin.succ`. -/
@@ -279,6 +296,7 @@ theorem azProjectQF_zero_not_mem_freeVars_image
   obtain ⟨j, _, hj⟩ := hmem
   exact Fin.succ_ne_zero j hj
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- The projected variable `i : Fin (k+1)` does not appear in the free
 variables of `azProjectQFAt i Φ hqf` when embedded back into the input
 variable space via `Fin.succAbove i` (which skips `i`). -/
@@ -296,17 +314,20 @@ theorem azProjectQFAt_projected_not_mem_freeVars_image
 
 variable {C : Type*} [Field C] [Algebra D C]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- `liftPoly` is multiplicative. -/
 theorem liftPoly_mul (p q : AzPolynomial (AzMvPolynomial k D ord)) :
     liftPoly (p * q) = liftPoly p * liftPoly q := by
   unfold liftPoly
   rw [AzPolynomial.toPoly_mul, Polynomial.map_mul]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- `liftPoly 1 = 1`. -/
 theorem liftPoly_one : liftPoly (1 : AzPolynomial (AzMvPolynomial k D ord)) = 1 := by
   unfold liftPoly
   rw [toPoly_one, Polynomial.map_one]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- `liftPoly` of a list-prod is the prod of `liftPoly` images. -/
 theorem liftPoly_list_prod
     (l : List (AzPolynomial (AzMvPolynomial k D ord))) :
@@ -316,6 +337,7 @@ theorem liftPoly_list_prod
   | cons p rest ih =>
     simp only [List.prod_cons, List.map_cons, liftPoly_mul, ih]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- `liftPoly` of a power is the power of the `liftPoly` image. -/
 theorem liftPoly_pow
     (p : AzPolynomial (AzMvPolynomial k D ord)) (n : ℕ) :
@@ -325,6 +347,7 @@ theorem liftPoly_pow
   | succ n ih =>
     rw [pow_succ, pow_succ, liftPoly_mul, ih]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- Evaluating a multivariate polynomial at `Fin.cons x y` agrees with
 evaluating the split polynomial (via `AzMvPolynomial.finSuccEquiv` and
 `liftPoly`) at `x` after mapping its coefficients through `aeval y`.
@@ -357,6 +380,7 @@ theorem aeval_cons_eq_eval_finSuccEquiv
     · simp [Fin.cons_zero, MvPolynomial.finSuccEquiv_apply]
     · intro j; simp [Fin.cons_succ, MvPolynomial.finSuccEquiv_apply]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- Fiber-level version of the projection predicate: rewritten via
 `AzMvPolynomial.finSuccEquiv` so that the variable `X` is explicit
 and then mapped through `aeval y` to land in `C[X]`. Azurite analogue
@@ -388,6 +412,7 @@ theorem exists_cons_iff_exists_eval_finSuccEquiv
     · intro Q hQ_mem
       rw [aeval_cons_eq_eval_finSuccEquiv]; exact hQ Q hQ_mem
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- The realization of `azDegNeqFormula Q₁ Q₂` matches BPR's
 `degNeqFormula (liftPoly Q₁) (liftPoly Q₂)`. -/
 theorem azRealization_azDegNeqFormula [FaithfulSMul D C]
@@ -467,6 +492,7 @@ private theorem mem_foldr_azToConjDisjForms
         · intro Q hQ
           exact (ih.mpr (fun b hb => h b (Or.inr hb))).2 Q hQ
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- The realization of a quantifier-free formula equals the union of its
 clauses in `azToConjDisjForms`, where each clause `(eqs, neqs)` evaluates
 to `(∀ P ∈ eqs, P = 0) ∧ (∀ Q ∈ neqs, Q ≠ 0)`. -/
@@ -492,6 +518,7 @@ theorem azRealization_azToConjDisjForms
 
 /-! ### Main correctness theorem: `azRealization_azProjBasic` -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- **Correctness of `azProjBasic`.** Its realization (as an Azurite
 quantifier-free formula) is precisely the projection over the first
 variable (`Fin 0`) of the basic constructible set defined by `Ps`
@@ -634,6 +661,7 @@ theorem azRealization_azProjBasic
 
 /-! ### Correctness of `azProjectQF` -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- **Correctness of `azProjectQF`.** The realization of `azProjectQF Φ`
 is precisely the projection over the first variable (`Fin 0`) of the
 realization of `Φ`, i.e. the set of `y ∈ C^k` such that some extension
@@ -664,6 +692,7 @@ theorem azRealization_azProjectQF
     rw [azRealization_azProjBasic hinj Ps' Qs']
     exact ⟨x, hP, hQ⟩
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
 /-- **Correctness of `azProjectQFAt`.** Projection over an arbitrary
 variable `i : Fin (k+1)`. The realization is precisely the set of
 `y : Fin k → C` such that some extension `(Fin.cons x y) ∘ swap 0 i`

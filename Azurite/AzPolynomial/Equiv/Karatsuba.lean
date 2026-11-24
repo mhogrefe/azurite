@@ -195,4 +195,48 @@ lemma toPoly_rawKaratsuba (a b : Array R) :
   simp only [mulKaratsuba, toPoly_normalize]
   exact toPoly_rawKaratsuba p.coeffs q.coeffs
 
+/-! ## The version with a threshold -/
+
+omit [DecidableEq R] in
+/-- `rawKaratsubaWithThreshold.go` produces the correct product polynomial. -/
+lemma toPoly_rawKaratsubaWithThreshold_go (threshold fuel : Nat) (a b : Array R)
+    (hfuel : max a.size b.size ≤ fuel) :
+    (rawKaratsubaWithThreshold.go threshold fuel a b hfuel).toList.toPoly =
+      a.toList.toPoly * b.toList.toPoly := by
+  induction fuel using Nat.strongRecOn generalizing a b with
+  | _ fuel ih =>
+    unfold rawKaratsubaWithThreshold.go
+    split
+    · next h =>
+      simp only [Bool.or_eq_true, beq_iff_eq] at h
+      rcases h with ha | hb
+      · simp [Array.eq_empty_of_size_eq_zero ha, List.toPoly]
+      · simp [Array.eq_empty_of_size_eq_zero hb, List.toPoly]
+    · split
+      · exact toPoly_mulBasecaseCoeffs a b
+      · split
+        · exact toPoly_mulBasecaseCoeffs a b
+        · next h_ne _ hlt =>
+          have hfuel_pos : 0 < fuel := by omega
+          have hm_lt : fuel / 2 < fuel := Nat.div_lt_self hfuel_pos (by omega : 1 < 2)
+          have hfm_lt : fuel - fuel / 2 < fuel := by
+            apply Nat.sub_lt hfuel_pos
+            exact Nat.div_pos (by omega) (by omega : 0 < 2)
+          simp only [toPoly_rawShift, toPoly_rawSub, toPoly_rawAdd]
+          conv_lhs =>
+            rw [ih (fuel / 2) hm_lt (a.take (fuel / 2)) (b.take (fuel / 2)) _]
+            rw [ih (fuel - fuel / 2) hfm_lt (a.drop (fuel / 2)) (b.drop (fuel / 2)) _]
+            rw [ih (fuel - fuel / 2) hfm_lt
+              (rawAdd (a.take (fuel / 2)) (a.drop (fuel / 2)))
+              (rawAdd (b.take (fuel / 2)) (b.drop (fuel / 2))) _]
+          rw [toPoly_rawAdd, toPoly_rawAdd]
+          rw [toPoly_take_drop a (fuel / 2), toPoly_take_drop b (fuel / 2)]
+          ring
+
+@[simp] lemma toPoly_mulKaratsubaWithThreshold (threshold : Nat) (p q : AzPolynomial R) :
+    AzPolynomial.toPoly (mulKaratsubaWithThreshold threshold p q) =
+      AzPolynomial.toPoly p * AzPolynomial.toPoly q := by
+  simp only [mulKaratsubaWithThreshold, rawKaratsubaWithThreshold, toPoly_normalize]
+  exact toPoly_rawKaratsubaWithThreshold_go _ _ p.coeffs q.coeffs (Nat.le_refl _)
+
 end Azurite.AzPolynomial

@@ -26,7 +26,8 @@ namespace Azurite
 
 open _root_.Azurite.AzPolynomial
 
-variable {R S : Type _} [CommSemiring R] [CommSemiring S] [DecidableEq S] [Algebra R S]
+variable {R S : Type _} [CommSemiring R] [CommSemiring S] [DecidableEq S]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig S] [Algebra R S]
 
 /-- When `S` is an `R`-algebra, `AzPolynomial S` is also an `R`-algebra via
     the composite embedding `R → S → AzPolynomial S`. -/

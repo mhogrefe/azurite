@@ -40,7 +40,9 @@ open Polynomial
 namespace Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- `toPoly (xSubC c) = X - C c`. -/
 @[simp] theorem toPoly_xSubC (c : R) :
     AzPolynomial.toPoly (xSubC c) = Polynomial.X - Polynomial.C c := by

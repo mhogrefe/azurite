@@ -52,9 +52,11 @@ open Polynomial
 namespace Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-! ### The linear polynomial `c·X − b` -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- `toPoly (cXSubB b c) = C c * X - C b`. -/
 @[simp] theorem toPoly_cXSubB (b c : R) :
     AzPolynomial.toPoly (cXSubB b c) = Polynomial.C c * Polynomial.X - Polynomial.C b := by
@@ -175,6 +177,7 @@ theorem eval_specialTranslate (p : AzPolynomial R) (b c z : R) :
 /-- **Field evaluation identity.** For `c ≠ 0`,
 `eval z (toPoly (specialTranslate p b c)) = c^(deg P) · eval (z − b/c) (toPoly p)`. -/
 theorem eval_specialTranslate_field {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (p : AzPolynomial K) (b c : K) (hc : c ≠ 0) (z : K) :
     Polynomial.eval z (AzPolynomial.toPoly (p.specialTranslate b c)) =
     c ^ p.natDegree * Polynomial.eval (z - b / c) (AzPolynomial.toPoly p) := by
@@ -195,6 +198,7 @@ theorem eval_specialTranslate_field {K : Type _} [Field K] [DecidableEq K]
 `z − b/c` is a root of `P`: the roots of `specialTranslate p b c` are the roots of
 `p`, each shifted by `+ b/c`. -/
 theorem isRoot_specialTranslate_iff {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (p : AzPolynomial K) (b c : K) (hc : c ≠ 0) (z : K) :
     Polynomial.IsRoot (AzPolynomial.toPoly (p.specialTranslate b c)) z ↔
     Polynomial.IsRoot (AzPolynomial.toPoly p) (z - b / c) := by
@@ -259,6 +263,7 @@ theorem isRoot_specialTranslate_map_iff {K : Type _} [Field K] [DecidableEq K]
 section Domain
 
 variable {D : Type _} [CommRing D] [IsDomain D] [DecidableEq D]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig D]
 
 /-- For `c ≠ 0` over a domain, `specialTranslate` preserves the degree. -/
 theorem natDegree_specialTranslate (p : AzPolynomial D) (b c : D) (hc : c ≠ 0) :

@@ -11,6 +11,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 Copyright (c) 2025 Azurite contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Azurite.AzPolynomial.FastMul
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Add
@@ -47,6 +48,7 @@ Output result.
 namespace Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-- The polynomial `c·X − b`, constructed from the coefficient array `#[-b, c]`. -/
 def cXSubB (b c : R) : AzPolynomial R :=
@@ -64,7 +66,7 @@ in `R[X]` (no division needed).
 
 When `c` is invertible (e.g. in `ℚ` or `ℝ`), evaluating the result at
 `z` gives `c^p · P(z − b/c)`. -/
-def specialTranslate [AzPolynomialMulConfig R] (p : AzPolynomial R) (b c : R) : AzPolynomial R :=
+def specialTranslate (p : AzPolynomial R) (b c : R) : AzPolynomial R :=
   let cxb := cXSubB b c
   (p.coeffs.foldr (init := ((0 : AzPolynomial R), (1 : R)))
     (fun a ⟨acc, d⟩ => (AzPolynomial.C (a * d) + acc * cxb, d * c))).1

@@ -45,6 +45,7 @@ namespace Azurite.AzPolynomial
 section MulLin
 
 variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-- Tail of the coefficient recursion for `(T − a)·P mod f`: `prev` is
 the coefficient one index below the current one. -/

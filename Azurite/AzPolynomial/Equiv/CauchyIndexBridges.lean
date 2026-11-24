@@ -86,6 +86,7 @@ theorem varAt_eq_BPR {K : Type _} [CommRing K] [LinearOrder K] [DecidableEq K]
 
 /-- `sRemSList` mapped through `toPoly` matches `BPR.SRemSList`. -/
 theorem map_sRemSList_toPoly {K : Type _} [Field K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     (P Q : AzPolynomial K) (n : ℕ) :
     (sRemSList P Q n).map AzPolynomial.toPoly =
       Azurite.BPR.SRemSList (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) n := by

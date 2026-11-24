@@ -34,7 +34,9 @@ open Polynomial
 attribute [local instance 0] Azurite.BPR.gcdMonoidPolynomial
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- Over a Euclidean domain, coprimality is the gcd being a unit (stated for
 Mathlib's normalized `K[X]` gcd). -/
 private theorem isCoprime_iff_isUnit_gcd (A B : K[X]) :
@@ -189,6 +191,7 @@ theorem isSquarefree_iff [PolynomialDerivative K] (P : AzPolynomial K) :
   rw [isSquarefree, coprime_iff, toPoly_derivative]
   exact Iff.rfl
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- **Correctness of `isPrimitive` over a field**: the test decides
 Mathlib's `Polynomial.IsPrimitive` (over a field: nonvanishing). -/
 theorem isPrimitive_field_iff (P : AzPolynomial K) :

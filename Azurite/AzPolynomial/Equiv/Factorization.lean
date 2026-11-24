@@ -223,6 +223,7 @@ attribute [local instance 0] Azurite.BPR.gcdMonoidPolynomial
 section Search
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-- A candidate representing a prime factor of `g` makes the splitting
 step succeed through the `gcd(a, g)` path. -/
@@ -252,11 +253,13 @@ theorem equalDegreeSplittingStep_isSome_of_factor {q : AzNat} {d : ℕ}
 
 variable [ExhaustiveGenerator K] [FiniteGenerator K]
 
-omit [ExhaustiveGenerator K] [FiniteGenerator K] in
+omit [ExhaustiveGenerator K] [FiniteGenerator K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- `(1 : AzPolynomial K)` is constant. -/
 private theorem natDegree_one_az : (1 : AzPolynomial K).natDegree = 0 := by
   rw [← AzPolynomial.natDegree_toPoly, toPoly_one, Polynomial.natDegree_one]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- Sweep candidates have degree at most `d`. -/
 theorem natDegree_sweepCandidate_le (d j : ℕ) :
     (AzPolynomial.sweepCandidate K d j).natDegree ≤ d := by
@@ -270,6 +273,7 @@ theorem natDegree_sweepCandidate_le (d j : ℕ) :
     show (AzPolynomial.monicOfVec vec).natDegree ≤ d
     rw [AzPolynomial.natDegree_monicOfVec]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- Every monic polynomial of degree `d` appears in the deterministic
 sweep, at an index below the enumeration's cardinality (the noncomputable
 `ofPoly` transports it into the capped exhaustive vector enumeration). -/

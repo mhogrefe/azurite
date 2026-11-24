@@ -76,6 +76,7 @@ polynomials of `α + β` and `α · β`; combined with `negateRoots` and
 namespace Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-- The constant-polynomial embedding `C`, bundled as a ring homomorphism
 `R →+* AzPolynomial R`. Used to view `P ∈ R[x]` as a polynomial in a new

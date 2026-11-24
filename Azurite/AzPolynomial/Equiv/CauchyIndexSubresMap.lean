@@ -44,15 +44,20 @@ namespace Azurite.AzPolynomial
 /-! ### `AzPolynomial.map` along an injective ring hom -/
 
 section MapHelpers
-variable {D E : Type*} [CommRing D] [DecidableEq D] [CommRing E] [DecidableEq E]
+variable {D E : Type*} [CommRing D] [DecidableEq D]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig D] [CommRing E] [DecidableEq E]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig E]
 
 omit [DecidableEq D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig E] in
 /-- Degree is preserved by `AzPolynomial.map` along an injective ring hom. -/
 theorem natDegree_map_of_injective (f : D →+* E) (hf : Function.Injective f) (P : AzPolynomial D) :
     (P.map f).natDegree = P.natDegree := by
   rw [← AzPolynomial.natDegree_toPoly, ← AzPolynomial.natDegree_toPoly, toPoly_map]
   exact natDegree_map_eq_of_injective hf _
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig E] in
 /-- `AzPolynomial.map` along an injective ring hom is zero only on zero. -/
 theorem map_eq_zero_iff_of_injective (f : D →+* E) (hf : Function.Injective f) (Q : AzPolynomial D) :
     Q.map f = 0 ↔ Q = 0 := by
@@ -60,6 +65,7 @@ theorem map_eq_zero_iff_of_injective (f : D →+* E) (hf : Function.Injective f)
   simp only [toPoly_map, toPoly_zero, Polynomial.map_eq_zero_iff hf]
 
 omit [DecidableEq D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig E] in
 /-- `AzPolynomial.map` along an injective ring hom sends leading coefficients to
 their images. -/
 theorem leadingCoeff_map_of_injective (f : D →+* E) (hf : Function.Injective f) (P : AzPolynomial D) :
@@ -72,26 +78,35 @@ theorem map_mul' (f : D →+* E) (P Q : AzPolynomial D) : (P * Q).map f = P.map 
   apply toPoly_inj.mp
   rw [toPoly_map, toPoly_mul, toPoly_mul, toPoly_map, toPoly_map, Polynomial.map_mul]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig E] in
 /-- `AzPolynomial.map` distributes over negation. -/
 theorem map_neg' (f : D →+* E) (P : AzPolynomial D) : (-P).map f = -(P.map f) := by
   apply toPoly_inj.mp; rw [toPoly_map, toPoly_neg, toPoly_neg, toPoly_map, Polynomial.map_neg]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig E] in
 /-- `AzPolynomial.map` distributes over subtraction. -/
 theorem map_sub' (f : D →+* E) (P Q : AzPolynomial D) : (P - Q).map f = P.map f - Q.map f := by
   apply toPoly_inj.mp
   rw [toPoly_map, toPoly_sub, toPoly_sub, toPoly_map, toPoly_map, Polynomial.map_sub]
 
 omit [DecidableEq D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig E] in
 /-- Coefficients of `AzPolynomial.map` are the images of the coefficients. -/
 theorem coeff_map' (f : D →+* E) (P : AzPolynomial D) (n : ℕ) : (P.map f).coeff n = f (P.coeff n) := by
   rw [← coeff_toPoly, ← coeff_toPoly, toPoly_map, Polynomial.coeff_map]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig E] in
 /-- `AzPolynomial.map` sends `c • P` to `f c • (P.map f)`. -/
 theorem map_smul' (f : D →+* E) (c : D) (P : AzPolynomial D) : (c • P).map f = f c • (P.map f) := by
   apply toPoly_inj.mp
   rw [toPoly_map, toPoly_smul, toPoly_smul, toPoly_map, Polynomial.smul_eq_C_mul,
     Polynomial.smul_eq_C_mul, Polynomial.map_mul, Polynomial.map_C]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig E] in
 /-- `AzPolynomial.map` commutes with the formal derivative. -/
 theorem map_derivative' [PolynomialDerivative D] [PolynomialDerivative E]
     (f : D →+* E) (P : AzPolynomial D) : (derivative P).map f = derivative (P.map f) := by
@@ -103,8 +118,12 @@ end MapHelpers
 /-! ### `pRem` transport (target field) -/
 
 section PRemMap
-variable {D E : Type*} [CommRing D] [DecidableEq D] [Field E] [DecidableEq E]
+variable {D E : Type*} [CommRing D] [DecidableEq D]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Field E] [DecidableEq E]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig E]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig E] in
 /-- **`pRem` commutes with an injective ring hom into a field.** Both
 `pRem (P.map f) (Q.map f)` and `(pRem P Q).map f` are the (unique) polynomial
 remainder of `C(lc Q ^ e) · P` modulo `Q` after mapping to `E[X]`. -/
@@ -156,12 +175,16 @@ end PRemMap
 
 section SignedSubresMap
 variable {D E : Type*} [CommRing D] [LinearOrder D] [IsStrictOrderedRing D] [DecidableEq D]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [CommRing E] [LinearOrder E] [IsStrictOrderedRing E] [DecidableEq E]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig E]
     [Azurite.ExactDiv E]
 
 open Azurite.BPR.Chapter4 (sRes)
 
 omit [LinearOrder D] [IsStrictOrderedRing D] [LinearOrder E] [IsStrictOrderedRing E] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig D] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig E] in
 /-- `f (epsilonSign n) = epsilonSign n` for a ring hom `f` (it is `±1`). -/
 theorem map_epsilonSign (f : D →+* E) (n : ℕ) : f (epsilonSign n) = epsilonSign n := by
   rw [epsilonSign_eq, epsilonSign_eq, map_pow, map_neg, map_one]
@@ -209,7 +232,9 @@ end SignedSubresMap
 
 section Transport
 variable {D R : Type*} [CommRing D] [LinearOrder D] [IsStrictOrderedRing D] [DecidableEq D]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [Field R] [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
     [Azurite.ExactDiv R] [IsRealClosed R]
 
 open Azurite.BPR.Chapter4 (PmV)
@@ -253,7 +278,8 @@ theorem azIntCast_strictMono {R : Type*} [Ring R] [PartialOrder R] [IsStrictOrde
 polynomials, the fraction-free signed-subresultant Cauchy index equals the Cauchy
 index of the polynomials cast into any real closed field `R` (via `AzInt → ℤ → R`). -/
 theorem cauchyIndex_azInt_eq_BPR {R : Type*} [Field R] [LinearOrder R]
-    [IsStrictOrderedRing R] [DecidableEq R] [Azurite.ExactDiv R] [IsRealClosed R]
+    [IsStrictOrderedRing R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R] [IsRealClosed R]
     (Q P : AzPolynomial AzInt) :
     cauchyIndex Q P
       = Azurite.BPR.cauchyIndex
@@ -266,8 +292,10 @@ theorem cauchyIndex_azInt_eq_BPR {R : Type*} [Field R] [LinearOrder R]
 section TarskiTransport
 open Azurite.BPR.Chapter4 (PmV PmV_map)
 variable {D R : Type*} [CommRing D] [LinearOrder D] [IsStrictOrderedRing D] [DecidableEq D]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig D]
     [Azurite.ExactDiv D] [Field R] [LinearOrder R] [IsStrictOrderedRing R]
-    [DecidableEq R] [Azurite.ExactDiv R] [IsRealClosed R]
+    [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R] [IsRealClosed R]
 
 /-- **Transport of `tarskiQuery` (BPR Algorithm 9.5) across an order
 embedding.** For a strictly monotone ring hom `f : D →+* R` into a real closed
@@ -327,7 +355,8 @@ polynomials with non-constant `P`, the fraction-free signed-subresultant Tarski
 query equals the Tarski query of the polynomials cast into any real closed field
 `R` (via `AzInt → ℤ → R`). -/
 theorem tarskiQuery_azInt_eq_BPR {R : Type*} [Field R] [LinearOrder R]
-    [IsStrictOrderedRing R] [DecidableEq R] [Azurite.ExactDiv R] [IsRealClosed R]
+    [IsStrictOrderedRing R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R] [IsRealClosed R]
     (Q P : AzPolynomial AzInt) (hP1 : 1 ≤ P.natDegree) :
     tarskiQuery Q P
       = Azurite.BPR.tarskiQuery

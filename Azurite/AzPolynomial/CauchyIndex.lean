@@ -103,6 +103,7 @@ private def Q'_int : AzPolynomial AzInt := (parseAzPolynomial "2*x").get!
     `P'·Q`, hitting zero by index `(P'·Q).natDegree + 2 ≤
     (P'·Q).coeffs.size + 2`. -/
 def tarskiQueryOnSRem {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig K]
     [PolynomialDerivative K]
     (Q P : AzPolynomial K) (a b : ExtendedPoint K) : ℤ :=
   let P'Q := P.derivative * Q
@@ -219,6 +220,7 @@ provisional name `tarskiQuery` is kept distinct pending a benchmark. -/
     [PolynomialDerivative R]` — no field — so it runs directly on `AzInt`.
     Correctness is BPR Lemma 4.36, to be bridged through `toPoly` later. -/
 def tarskiQuery {R : Type _} [CommRing R] [LinearOrder R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R]
     [Azurite.ExactDiv R] [PolynomialDerivative R] (Q P : AzPolynomial R) : ℤ :=
   let P' := derivative P
   let p := P.natDegree

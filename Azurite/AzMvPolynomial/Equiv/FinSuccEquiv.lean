@@ -25,9 +25,11 @@ namespace Azurite
 open AzMvPolynomial
 
 variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-! ### Forward bridge -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- `AzMvPolynomial.finSuccEquiv` corresponds to `MvPolynomial.finSuccEquiv`
     across the `toMvPoly` / `toPoly` bridges. -/
 theorem AzMvPolynomial.toPoly_map_finSuccEquiv {n : ℕ} {ord : MonomialOrder}
@@ -131,6 +133,7 @@ private theorem finSuccEquiv_rename_succ (n : ℕ)
 
 /-! ### Reverse bridge -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- Core list-induction lemma for the reverse bridge. -/
 private theorem toMvPoly_foldr_finSuccEquivSymm {n : ℕ} {ord : MonomialOrder}
     (l : List (AzMvPolynomial n R ord)) :
@@ -191,6 +194,7 @@ private theorem toMvPoly_foldr_finSuccEquivSymm {n : ℕ} {ord : MonomialOrder}
                 (List.toPoly l)
     ring
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- Reverse bridge: `toMvPoly (finSuccEquivSymm q)` matches Mathlib's
     `(MvPolynomial.finSuccEquiv R n).symm` applied to `q.toPoly`. -/
 theorem AzMvPolynomial.toMvPoly_finSuccEquivSymm {n : ℕ} {ord : MonomialOrder}
@@ -222,6 +226,7 @@ section Bundled
 
 variable {n : ℕ} {ord : MonomialOrder}
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- Injectivity of the composite bridge
     `Polynomial.map toMvPolyHom ∘ AzPolynomial.toPoly`. -/
 private theorem bridge_injective

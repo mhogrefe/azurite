@@ -71,6 +71,7 @@ monic-normalized one, matching `toPoly_gcdMonic`), so we locally prefer it. -/
 attribute [local instance 0] Azurite.BPR.gcdMonoidPolynomial
 
 variable {F : Type*} [Field F] [DecidableEq F]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig F]
 
 /-! ### The tail products `fᵢ`
 
@@ -78,6 +79,7 @@ variable {F : Type*} [Field F] [DecidableEq F]
 product of the prime factors of `f` of degree `> i` (each once — for
 squarefree `f` that is all of their contribution). -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- A monic squarefree polynomial is the product of its prime-factor set
 (the `prod_distinctDegreeDecomposition` assembly step, standalone). -/
 theorem prod_primeFactors_eq {f : F[X]} (hm : f.Monic) (hsq : Squarefree f) :
@@ -87,6 +89,7 @@ theorem prod_primeFactors_eq {f : F[X]} (hm : f.Monic) (hsq : Squarefree f) :
     (Polynomial.monic_prod_of_monic _ _
       (fun g hg => monic_of_mem_primeFactors hg)) hm hrad
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- Membership in the prime-factor set, unfolded (`mem_primeFactors` +
 `mem_normalizedFactors_iff'`). -/
 theorem mem_primeFactors_iff'' {g p : F[X]} (hg0 : g ≠ 0) :
@@ -98,18 +101,22 @@ factors of `f` of degree `> i`. -/
 noncomputable def ddTail (f : F[X]) (i : ℕ) : F[X] :=
   ((primeFactors f).filter (fun g => i < g.natDegree)).prod id
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 theorem ddTail_monic (f : F[X]) (i : ℕ) : (ddTail f i).Monic :=
   Polynomial.monic_prod_of_monic _ _
     (fun _ hg => monic_of_mem_primeFactors (Finset.mem_filter.mp hg).1)
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 theorem ddTail_dvd (f : F[X]) (i : ℕ) : ddTail f i ∣ f :=
   (Finset.prod_dvd_prod_of_subset _ _ id (Finset.filter_subset _ _)).trans
     radical_dvd_self
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 theorem squarefree_ddTail {f : F[X]} (hsq : Squarefree f) (i : ℕ) :
     Squarefree (ddTail f i) :=
   hsq.squarefree_of_dvd (ddTail_dvd f i)
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- `f₀ = f`: for squarefree monic `f`, the degree-`> 0` tail is all of `f`
 (irreducible factors have positive degree). -/
 theorem ddTail_zero {f : F[X]} (hm : f.Monic) (hsq : Squarefree f) :
@@ -118,6 +125,7 @@ theorem ddTail_zero {f : F[X]} (hm : f.Monic) (hsq : Squarefree f) :
     (fun g hg => (irreducible_of_mem_primeFactors hg).natDegree_pos)]
   exact prod_primeFactors_eq hm hsq
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- The prime factors of the tail are exactly the prime factors of `f` of
 degree `> i`. -/
 theorem mem_primeFactors_ddTail {f : F[X]} (hf0 : f ≠ 0) {i : ℕ} {p : F[X]} :
@@ -144,6 +152,7 @@ theorem mem_primeFactors_ddTail {f : F[X]} (hf0 : f ≠ 0) {i : ℕ} {p : F[X]} 
     rw [Finset.mem_filter]
     exact ⟨hpf, hideg⟩
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- The loop's termination condition: `fᵢ = 1` exactly when all factor
 degrees are `≤ i`, i.e. `i ≥ s`. -/
 theorem ddTail_eq_one_iff {f : F[X]} {i : ℕ} :
@@ -172,6 +181,7 @@ theorem ddTail_eq_one_iff {f : F[X]} {i : ℕ} :
     have := Finset.le_sup (f := natDegree) hg
     omega
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- Peeling the loop: `fᵢ = gᵢ₊₁ · fᵢ₊₁` (split the degree-`> i` factor set
 at degree `i + 1`). -/
 theorem ddTail_succ (f : F[X]) (i : ℕ) :
@@ -188,12 +198,14 @@ theorem ddTail_succ (f : F[X]) (i : ℕ) :
     rw [Finset.filter_filter]
     exact Finset.filter_congr fun g _ => by omega
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- The fuel bound: factor degrees are at most `deg f`. -/
 theorem ddLength_le_natDegree {f : F[X]} (hf0 : f ≠ 0) :
     ddLength f ≤ f.natDegree :=
   Finset.sup_le fun _ hg =>
     Polynomial.natDegree_le_of_dvd ((mem_primeFactors_iff'' hf0).mp hg).2.2 hf0
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- **The early-abort criterion** (the book's remark after Theorem 14.4):
 if `fᵢ ≠ 1` has degree `< 2(i + 1)`, then — all its factors having degree
 `≥ i + 1` — the factor set of `fᵢ` is a single prime `p = fᵢ`, so `fᵢ` is
@@ -293,6 +305,7 @@ theorem map_range'_eq_replicate_append (g : ℕ → F[X]) :
 
 /-! ### The two gcd computations of the loop body -/
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- Adding a multiple of `c` to the first argument does not change the gcd. -/
 theorem gcd_congr_left_of_dvd_sub {a b c : F[X]} (h : c ∣ a - b) :
     gcd a c = gcd b c := by
@@ -307,6 +320,7 @@ theorem gcd_congr_left_of_dvd_sub {a b c : F[X]} (h : c ∣ a - b) :
   rw [← normalize_gcd a c, ← normalize_gcd b c]
   exact normalize_eq_normalize h1 h2
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- **The heart of Theorem 14.4** (the book's application of Theorem 14.2):
 `gcd(x^(q^(i+1)) − x, fᵢ) = gᵢ₊₁`, the product of the monic irreducible
 factors of `f` of degree exactly `i + 1`.  Both sides are monic squarefree,
@@ -415,6 +429,7 @@ noncomputable def dddLoop (q : ℕ) : ℕ → ℕ → F[X] → F[X] → List F[X
 noncomputable def distinctDegreeFactorization (q : ℕ) (f : F[X]) : List F[X] :=
   dddLoop q f.natDegree 0 X f
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- The loop invariant of Theorem 14.4, discharged by induction on the fuel:
 entering step `i + 1` with `hᵢ = x^(qⁱ) rem f` and `fᵢ = ddTail f i`, the
 loop emits exactly `(gᵢ₊₁, …, g_s)`. -/
@@ -485,6 +500,7 @@ theorem dddLoop_ddTail [Fintype F] {f : F[X]} (hm : f.Monic)
             ⟨ddFactor f (i + 1), by rw [ddTail_succ f i]; ring⟩
           exact hnext.trans hstep
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig F] in
 /-- **GG Theorem 14.4.** The distinct-degree factorization algorithm works
 correctly as specified: for a squarefree monic `f`, Algorithm 14.3 computes
 the distinct-degree decomposition of `f`. -/
@@ -514,6 +530,7 @@ tail), the gcd by the signed-subresultant `gcdMonic`, the exact division by
 section Computable
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-- The power bridge inside a fixed `AzPolyMod` modulus, at the level of
 reduced representatives: the limb-level power `a ^ (q : AzNat)` represents

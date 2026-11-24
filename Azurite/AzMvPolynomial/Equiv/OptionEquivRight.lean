@@ -27,6 +27,7 @@ namespace Azurite
 open AzMvPolynomial _root_.Azurite.AzPolynomial
 
 variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-! ### Forward bridge -/
 

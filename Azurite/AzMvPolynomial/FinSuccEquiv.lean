@@ -32,6 +32,7 @@ namespace Azurite
 open AzMvPolynomial
 
 variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
 
 /-- Convert a polynomial in `n + 1` variables into a univariate polynomial
     whose coefficients are polynomials in the first `n` variables.

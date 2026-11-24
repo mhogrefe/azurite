@@ -27,6 +27,7 @@ namespace Azurite.AzPolynomial
 open Polynomial
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-! ### Abstract fold invariant -/
 
@@ -46,7 +47,7 @@ private theorem foldl_preserves_inv
 private theorem step_identity (C m R Q : AzPolynomial K) :
     mulBasecaseFold (C + m) Q + (R - mulBasecaseFold m Q)
       = mulBasecaseFold C Q + R := by
-  show (C + m) * Q + (R - m * Q) = C * Q + R
+  simp only [← mul_eq_mulBasecaseFold]
   ext n
   simp only [coeff_add, coeff_sub, coeff_mul, add_mul]
   rw [Finset.sum_add_distrib]
@@ -70,7 +71,7 @@ private theorem quoRem_fold_eq (q : ℕ) (bq : K) (Q P : AzPolynomial K)
 
 private theorem base_invariant (P Q : AzPolynomial K) :
     P = mulBasecaseFold 0 Q + P := by
-  show P = (0 : AzPolynomial K) * Q + P
+  rw [← mul_eq_mulBasecaseFold]
   ext n
   simp only [coeff_add, coeff_mul]
   simp [coeff]
@@ -173,6 +174,7 @@ private theorem sub_monomial_mul_coeffs_zero (q : ℕ) (Q : AzPolynomial K)
 private theorem quoRemStep_snd_eq (q : ℕ) (bq : K) (Q : AzPolynomial K)
     (j : ℕ) (C R : AzPolynomial K) :
     (quoRemStep q bq Q j (C, R)).2 = R - monomial (j - q) (R.coeff j / bq) * Q := by
+  rw [mul_eq_mulBasecaseFold]
   rfl
 
 -- Combined step coefficient theorem

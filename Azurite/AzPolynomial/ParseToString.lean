@@ -22,8 +22,10 @@ import Azurite.AzMvPolynomial.Equiv.FinOneAlgEquiv
 
 namespace Azurite.AzPolynomial
 
-variable {R : Type _} [CommSemiring R] [DecidableEq R] [NeZero (1 : R)] [ParsableCoeff R]
+variable {R : Type _} [CommSemiring R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [NeZero (1 : R)] [ParsableCoeff R]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- Round-trip: parsing the string representation of a polynomial recovers it. -/
 theorem parseAzPolynomial_toChars (p : AzPolynomial R) :
     parseAzPolynomial (toChars p) = some p := by

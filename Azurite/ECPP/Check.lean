@@ -27,9 +27,8 @@ remaining number is settled by `AzNat.isPrime`.
 
 * `n > 1`, `gcd(n, 6) = 1`; `s + 1 < q` and `4s < (q − s − 1)²`;
 * `gcd(4a³ + 27b², n) = 1` and `v² = u³ + au + b`;
-* `V = (q − 1) · (u, v)` by `jacMulAcc`, with the product `acc` of the `Z`-coordinates of
-  its additions: `gcd(acc · Z_V, n) = 1`, and `V = −(u, v)`, i.e. `X_V = u Z_V²`,
-  `Y_V = −v Z_V³`.
+* `V = (q − 1) · (u, v)` by `jacMul`: `gcd(Z_V, n) = 1` (which certifies every step of the
+  multiplication), and `V = −(u, v)`, i.e. `X_V = u Z_V²`, `Y_V = −v Z_V³`.
 
 `check n cert` runs the chain.  Soundness: `Equiv/Check.lean`
 (`check n cert = true → Nat.Prime n.toNat`).
@@ -73,10 +72,10 @@ def checkStep (n : AzNat) (c : StepCert) : Bool :=
       && decide (AzNat.ofNat 4 * s < t * t)
       && decide (AzNat.gcd disc.val n = one)
       && decide (Square.square v = u * Square.square u + a * u + b)
-      && match jacMulAcc a b u v (c.q.size + 1) (c.q - one) with
+      && match jacMul a u v (c.q.size + 1) (c.q - one) with
         | none => false
-        | some (V, acc) =>
-          decide (AzNat.gcd (acc * V.2.2).val n = one)
+        | some V =>
+          decide (AzNat.gcd V.2.2.val n = one)
             && decide (V.1 = u * Square.square V.2.2)
             && decide (V.2.1 = -(v * (V.2.2 * Square.square V.2.2)))
   else false

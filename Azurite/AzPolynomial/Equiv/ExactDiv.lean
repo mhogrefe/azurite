@@ -39,7 +39,8 @@ namespace Azurite.AzPolynomial
 
 open Polynomial
 
-variable {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDiv R]
+variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R]
 
 /-! ### Step-level lemma -/
 
@@ -52,9 +53,10 @@ private theorem exactDivStep_preserves
     mulBasecaseFold (exactDivStep q bq Q j (C, R₀)).1 Q +
         (exactDivStep q bq Q j (C, R₀)).2 =
       mulBasecaseFold C Q + R₀ := by
-  show (C + monomial (j - q) (Azurite.ExactDiv.exactDiv (R₀.coeff j) bq)) * Q +
-      (R₀ - monomial (j - q) (Azurite.ExactDiv.exactDiv (R₀.coeff j) bq) * Q) =
-      C * Q + R₀
+  show mulBasecaseFold (C + monomial (j - q) (Azurite.ExactDiv.exactDiv (R₀.coeff j) bq)) Q +
+      (R₀ - mulBasecaseFold (monomial (j - q) (Azurite.ExactDiv.exactDiv (R₀.coeff j) bq)) Q) =
+      mulBasecaseFold C Q + R₀
+  simp only [← mul_eq_mulBasecaseFold]
   ring
 
 /-! ### Fold invariant -/
@@ -87,7 +89,7 @@ private theorem exactDiv_fold_eq (q : ℕ) (bq : R) (Q P : AzPolynomial R)
 
 private theorem base_invariant (P Q : AzPolynomial R) :
     P = mulBasecaseFold 0 Q + P := by
-  show P = (0 : AzPolynomial R) * Q + P
+  rw [← mul_eq_mulBasecaseFold]
   ext n
   simp only [coeff_add, coeff_mul]
   simp [coeff]
@@ -184,7 +186,8 @@ private theorem exactDivStep_snd_coeffs_zero
     (h_above : ∀ i, i > j → R₀.coeff i = 0) :
     ∀ i, i ≥ j → (exactDivStep q Q.leadingCoeff Q j (C, R₀)).2.coeff i = 0 := by
   intro i hi
-  show (R₀ - monomial (j - q) (Azurite.ExactDiv.exactDiv (R₀.coeff j) Q.leadingCoeff) * Q).coeff i = 0
+  show (R₀ - mulBasecaseFold (monomial (j - q) (Azurite.ExactDiv.exactDiv (R₀.coeff j) Q.leadingCoeff)) Q).coeff i = 0
+  rw [← mul_eq_mulBasecaseFold]
   rcases eq_or_lt_of_le hi with rfl | hgt
   · simp only [coeff_sub]
     have hjq2 : j - q + q = j := by omega
@@ -275,7 +278,8 @@ private theorem exactDivStep_preserves_dvd
     (C R₀ : AzPolynomial R) (hdvd : AzPolynomial.toPoly Q ∣ AzPolynomial.toPoly R₀) :
     AzPolynomial.toPoly Q ∣ AzPolynomial.toPoly (exactDivStep q bq Q j (C, R₀)).2 := by
   show AzPolynomial.toPoly Q ∣
-    AzPolynomial.toPoly (R₀ - monomial (j - q) (Azurite.ExactDiv.exactDiv (R₀.coeff j) bq) * Q)
+    AzPolynomial.toPoly (R₀ - mulBasecaseFold (monomial (j - q) (Azurite.ExactDiv.exactDiv (R₀.coeff j) bq)) Q)
+  rw [← mul_eq_mulBasecaseFold]
   rw [toPoly_sub, Azurite.AzPolynomial.toPoly_mul]
   exact dvd_sub hdvd ⟨_, mul_comm _ _⟩
 
@@ -661,6 +665,7 @@ end Azurite.AzPolynomial
 namespace Azurite
 
 instance {R : Type _} [CommRing R] [IsDomain R] [DecidableEq R]
+    [Azurite.AzPolynomial.AzPolynomialMulConfig R]
     [Azurite.ExactDiv R] :
     Azurite.ExactDiv (AzPolynomial R) where
   exactDiv := AzPolynomial.exactDiv

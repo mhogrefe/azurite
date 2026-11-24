@@ -31,6 +31,7 @@ namespace Azurite
 open AzMvPolynomial BPR
 
 variable {k : ℕ} {D : Type _} [CommRing D] [IsDomain D] [DecidableEq D]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig D]
          {ord : MonomialOrder}
 
 /-- Extract a DNF of an `AzFieldAtom` quantifier-free formula as a

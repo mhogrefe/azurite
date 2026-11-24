@@ -44,6 +44,7 @@ open _root_.Azurite.AzPolynomial
 section Reduced
 
 variable {R : Type _} [CommRing R] [DecidableEq R] [Nontrivial R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
   {f : AzPolynomial R} [hfact : Fact (AzPolynomial.toPoly f).Monic]
 
 omit [DecidableEq R] [Nontrivial R] in

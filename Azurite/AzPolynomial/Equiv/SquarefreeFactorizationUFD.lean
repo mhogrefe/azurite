@@ -939,7 +939,8 @@ theorem yunPoly_pairwise_coprime' {a : R[X]} (hprim : a.IsPrimitive) :
 
 section Bridge
 
-variable [DecidableEq R] [Azurite.ExactDiv R] [GcdImpl R] [PolynomialDerivative R]
+variable [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R] [GcdImpl R] [PolynomialDerivative R]
 
 /-- Quotient bridge over a domain: the synthetic exact quotient computes
 `edivExact`, when the divisor divides (both are the unique cofactor). -/

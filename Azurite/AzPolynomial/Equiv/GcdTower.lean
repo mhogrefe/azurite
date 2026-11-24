@@ -84,7 +84,8 @@ attribute [local instance 0] Azurite.BPR.gcdMonoidPolynomial
 
 section TowerBridge
 
-variable {D M : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+variable {D M : Type _} [CommRing D] [DecidableEq D]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
   [IsDomain D] [NormalizedGcd D] [CommRing M] [IsDomain M]
   [StrongNormalizedGCDMonoid M] {ρ : D →+* M}
 
@@ -908,7 +909,8 @@ structure NormalizedGcdBridge (D M : Type _) [CommRing D] [DecidableEq D]
 
 namespace NormalizedGcdBridge
 
-variable {D M : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
+variable {D M : Type _} [CommRing D] [DecidableEq D]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig D] [Azurite.ExactDiv D]
   [IsDomain D] [NormalizedGcd D] [CommRing M] [IsDomain M]
   [StrongNormalizedGCDMonoid M]
 

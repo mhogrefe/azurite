@@ -22,6 +22,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
   in the resulting term.
 -/
 import Azurite.AzMvPolynomial.Equiv.Add
+import Azurite.AzPolynomial.Mul
 import Azurite.AzMvPolynomial.Equiv.Mul
 import Azurite.AzMvPolynomial.Equiv.Neg
 import Azurite.AzMvPolynomial.Equiv.Sub
@@ -203,6 +204,9 @@ instance instAzMvPolynomialSemiring : Semiring (AzMvPolynomial n R ord) where
         show (1 : AzMvPolynomial n R ord).toMvPoly = (1 : MvPolynomial (Fin n) R)
           from toMvPoly_one]
     push_cast; ring)
+
+/-- Polynomials in one variable over `AzMvPolynomial`: the schoolbook product. -/
+instance : Azurite.AzPolynomial.AzPolynomialMulConfig (AzMvPolynomial n R ord) := .basecase
 
 /-- `AzMvPolynomial n R ord` forms a commutative semiring. -/
 instance instAzMvPolynomialCommSemiring : CommSemiring (AzMvPolynomial n R ord) where

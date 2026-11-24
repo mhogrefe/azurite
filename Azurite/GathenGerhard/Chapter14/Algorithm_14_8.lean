@@ -47,7 +47,9 @@ theory (same as in `Algorithm_14_3.lean`). -/
 attribute [local instance 0] Azurite.BPR.gcdMonoidPolynomial
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig K] in
 /-- Nonconstant `AzPolynomial`s are nonzero. -/
 private theorem ne_zero_of_natDegree_ne_zero {a : AzPolynomial K}
     (h : a.natDegree ≠ 0) : AzPolynomial.toPoly a ≠ 0 := by

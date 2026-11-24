@@ -30,7 +30,7 @@ namespace Azurite.AzPolynomial
 variable {R : Type _} [Semiring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
 /-- Computable exponentiation for `AzPolynomial R` via sliding-window exponentiation.
-    Uses the configured multiplication algorithm (basecase or Karatsuba).
+    Uses the multiplication of the coefficient type (`AzPolynomialMulConfig`).
     Agrees with `p ^ n` (the `Semiring`'s `Pow` instance). -/
 def pow (p : AzPolynomial R) (n : ℕ) : AzPolynomial R :=
   Azurite.slidingWindowPow p n
@@ -39,16 +39,6 @@ def pow (p : AzPolynomial R) (n : ℕ) : AzPolynomial R :=
 -- Tests
 -- ═══════════════════════════════════════════════════════════════════
 
-section Tests
-
-#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get!.pow 0) == "1"
-#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get!.pow 1) == "x+1"
-#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get!.pow 2) == "x^2+2*x+1"
-#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get!.pow 3) == "x^3+3*x^2+3*x+1"
-#guard toChars ((parseAzPolynomial (R := AzInt) "2*x").get!.pow 4) == "16*x^4"
-#guard toChars ((0 : AzPolynomial AzInt).pow 5) == "0"
-#guard toChars ((1 : AzPolynomial AzInt).pow 100) == "1"
-
-end Tests
+-- (the tests are in `FastMul.lean`, where the multiplication of `AzInt` is available)
 
 end Azurite.AzPolynomial

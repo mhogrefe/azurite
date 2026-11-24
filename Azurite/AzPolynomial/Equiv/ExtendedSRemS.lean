@@ -29,6 +29,7 @@ open Polynomial
 namespace Azurite.AzPolynomial
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-- `toPoly (sRemU P Q n) = BPR.SRemU (toPoly P) (toPoly Q) n`. -/
 theorem toPoly_sRemU (P Q : AzPolynomial K) (n : ℕ) :

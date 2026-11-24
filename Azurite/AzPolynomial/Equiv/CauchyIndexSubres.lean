@@ -111,7 +111,8 @@ section Deg0
 -- needs no field structure (or order), only a nontrivial commutative ring with
 -- exact division. Stated at that generality so the ordered-domain transport
 -- (`Equiv.CauchyIndexSubresMap`) can reuse it, e.g. over `AzInt`.
-variable {R : Type _} [CommRing R] [Nontrivial R] [DecidableEq R] [Azurite.ExactDiv R]
+variable {R : Type _} [CommRing R] [Nontrivial R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R]
 
 omit [DecidableEq R] in
 /-- Exact division by `1` is the identity. -/
@@ -119,6 +120,7 @@ theorem exactDiv_one' (x : R) :
     Azurite.ExactDiv.exactDiv x 1 = x := by
   have := Azurite.ExactDiv.exactDiv_mul_self x 1 (one_dvd x) one_ne_zero; rwa [mul_one] at this
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- **`signedSubresultant` for a constant `Q` (`deg Q = 0`).** The explicit
 coefficient array is `[ε_p·lcof(Q)^p, 0, …, 0, lcof(P)]`. Proved by a single
 unfolding of `ssAux` (which terminates in one step for `deg Q = 0`). -/
@@ -160,8 +162,10 @@ theorem snd_toList_deg0 (P Q : AzPolynomial R) (hQ : Q ≠ 0) (hq0 : Q.natDegree
 end Deg0
 
 variable {R : Type _} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R]
     [Azurite.ExactDiv R]
 
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- **Signed-subresultant `.2` bridge for a constant `Q` (`deg Q = 0`).** Matches
 the computed coefficients to the abstract signed subresultant coefficients `sRes`,
 the missing `deg Q = 0` case of `signedSubresultant_toPoly_domain`. -/
@@ -206,6 +210,7 @@ theorem snd_toList_deg0_sRes (P Q : AzPolynomial R) (hQ : Q ≠ 0)
 variable [IsRealClosed R]
 
 omit [Azurite.ExactDiv R] in
+omit [Azurite.AzPolynomial.AzPolynomialMulConfig R] in
 /-- **The signed pseudo-remainder preserves the Cauchy index.**
 `Ind((pRem Q P)/P) = Ind(Q/P)` over a real closed field, for `P ≠ 0`. Since
 `pRem Q P = C(lcof(P)^d)·Q − A·P` with `d` even (so `lcof(P)^d > 0`), the two

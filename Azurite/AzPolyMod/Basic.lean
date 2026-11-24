@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzPolynomial.DivModByMonic
+import Azurite.AzPolynomial.FastMul
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.ToString
 import Azurite.Algorithm.SlidingWindowPow
@@ -66,7 +67,7 @@ omit [DecidableEq R] in
 @[ext] theorem ext {a b : AzPolyMod f} (h : a.val = b.val) : a = b := by
   cases a; cases b; cases h; rfl
 
-open AzPolynomial in
+open Azurite.AzPolynomial in
 /-- The canonical `isReduced` witness for the reduction `modByMonic p f`, for any
 `f` (monic or not). -/
 theorem modByMonic_isReduced (p : AzPolynomial R) :
@@ -117,23 +118,29 @@ instance : Sub (AzPolyMod f) := ⟨sub⟩
 
 /-- **Multiplication** in `R[x] / (f)`: multiply representatives, then reduce the
 (possibly higher-degree) product back modulo `f`. -/
-def mul (a b : AzPolyMod f) : AzPolyMod f := ofPoly (a.val * b.val)
+def mul [AzPolynomial.AzPolynomialMulConfig R] (a b : AzPolyMod f) : AzPolyMod f :=
+  ofPoly (a.val * b.val)
 
-instance : Mul (AzPolyMod f) := ⟨mul⟩
+instance [AzPolynomial.AzPolynomialMulConfig R] : Mul (AzPolyMod f) := ⟨mul⟩
 
 /-- **Exponentiation** in `R[x] / (f)` via sliding-window exponentiation over the
 quotient-ring operations, so `a ^ n` costs `O(log n)` reduced multiplications. -/
-def pow (a : AzPolyMod f) (n : ℕ) : AzPolyMod f := Azurite.slidingWindowPow a n
+def pow [AzPolynomial.AzPolynomialMulConfig R] (a : AzPolyMod f) (n : ℕ) : AzPolyMod f :=
+  Azurite.slidingWindowPow a n
 
-instance : Pow (AzPolyMod f) ℕ := ⟨pow⟩
+instance [AzPolynomial.AzPolynomialMulConfig R] : Pow (AzPolyMod f) ℕ := ⟨pow⟩
 
 /-- **Exponentiation with an `AzNat` exponent** in `R[x] / (f)`.  The exponent is read at the
 limb level (never through `AzNat.toNat`), so huge exponents like `p^k` (used in factorization)
 stay limb-level.  Coexists with the `ℕ`-exponent `pow`; the `Monoid`/`CommRing` `npow` remains
 `ℕ`-indexed. -/
-def powAzNat (a : AzPolyMod f) (n : AzNat) : AzPolyMod f := Azurite.slidingWindowPowAzNat a n
+def powAzNat [AzPolynomial.AzPolynomialMulConfig R] (a : AzPolyMod f) (n : AzNat) : AzPolyMod f :=
+  Azurite.slidingWindowPowAzNat a n
 
-instance : Pow (AzPolyMod f) AzNat := ⟨powAzNat⟩
+instance [AzPolynomial.AzPolynomialMulConfig R] : Pow (AzPolyMod f) AzNat := ⟨powAzNat⟩
+
+/-- Polynomials over `R[x] / (f)` (towers): the schoolbook product. -/
+instance [Semiring (AzPolyMod f)] : AzPolynomial.AzPolynomialMulConfig (AzPolyMod f) := .basecase
 
 /-- Render the reduced representative of a class as a string (for tests). -/
 def render {R : Type _} [CommRing R] [DecidableEq R] [NeZero (1 : R)]

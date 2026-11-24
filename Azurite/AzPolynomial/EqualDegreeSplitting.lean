@@ -175,6 +175,7 @@ def czExponent (q : AzNat) (d : ℕ) : AzNat :=
     AzNat.toNat_ofNat, pow_one]
 
 variable {K : Type _} [Field K] [DecidableEq K]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig K]
 
 /-- **One attempt of Algorithm 14.8 (equal-degree splitting)**, on a given
 candidate `a`: fail if `a` is constant; return `gcd(a, f)` if nontrivial;

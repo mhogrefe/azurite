@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzPolynomial.FastMul
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Neg
 import Azurite.AzPolynomial.SMul
@@ -39,7 +40,8 @@ remainder sequence via the proportionality of Corollary 8.38.
 
 namespace Azurite.AzPolynomial
 
-variable {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDiv R]
+variable {R : Type _} [CommRing R] [DecidableEq R]
+  [Azurite.AzPolynomial.AzPolynomialMulConfig R] [Azurite.ExactDiv R]
 
 /-- The sign `ε_n = (-1)^{n(n-1)/2}` of Notation 8.33 (the reversal sign of `n` rows). -/
 def epsilonSign (n : ℕ) : R := if (n * (n - 1) / 2) % 2 = 0 then 1 else -1

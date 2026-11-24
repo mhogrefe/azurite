@@ -50,35 +50,43 @@ def mulBasecaseFold (p q : AzPolynomial R) : AzPolynomial R :=
 
 -- ── Multiplication config typeclass ─────────────────────────────────────────
 
-/-- Configuration typeclass for `AzPolynomial` multiplication.
-    Instances select the algorithm and (for Karatsuba) the threshold.
+/-- **The multiplication of `AzPolynomial R`**: an implementation `dmul` together with the
+    proof that it is the schoolbook product (`dmul_eq`).  The `*` of `AzPolynomial R` — and
+    with it the ring structure — is `dmul`, so the algorithm is chosen by the coefficient
+    type, and every statement about `*` holds for whichever algorithm that is.
 
-    Priority convention:
-    - 100: basecase O(n²) for any `Semiring` (default)
-    - 200: Karatsuba with default threshold for `CommRing`
-    - 300: type-specific tuned Karatsuba thresholds -/
+    Each coefficient type has exactly one instance (there is no generic default, so that
+    code generic in `R` cannot silently fix an algorithm): the tuned ones for `AzInt`,
+    `AzNat`, `AzRat`, `AzZMod m` are in `FastMul.lean`; `basecase` and (in `FastMul.lean`)
+    `karatsuba` are ready-made values for other types.
+
+    Code and statements generic in `R` take `[AzPolynomialMulConfig R]`. -/
 class AzPolynomialMulConfig (R : Type _) [Semiring R] [DecidableEq R] where
   /-- The multiplication implementation. -/
   dmul : AzPolynomial R → AzPolynomial R → AzPolynomial R
+  /-- It is the schoolbook product. -/
+  dmul_eq : ∀ p q, dmul p q = mulBasecaseFold p q
 
-/-- Default: O(n²) basecase multiplication for any Semiring.
-    Overridden by higher-priority Karatsuba instances when `Karatsuba.lean`
-    is imported. -/
-instance (priority := 100) : AzPolynomialMulConfig R where
+/-- The schoolbook product as a multiplication config, for coefficient types without a tuned
+    one: `instance : AzPolynomialMulConfig T := .basecase`. -/
+@[reducible] def AzPolynomialMulConfig.basecase : AzPolynomialMulConfig R where
   dmul := mulBasecaseFold
+  dmul_eq _ _ := rfl
 
-/-- Multiplies two AzPolynomialnomials using the best available algorithm
-    for the coefficient type `R`, as determined by `AzPolynomialMulConfig`. -/
+/-- Multiplies two `AzPolynomial`s by the algorithm of the coefficient type `R`
+    (`AzPolynomialMulConfig`). -/
 def mul [AzPolynomialMulConfig R] (p q : AzPolynomial R) : AzPolynomial R :=
   AzPolynomialMulConfig.dmul p q
 
 instance [AzPolynomialMulConfig R] : Mul (AzPolynomial R) := ⟨mul⟩
 
--- Testing the implementation using Integer polynomials
-#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get! * (parseAzPolynomial (R := AzInt) "x+2").get!) == "x^2+3*x+2"
-#guard toChars ((parseAzPolynomial (R := AzInt) "2*x^2+x").get! * (parseAzPolynomial (R := AzInt) "x-1").get!) == "2*x^3-x^2-x"
-#guard toChars ((0 : AzPolynomial AzInt) * (parseAzPolynomial (R := AzInt) "x^2+1").get!) == "0"
-#guard toChars ((parseAzPolynomial (R := AzInt) "3").get! * (parseAzPolynomial (R := AzInt) "4").get!) == "12"
+/-- `*` is the schoolbook product, whatever the algorithm. -/
+theorem mul_eq_mulBasecaseFold [AzPolynomialMulConfig R] (p q : AzPolynomial R) :
+    p * q = mulBasecaseFold p q :=
+  AzPolynomialMulConfig.dmul_eq p q
+
+/-- Polynomials over polynomials: the schoolbook product. -/
+instance [Semiring (AzPolynomial R)] : AzPolynomialMulConfig (AzPolynomial R) := .basecase
 
 -- Verify old implementation still works
 #guard toChars (mulBasecaseList (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!) == "x^2+3*x+2"
@@ -92,9 +100,5 @@ instance [AzPolynomialMulConfig R] : Mul (AzPolynomial R) := ⟨mul⟩
     Option (AzPolynomial AzRat)).map toChars == some "3/2*x^2-1/3*x+5"
 #guard (parseAzPolynomial "x^2-x-1/2" :
     Option (AzPolynomial AzRat)).map toChars == some "x^2-x-1/2"
-#guard ((· * ·) <$>
-    (parseAzPolynomial "x-1/2" : Option (AzPolynomial AzRat)) <*>
-    (parseAzPolynomial "x+1/2" : Option (AzPolynomial AzRat))).map
-    toChars == some "x^2-1/4"
 
 end Azurite.AzPolynomial

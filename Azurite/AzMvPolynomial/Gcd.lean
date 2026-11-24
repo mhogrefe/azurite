@@ -45,6 +45,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
   `gcd 0 0 = 0`.
 -/
 import Azurite.AzMvPolynomial.Derivative
+import Azurite.AzPolynomial.FastMul
 import Azurite.AzMvPolynomial.Equiv.ExactDivCR
 import Azurite.AzMvPolynomial.FinSuccEquiv
 import Azurite.AzMvPolynomial.OfAzPolynomial
@@ -64,9 +65,10 @@ structure GcdRing where
   [isDomain : IsDomain carrier]
   [exactDiv : Azurite.ExactDiv carrier]
   [normalizedGcd : NormalizedGcd carrier]
+  [mulConfig : Azurite.AzPolynomial.AzPolynomialMulConfig carrier]
 
 attribute [instance] GcdRing.commRing GcdRing.decEq GcdRing.isDomain
-  GcdRing.exactDiv GcdRing.normalizedGcd
+  GcdRing.exactDiv GcdRing.normalizedGcd GcdRing.mulConfig
 
 /-- One tower step: adjoin one (outer) polynomial variable. All five
     instance fields are inherited from the coefficient level by the
@@ -77,7 +79,8 @@ attribute [instance] GcdRing.commRing GcdRing.decEq GcdRing.isDomain
     decEq := inferInstance
     isDomain := inferInstance
     exactDiv := inferInstance
-    normalizedGcd := inferInstance }
+    normalizedGcd := inferInstance
+    mulConfig := inferInstance }
 
 /-- The `AzInt`-based nested polynomial tower: `ℤ`, `ℤ[x]`, `ℤ[x][T]`, … -/
 @[reducible] def intTower : ℕ → GcdRing
@@ -87,7 +90,8 @@ attribute [instance] GcdRing.commRing GcdRing.decEq GcdRing.isDomain
       decEq := inferInstance
       isDomain := inferInstance
       exactDiv := inferInstance
-      normalizedGcd := inferInstance }
+      normalizedGcd := inferInstance
+      mulConfig := inferInstance }
   | n + 1 => (intTower n).step
 
 /-- The `n`-level nested tower carrier,
