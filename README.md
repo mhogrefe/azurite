@@ -52,7 +52,8 @@ and as the baseline the benchmarks compare against.
   followed by an elliptic curve certificate (found by an unproven search, checked
   by a fully proven checker), with the fully proven APR-CL test for small
   numbers and as the fallback; `isPrime n = true ↔ Nat.Prime n` is a theorem.  A
-  300-digit prime is certified in about ten seconds.
+  300-digit prime is certified in about seven seconds (six to find the
+  certificate, under one to check it).
 - **Small trusted base.** Every declaration depends only on the three standard
   axioms (`propext`, `Classical.choice`, `Quot.sound`); `native_decide` and
   `sorry` are rejected by CI.

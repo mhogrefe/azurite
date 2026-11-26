@@ -160,14 +160,15 @@ def processBatchTimed (P : GenParams) (prim : AzNat) (n : AzNat) [NeZero n.toNat
         let mut tH : UInt64 := 0
         if D ≠ 3 ∧ D ≠ 4 then
           let (_, t) ← timeOnce fun _ =>
+            let C := classPolys D
             if (weberKind D).isSome then
-              match genusWeberPoly D with
+              match C.genusWeber.get with
               | some G => G.terms.length
-              | none => ((weberClassPoly D).map List.length).getD 0
+              | none => (C.weber.get.map List.length).getD 0
             else
-              match genusClassPoly D with
+              match C.genusHilbert.get with
               | some G => G.terms.length
-              | none => ((hilbertClassPoly D).map List.length).getD 0
+              | none => (C.hilbert.get.map List.length).getD 0
           tH := t
           acc := acc.modify 5 (· + t)
           cnt := cnt.modify 5 (· + 1)
@@ -391,8 +392,40 @@ def classPolyParts : IO Unit := do
     IO.println s!"D={D} h={classNumber D}: H {ms tH}ms ({h}), W {ms tW}ms ({w}), \
       genus H {ms tG}ms ({g}), genus W {ms tGW}ms ({gw})"
 
+/-- `benchmark ecpp 1 "ladder:1"`: the products of the primes below `2^j`, each from scratch
+and by the ladder (each from the one before). -/
+def ladderParts : IO Unit := do
+  let mut tot : UInt64 := 0
+  for j in [10:21] do
+    let (s, t) ← timeOnce fun _ => (AzNat.primorial (2 ^ j)).size
+    tot := tot + t
+    IO.println s!"primorial 2^{j}: {s} bits {ms t}ms"
+  IO.println s!"from scratch, 2^10 … 2^20: {ms tot}ms"
+  let L := primorialLadder 20
+  let (s, t) ← timeOnce fun _ => L[20]!.get.size
+  IO.println s!"ladder up to 2^20: {s} bits {ms t}ms"
+  let ok := (List.range 15).all fun j => L[j]!.get == AzNat.primorial (2 ^ j)
+  IO.println s!"equal up to 2^14: {ok}"
+
+/-- `benchmark ecpp 1 "fallback:1"`: trial division against the certificate search of
+`AzNat.ecppOrNaive`, on five primes of each size (ms per prime).  Trial division takes
+1.4 s per prime at 52 bits and four times more for every two bits. -/
+def fallbackParts : IO Unit := do
+  for bits in [34, 36, 38, 40, 42, 44, 46, 48, 52] do
+    let ps := nextProbablePrimes (AzNat.pow (AzNat.ofNat 2) (bits - 1) + 1) 5
+    let (a, tN) ← timeOnce fun _ => (ps.filter AzNat.isPrimeNaive).length
+    let (b, tE) ← timeOnce fun _ =>
+      (ps.filter fun n => provePrime n AzNat.ecppFallbackParams).length
+    IO.println s!"{bits} bits: trial division {ms (tN / 5)}ms ({a}), certificate {ms (tE / 5)}ms ({b})"
+
 def run (limit : Nat) (cfg : Std.HashMap String String) : IO Unit := do
   let d := configGetNat cfg "digits" 30
+  if cfg.contains "fallback" then
+    fallbackParts
+    return
+  if cfg.contains "ladder" then
+    ladderParts
+    return
   if cfg.contains "classpoly" then
     classPolyParts
     return

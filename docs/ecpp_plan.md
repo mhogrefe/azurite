@@ -317,6 +317,8 @@ No new function on `AzNat` or `AzZMod` themselves was needed.
 | `ECPP.findStep P T n skip` | `Option StepCert` | one step of a certificate |
 | `ECPP.findStepWith P T n skip cache` | `Option StepCert × SqrtCache n` | the same, with the square roots found given and returned |
 | `ECPP.processBatch P prim n batch toSkip` | `Option StepCert × Nat` | a batch of candidate orders `(D, m)`: `smoothParts`, then by increasing cofactor the probable-prime test, the curves and the point |
+| `ECPP.classPolys D` | `ClassPolys` (four `Thunk`s) | the Weber / Hilbert polynomials of `−D` and their genus factors from the table of the process (`classPolyCache`, `D ≤ 80000`), each computed once |
+| `ECPP.sharedPrimorials`, `primorialsUpTo top` | `Array (Thunk AzNat)` | the ladder of prime products of the process (up to `2^32`) |
 | `ECPP.primorialLadder top`, `GenTables.primorialFor T n` | `Array (Thunk AzNat)`, `AzNat` | the products of the primes below `2^j` (lazy), and the one used for `n` (`j = ⌊2.7 log₂ bits⌋ − 6`, between 10 and the cap) |
 | `ECPP.findStepTiers P tiers n skip` | `Option StepCert` | the first tier of tables that gives a step |
 | `ECPP.genChain`, `ecppCertificate n P` | `Option (List StepCert)` | the certificate |
@@ -489,3 +491,45 @@ Generator only (`Gen/Forms.lean`, `Gen/Search.lean`).
 * Benchmark: keys `pmax`, `gmax`, `hweber`, `sqrtcost`, `rootcost`; the `classpoly` stage
   of the profile now times what the search uses (Weber when available).  Any non-default
   key rebuilds the tables per prime (about 55 ms, and 0.5 s per tier escalation).
+
+## 2026-11-26 — per-process caches
+
+Generator only (`Gen/ClassPoly.lean`, `Gen/Search.lean`).
+
+* `classPolys D`: a table indexed by `D < 80001` (`classPolyCache`, a thunk, so nothing is
+  built at program start) of `ClassPolys` — four thunks: Weber polynomial, its genus factor,
+  Hilbert polynomial, its genus factor.  `weberRoot` / `hilbertRoot` read from it, so a
+  polynomial is computed once per process instead of once per level that uses `D`.  Larger
+  `D` are computed directly.
+* `sharedPrimorials` (`primorialsUpTo`): one ladder for all parameter sets, and each level is
+  the one below times the primes between (`primorialLadder`): all of `2^10 … 2^20` in
+  289 ms once per process (442 ms from scratch; `benchmark ecpp 1 "ladder:1"`).
+* **Timed 2026-11-26** (ten primes, generator total ms, before / after, alternating runs):
+  30 digits 98, 94 / 98, 99; 50: 240, 239 / 232, 232; 100: 1501, 1496 / 1427, 1447 (−4 %);
+  200: 13316, 13625 / 13402, 13352; 300: 59915, 60208, 61145, 63374 / 59372, 64791, 61232,
+  60011 (no difference beyond the ±4 % noise).  One 300-digit prime in a fresh process:
+  6.34 → 5.89 s.  The prime products were already shared in the default path, and class
+  polynomials are 2–3 % of the work at 300 digits, so the gain is small, as expected.
+* The profile's `classpoly` stage reads the same table (a polynomial is counted once).
+
+## 2026-11-26 — elliptic curves when APR-CL gives up
+
+`AzNat/IsPrime.lean`, `AzNat/Equiv/IsPrime.lean`.
+
+* `isPrime` is now: trial division up to 32 bits; up to 80 bits Miller–Rabin and
+  `aprclOrEcpp` (the APR-CL verdict, and `ecppOrNaive` when it gives up); above, as before
+  (the certificate search comes first there, so after APR-CL only trial division is left).
+* `ecppOrNaive n`: `provePrime n ecppFallbackParams` when `n` has more than
+  `ecppFallbackBits = 36` bits, then (or otherwise) `isPrimeNaive`.  `ecppFallbackParams` =
+  `smallParams` with `baseBits := 32`, so the chain ends where the checker's base case
+  (`isPrimeAprcl`) is trial division.
+* Proven: `ecppOrNaive_eq_true_iff`, `aprclOrEcpp_eq_true_iff`; `isPrime_eq_true_iff`
+  unchanged in statement.
+* **Timed 2026-11-26** (`benchmark ecpp 1 "fallback:1"`, five primes each, ms per prime,
+  trial division / certificate): 34 bits 2.9 / 7.6; 36: 5.4–5.9 / 5.9–6.2; 38: 11 / 5.7;
+  40: 22 / 6.7; 44: 93 / 5.5; 48: 356 / 6.2; 52: 1440 / 6.3–9.0; 56: 5800 / 6.2;
+  60: 22900 / 7.0; 64: 92600 / 7.7.  The certificate time is mostly the table of
+  discriminants, rebuilt per call for non-default parameters (about 5 ms).
+* APR-CL has never been seen to give up, so the path is tested by guards on `ecppOrNaive`.
+* New functions on `Az*` types: `AzNat.ecppOrNaive`, `AzNat.aprclOrEcpp`
+  (`AzNat → Bool`), constants `AzNat.ecppFallbackParams`, `AzNat.ecppFallbackBits`.

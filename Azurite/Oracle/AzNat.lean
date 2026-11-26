@@ -599,10 +599,14 @@ def checkToStringBase (line : String) : Verdict := do
 def checkIsSquare : String → Verdict :=
   checkPredicate " is a perfect square" " is not a perfect square" AzNat.isSquare
 
-/-- `n is prime` or `n is not prime`, decided by `isPrime` (a Miller–Rabin filter and a proven
-APR-CL certificate). -/
+/-- `n is prime` or `n is not prime`, decided by the proven `isPrime`. -/
 def checkIsPrime : String → Verdict :=
   checkPredicate " is prime" " is not prime" AzNat.isPrime
+
+/-- `n is proven prime` or `n is proven composite`, the output of a primality proof such as
+APR-CL, decided by the proven `isPrime`. -/
+def checkIsPrimeProven : String → Verdict :=
+  checkPredicate " is proven prime" " is proven composite" AzNat.isPrime
 
 /-- `n is a probable prime` or `n is not a probable prime`, decided by the proven `isPrime`: for
 the inputs Malachite tests, a probable-prime test must agree with the truth. -/
@@ -610,8 +614,7 @@ def checkIsProbablePrime : String → Verdict :=
   checkPredicate " is a probable prime" " is not a probable prime" AzNat.isPrime
 
 /-- `primes_less_than(n) = [p, …]` or `primes_less_than_or_equal_to(n) = [p, …]`: the list must be
-exactly the primes in range, in increasing order, each one decided by `isPrime` (a Miller–Rabin
-filter and a proven APR-CL certificate). -/
+exactly the primes in range, in increasing order, each one decided by the proven `isPrime`. -/
 def checkPrimesLessThan (line : String) : Verdict := do
   let (inclusive, call) ←
     match functionCall line "primes_less_than",

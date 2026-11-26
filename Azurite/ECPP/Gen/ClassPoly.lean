@@ -310,4 +310,36 @@ def genusWeberPoly (D : Nat) : Option GenusPoly :=
       retry3 (weberBits D + 8 * (primeDiscriminants D).length)
         fun p => genusPolyAt (fun f => weberValue D (k == 3) f p) D p
 
+/-! ### The class polynomials of a process
+
+The polynomials do not depend on the number being proved prime, and the search meets the same
+discriminants again and again (at every level of a chain, and for every number), so they are
+kept: a table of unevaluated entries indexed by `D`, each computed when first used. -/
+
+/-- The polynomials of `−D` the search uses, each computed when first asked for. -/
+structure ClassPolys where
+  genusWeber : Thunk (Option GenusPoly)
+  weber : Thunk (Option (List AzInt))
+  genusHilbert : Thunk (Option GenusPoly)
+  hilbert : Thunk (Option (List AzInt))
+
+/-- The (unevaluated) polynomials of `−D`. -/
+def ClassPolys.make (D : Nat) : ClassPolys :=
+  ⟨Thunk.mk fun _ => genusWeberPoly D, Thunk.mk fun _ => weberClassPoly D,
+    Thunk.mk fun _ => genusClassPoly D, Thunk.mk fun _ => hilbertClassPoly D⟩
+
+/-- The `D` below this bound have an entry in `classPolyCache` (the discriminants of the
+default search with its two enlargements are at most `80000`). -/
+def classPolyCacheSize : Nat := 80001
+
+/-- The table of the process: built (empty) when first used, and then kept. -/
+def classPolyCache : Thunk (Array ClassPolys) :=
+  Thunk.mk fun _ => (Array.range classPolyCacheSize).map ClassPolys.make
+
+/-- **The class polynomials of `−D`**, from the table of the process when `D` is in it. -/
+def classPolys (D : Nat) : ClassPolys :=
+  match classPolyCache.get[D]? with
+  | some c => c
+  | none => ClassPolys.make D
+
 end Azurite.ECPP

@@ -120,6 +120,14 @@ without the factor `3`). -/
 #guard (genusWeberPoly 23).isNone
 #guard (genusWeberPoly 95).isSome
 
+-- the table of the process gives the same polynomials (also beyond its range)
+#guard ((classPolys 47).weber.get).map (·.map AzInt.toInt) == some [-1, 0, 1, 2, 2, 1]
+#guard ((classPolys 23).hilbert.get).map (·.map toString) == H 23
+#guard (classPolys 23).genusWeber.get.isNone && (classPolys 95).genusWeber.get.isSome
+#guard (classPolys 80003).weber.get.isNone && (classPolys 80003).genusWeber.get.isNone
+#guard (primorialLadder 12).toList.map (·.get) == (List.range 13).map fun j =>
+  AzNat.primorial (2 ^ j)
+
 private def weberOk (D : Nat) (n : AzNat) : Bool :=
   if h : 1 < n.toNat then
     haveI : NeZero n.toNat := ⟨by omega⟩

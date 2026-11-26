@@ -115,24 +115,38 @@ def GenTables.primorialFor (T : GenTables) (n : AzNat) : AzNat :=
   | some t => t.get
   | none => 1
 
-/-- The products of the primes below `2^j`, `j ≤ top`, each computed when first used. -/
+/-- The products of the primes below `2^j`, `j ≤ top`, each computed when first used, from
+the one before it and the primes between `2^(j−1)` and `2^j`. -/
 def primorialLadder (top : Nat) : Array (Thunk AzNat) :=
-  (Array.range (top + 1)).map fun j => Thunk.mk fun _ => AzNat.primorial (2 ^ j)
+  (List.range (top + 1)).foldl (fun acc j =>
+    acc.push <| Thunk.mk fun _ =>
+      match acc.back? with
+      | none => 1
+      | some t =>
+        t.get * AzNat.product
+          (((AzNat.primesUpTo (2 ^ j)).toList.filter (2 ^ (j - 1) < ·)).map AzNat.ofNat)) #[]
+
+/-- The products of primes of the process: computed when first used, and then kept. -/
+def sharedPrimorials : Array (Thunk AzNat) := primorialLadder 32
+
+/-- The ladder up to `2^top`: that of the process when it reaches that far. -/
+def primorialsUpTo (top : Nat) : Array (Thunk AzNat) :=
+  if top < sharedPrimorials.size then sharedPrimorials else primorialLadder top
 
 /-- Build the tables for the parameters. -/
 def GenParams.tables (P : GenParams) : GenTables :=
   let top := Nat.log2 P.trialBound
   ⟨smoothDiscriminantTable P.dMax P.pMax P.gMax P.hMax P.hMaxWeber P.sqrtCost P.rootCost,
-    primorialLadder top, top, P.trialExtra⟩
+    primorialsUpTo top, top, P.trialExtra⟩
 
 /-- The tables of the successive tiers of the search: the parameters as given, then `tiers`
 enlargements (four times the trial division bound, twice the bounds of the discriminants, of
 their primes and of the class numbers), each built only when the tiers before it
 found no step.  The products of primes
-are shared by the tiers. -/
+are shared by the tiers (and by all the searches of the process, `sharedPrimorials`). -/
 def GenParams.tierTables (P : GenParams) : List (Thunk GenTables) :=
   let top := Nat.log2 P.trialBound
-  let ladder := primorialLadder (top + 2 * P.tiers)
+  let ladder := primorialsUpTo (top + 2 * P.tiers)
   (List.range (P.tiers + 1)).map fun i =>
     Thunk.mk fun _ =>
       ⟨smoothDiscriminantTable (P.dMax * 2 ^ i) (P.pMax * 2 ^ i) (P.gMax * 2 ^ i)
@@ -274,13 +288,15 @@ def rootVia (n : AzNat) [NeZero n.toNat] (G : Option GenusPoly)
 
 /-- A root of `H_{−D}` modulo `n` through `H_{−D}` (and its factor over the genus field). -/
 def hilbertRoot (n : AzNat) [NeZero n.toNat] (D : Nat) : Option (AzZMod n) :=
-  rootVia n (genusClassPoly D) fun _ => hilbertClassPoly D
+  let C := classPolys D
+  rootVia n C.genusHilbert.get fun _ => C.hilbert.get
 
 /-- A root of `H_{−D}` modulo `n` through the Weber class polynomial, `D ≡ 7 (mod 8)`: from
 a root `u` of it, `(x − 16)³ / x` with `x = u^24`, or `x = u^8` when `3 ∣ D`. -/
 def weberRoot (n : AzNat) [NeZero n.toNat] (D : Nat) : Option (AzZMod n) := do
   let k ← weberKind D
-  let u ← rootVia n (genusWeberPoly D) fun _ => weberClassPoly D
+  let C := classPolys D
+  let u ← rootVia n C.genusWeber.get fun _ => C.weber.get
   let u2 := Square.square u
   let u8 := Square.square (Square.square u2)
   let x := if k = 3 then u8 else u8 * Square.square u8
@@ -291,7 +307,8 @@ def weberRoot (n : AzNat) [NeZero n.toNat] (D : Nat) : Option (AzZMod n) := do
 /-- **A root of `H_{−D}` modulo `n`** (`n` a probable prime that splits in the class field):
 through Weber's class invariants for `D ≡ 7 (mod 8)`, and through `H_{−D}` otherwise or when
 that fails; in both cases through the factor over the genus field when `−D` is not a prime
-discriminant. -/
+discriminant.  The polynomials are those of the process (`classPolys`): each is computed
+once. -/
 def classPolyRoot (n : AzNat) [NeZero n.toNat] (D : Nat) : Option (AzZMod n) :=
   (weberRoot n D).orElse fun _ => hilbertRoot n D
 
