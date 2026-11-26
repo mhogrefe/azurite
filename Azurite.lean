@@ -1015,6 +1015,7 @@ import Azurite.AzNat.Equiv.OfLimbDigits
 import Azurite.AzNat.Equiv.OfLimbDigitsPow2
 import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.ParseBase
+import Azurite.AzNat.Equiv.PerfectPower
 import Azurite.AzNat.Equiv.Pow
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.Pratt
@@ -1103,6 +1104,7 @@ import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parity
 import Azurite.AzNat.ParsableElement
 import Azurite.AzNat.ParseBase
+import Azurite.AzNat.PerfectPower
 import Azurite.AzNat.Pow
 import Azurite.AzNat.Pow2
 import Azurite.AzNat.Pratt
@@ -2001,6 +2003,7 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.StructureTheorem
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_34
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_51
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.TransitionMatrix
+import Azurite.Bernstein.PerfectPower
 import Azurite.BrentZimmermann.Chapter2.DFT
 import Azurite.BrentZimmermann.Chapter2.FFT
 import Azurite.BrentZimmermann.Chapter2.FFTMulMod
