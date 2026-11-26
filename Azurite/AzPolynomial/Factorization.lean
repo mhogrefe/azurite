@@ -59,6 +59,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
   pseudorandom attempts succeed, and the `gcd` path backstop is
   characteristic-agnostic.
 -/
+import Azurite.AzPolynomial.GcdEuclid
 import Azurite.AzPolynomial.EqualDegreeSplitting
 import Azurite.AzPolynomial.Equiv.Compare
 import Azurite.AzZMod.Order

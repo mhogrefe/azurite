@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzNat.Equiv.Div.Schoolbook2
 import Azurite.AzNat.Div.Schoolbook
 import Azurite.AzNat.Mul
 import Azurite.AzNat.ShiftLeft

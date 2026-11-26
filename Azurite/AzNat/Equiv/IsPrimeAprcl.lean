@@ -1,0 +1,59 @@
+/-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
+  **Correctness of the APR-CL primality test**:
+  `isPrimeAprcl n = true ↔ Nat.Prime n.toNat` — the same characterization the
+  naive test carried, now for the Miller–Rabin / APR-CL / trial-division
+  layering.  Every layer is a theorem: the trial-division verdict is an
+  iff (`isPrimeNaive_eq_true_iff`), primes always pass Miller–Rabin
+  (`millerRabin_eq_true_of_prime`), and both APR-CL verdicts are sound
+  (`aprclTestSel_true`, `aprclTestSel_false`), so the `none` fallback is
+  the only case that needs the naive test.
+-/
+import Azurite.AzNat.IsPrimeAprcl
+import Azurite.AzNat.Equiv.Primality
+import Azurite.AzNat.Equiv.MillerRabin
+import Azurite.APRCL.Equiv.Test
+
+namespace Azurite
+
+namespace AzNat
+
+/-- The APR-CL layer with its trial-division fallback is an iff. -/
+theorem aprclOrNaive_eq_true_iff (n : AzNat) :
+    aprclOrNaive n = true ↔ Nat.Prime n.toNat := by
+  unfold aprclOrNaive
+  rcases h : APRCL.aprclTestSel n with _ | b
+  · exact isPrimeNaive_eq_true_iff n
+  · cases b
+    · simp only [Bool.false_eq_true, false_iff]
+      exact APRCL.aprclTestSel_false h
+    · simp only [true_iff]
+      exact APRCL.aprclTestSel_true h
+
+/-- **Correctness of `isPrimeAprcl`**: `true` exactly on primes. -/
+theorem isPrimeAprcl_eq_true_iff (n : AzNat) :
+    isPrimeAprcl n = true ↔ Nat.Prime n.toNat := by
+  rw [isPrimeAprcl]
+  by_cases hsize : n.size ≤ 32
+  · rw [ite_eq_left hsize, isPrimeNaive_eq_true_iff]
+  · rw [ite_eq_right hsize, Bool.and_eq_true, aprclOrNaive_eq_true_iff]
+    constructor
+    · exact fun h => h.2
+    · exact fun hp => ⟨millerRabin_eq_true_of_prime hp 0 0, hp⟩
+
+/-- `ofNat`-phrased correctness. -/
+theorem isPrimeAprcl_ofNat_eq_true_iff (k : Nat) :
+    isPrimeAprcl (ofNat k) = true ↔ Nat.Prime k := by
+  rw [isPrimeAprcl_eq_true_iff, toNat_ofNat]
+
+end AzNat
+
+end Azurite

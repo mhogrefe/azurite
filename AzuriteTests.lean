@@ -233,10 +233,12 @@ import Azurite.AzNat.Tests.LinComb
 import Azurite.AzNat.Tests.LogBase
 import Azurite.AzNat.Tests.LogBase2
 import Azurite.AzNat.Tests.ModPow2
+import Azurite.AzNat.Tests.Montgomery
 import Azurite.AzNat.Tests.OfLimbDigits
 import Azurite.AzNat.Tests.OfLimbDigitsPow2
 import Azurite.AzNat.Tests.RootInt
 import Azurite.AzNat.Tests.SchonhageStrassen
+import Azurite.AzNat.Tests.Schoolbook2
 import Azurite.AzNat.Tests.ShiftRightNearestTernary
 import Azurite.AzNat.Tests.ShiftRightRound
 import Azurite.AzNat.Tests.ToomCook

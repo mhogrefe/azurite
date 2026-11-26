@@ -8,8 +8,10 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzPolynomial.FastMul
+import Azurite.AzPolynomial.Equiv.Kronecker
 import Azurite.AzPolynomial.DistinctDegreeFactorization
 import Azurite.AzNat.Pow
+import Azurite.AzNat.Mul.ShortProduct
 import Azurite.Benchmark.Common
 
 open Azurite Azurite.AzPolynomial Azurite.Benchmark
@@ -76,8 +78,136 @@ def report {R : Type} [Semiring R] [DecidableEq R] (len : Nat)
     sums := sums ++ [s]
   IO.println s!"   len {len}: {" / ".intercalate out}  ({sums.all (· == sums.head!)})"
 
+/-- `benchmark poly_kronecker <iters> "split:1"`: the pieces of one Kronecker product over
+`AzZMod m` — packing the two factors, the `AzNat` product, reading the blocks back, reducing
+them modulo `m` — and the square of the packed number.  Microseconds per product. -/
+def runSplit (iters : Nat) : IO Unit := do
+  for bits in [60, 120, 250, 500, 1000] do
+    let m := AzNat.pow (AzNat.ofNat 2) bits - AzNat.ofNat 3
+    if h : m.toNat ≠ 0 then
+      have : NeZero m.toNat := ⟨h⟩
+      IO.println s!"modulus {bits} bits (µs: whole / pack / product / square / read / reduce)"
+      for len in [4, 8, 16, 32, 64, 128] do
+        let reps := min 1000 (max 2 (iters * 4096 / (len * len * (bits / 64 + 1))))
+        let ps := (Array.range reps).map fun r => testPoly m len (2 * r + 1)
+        let qs := (Array.range reps).map fun r => testPoly m len (2 * r + 2)
+        let w := kroneckerWidth m (2 * len)
+        let loop (f : Nat → Nat) : IO UInt64 := do
+          let mut best : UInt64 := 0
+          for round in [0:2] do
+            let t0 ← monoNanos
+            let mut s := 0
+            for i in [0:reps] do
+              s := s + f i
+            let t1 ← monoNanos
+            if s == 0 then IO.println "?"
+            let t := (t1 - t0) / reps.toUInt64
+            best := if round == 0 then t else min best t
+          return best
+        let tAll ← loop fun i => (mulKronecker ps[i]! qs[i]!).coeffs.size + 1
+        let tPack ← loop fun i =>
+          (AzNat.kroneckerPack w (ps[i]!.coeffs.map (·.val))).limbs.size +
+            (AzNat.kroneckerPack w (qs[i]!.coeffs.map (·.val))).limbs.size + 1
+        let as := ps.map fun (p : AzPolynomial (AzZMod m)) =>
+          AzNat.kroneckerPack w (p.coeffs.map (·.val))
+        let bs := qs.map fun (p : AzPolynomial (AzZMod m)) =>
+          AzNat.kroneckerPack w (p.coeffs.map (·.val))
+        let tMul ← loop fun i => (as[i]! * bs[i]!).limbs.size + 1
+        let tSqr ← loop fun i => (AzNat.square as[i]!).limbs.size + 1
+        let xs := (Array.range reps).map fun i => as[i]! * bs[i]!
+        let tRead ← loop fun i =>
+          (Array.ofFn fun (k : Fin (2 * len - 1)) => AzNat.kroneckerCoeff w xs[i]! k.val).size
+        let cs := xs.map fun (x : AzNat) =>
+          Array.ofFn fun (k : Fin (2 * len - 1)) => AzNat.kroneckerCoeff w x k.val
+        let tRed ← loop fun i =>
+          (cs[i]!.map fun (c : AzNat) => c % m).size
+        IO.println s!"   len {len} (w = {w}): {us tAll} / {us tPack} / {us tMul} / {us tSqr} / {
+          us tRead} / {us tRed}"
+        -- the two-point product, piece by piece
+        let w2 := (w + 1) / 2
+        let tAll2 ← loop fun i => (mulKronecker2 ps[i]! qs[i]!).coeffs.size + 1
+        let tEval ← loop fun i =>
+          (AzNat.kroneckerEvalPair w2 (ps[i]!.coeffs.map (·.val))).1.limbs.size +
+            (AzNat.kroneckerEvalPair w2 (qs[i]!.coeffs.map (·.val))).1.limbs.size + 1
+        let tEven ← loop fun i =>
+          (AzNat.kroneckerPackEven w2 (ps[i]!.coeffs.map (·.val))).limbs.size + 1
+        let tOdd ← loop fun i =>
+          (AzNat.kroneckerPackOdd w2 (ps[i]!.coeffs.map (·.val))).limbs.size + 1
+        let as2 := ps.map fun (p : AzPolynomial (AzZMod m)) =>
+          AzNat.kroneckerEvalPair w2 (p.coeffs.map (·.val))
+        let bs2 := qs.map fun (p : AzPolynomial (AzZMod m)) =>
+          AzNat.kroneckerEvalPair w2 (p.coeffs.map (·.val))
+        let tMul2 ← loop fun i =>
+          (as2[i]!.1 * bs2[i]!.1).limbs.size + (as2[i]!.2 * bs2[i]!.2).abs.limbs.size + 1
+        let uvs := (Array.range reps).map fun i =>
+          (as2[i]!.1 * bs2[i]!.1, as2[i]!.2 * bs2[i]!.2)
+        let tHalf ← loop fun i =>
+          let h := AzNat.kroneckerHalves uvs[i]!.1 uvs[i]!.2
+          h.1.limbs.size + h.2.limbs.size + 1
+        let hs := uvs.map fun (uv : AzNat × AzInt) => AzNat.kroneckerHalves uv.1 uv.2
+        let tRead2 ← loop fun i =>
+          (Array.ofFn fun (k : Fin (2 * len - 1)) =>
+            AzNat.kroneckerCoeff2 w2 hs[i]!.1 hs[i]!.2 k.val).size
+        IO.println s!"      two points: whole {us tAll2}, both pairs {us tEval} (one even {
+          us tEven}, one odd {us tOdd}), products {us tMul2}, halves {us tHalf}, read {us tRead2}"
+
+/-- `benchmark poly_kronecker <iters> "two:1"`: one point against two points, products and
+squares.  Microseconds. -/
+def runTwo (iters : Nat) : IO Unit := do
+  for bits in [20, 30, 60, 64, 100, 120, 128, 190, 250, 500, 1000, 2000] do
+    let m := AzNat.pow (AzNat.ofNat 2) bits - AzNat.ofNat 3
+    if h : m.toNat ≠ 0 then
+      have : NeZero m.toNat := ⟨h⟩
+      IO.println s!"modulus {bits} bits (µs: one point / two points / square one / square two)"
+      for len in [2, 3, 4, 6, 8, 12, 16, 32, 64, 128, 256] do
+        let reps := min 1000 (max 2 (iters * 4096 / (len * len * (bits / 64 + 1))))
+        let pairs := (Array.range reps).map fun r =>
+          (testPoly m len (2 * r + 1), testPoly m len (2 * r + 2))
+        let w := kroneckerWidth m (2 * len)
+        IO.print s!"   w = {w}"
+        report len [mulKronecker, mulKronecker2, fun p _ => mulKronecker p p,
+          fun p _ => mulKronecker2 p p] pairs
+
+/-- `benchmark poly_kronecker <iters> "low:1"`: the low short product `AzNat.mulLow` (thresholds
+8, 16, 32, 64) against the full product, for two factors of `n` limbs.  Microseconds. -/
+def runLow (iters : Nat) : IO Unit := do
+  IO.println "limbs: full product / mulLow 8 / 16 / 32 / 64 (µs)"
+  for n in [16, 32, 64, 128, 256, 512, 1024, 2048] do
+    let reps := min 500 (max 4 (iters * 20000 / (n * n)))
+    let big := AzNat.pow (AzNat.ofNat 1000003) (4 * n)
+    let md := AzNat.pow (AzNat.ofNat 2) (64 * n) - AzNat.ofNat 159
+    let xs := (Array.range reps).map fun i => (big * AzNat.ofNat (i * i + 7 * i + 11)) % md
+    let ys := (Array.range reps).map fun i => (big * AzNat.ofNat (3 * i * i + i + 5)) % md
+    let loop (f : Nat → Nat) : IO UInt64 := do
+      let mut best : UInt64 := 0
+      for round in [0:3] do
+        let t0 ← monoNanos
+        let mut s := 0
+        for i in [0:reps] do
+          s := s + f i
+        let t1 ← monoNanos
+        if s == 0 then IO.println "?"
+        let t := (t1 - t0) / reps.toUInt64
+        best := if round == 0 then t else min best t
+      return best
+    let tFull ← loop fun i => (xs[i]! * ys[i]!).limbs.size + 1
+    let mut out := s!"   {n}: {us tFull}"
+    for n0 in [8, 16, 32, 64] do
+      let t ← loop fun i => (AzNat.mulLow n0 xs[i]! ys[i]! n).limbs.size + 1
+      out := out ++ s!" / {us t}"
+    IO.println out
+
 def run (limit : Nat) (cfg : Std.HashMap String String) : IO Unit := do
   let iters := max limit 1
+  if cfg.contains "low" then
+    runLow iters
+    return
+  if cfg.contains "split" then
+    runSplit iters
+    return
+  if cfg.contains "two" then
+    runTwo iters
+    return
   let maxLen := configGetNat cfg "maxlen" 256
   let reps (len bits : Nat) : Nat :=
     min 2000 (max 2 (iters * 4096 / (len * len * (bits / 64 + 1))))
@@ -107,6 +237,54 @@ def run (limit : Nat) (cfg : Std.HashMap String String) : IO Unit := do
         (testNat bits len (2 * r + 1), testNat bits len (2 * r + 2))
       report len [mulKroneckerNat, mulBasecaseFold] pairs
 
+/-! ### The product over `AzZMod m` as it was before 2026-11-25, for comparison -/
+
+/-- The Kronecker product before 2026-11-25: one point, every block extracted and reduced by
+`%`, no squaring. -/
+def mulKroneckerOld {m : AzNat} [NeZero m.toNat] (p q : AzPolynomial (AzZMod m)) :
+    AzPolynomial (AzZMod m) :=
+  if p.coeffs.size == 0 || q.coeffs.size == 0 then 0
+  else
+    let w := kroneckerWidth m (p.coeffs.size + q.coeffs.size)
+    let x := AzNat.kroneckerPack w (p.coeffs.map (·.val)) *
+      AzNat.kroneckerPack w (q.coeffs.map (·.val))
+    normalize <| Array.ofFn fun (k : Fin (p.coeffs.size + q.coeffs.size - 1)) =>
+      AzZMod.ofAzNat m (AzNat.kroneckerCoeff w x k.val)
+
+theorem mulKroneckerOld_eq {m : AzNat} [NeZero m.toNat] (p q : AzPolynomial (AzZMod m)) :
+    mulKroneckerOld p q = mulKronecker p q := by
+  unfold mulKroneckerOld mulKronecker
+  split
+  · rfl
+  · dsimp only
+    rw [kroneckerRead_eq]
+    split
+    · next hpq =>
+      subst hpq
+      have hx : AzNat.kroneckerPack (kroneckerWidth m (p.coeffs.size + p.coeffs.size))
+            (p.coeffs.map (·.val)) *
+          AzNat.kroneckerPack (kroneckerWidth m (p.coeffs.size + p.coeffs.size))
+            (p.coeffs.map (·.val)) =
+          AzNat.square (AzNat.kroneckerPack (kroneckerWidth m (p.coeffs.size + p.coeffs.size))
+            (p.coeffs.map (·.val))) := by
+        apply AzNat.toNat_injective
+        rw [AzNat.toNat_square, AzNat.toNat_mul, sq]
+      rw [hx]
+    · rfl
+
+/-- The multiplication config of `AzZMod m` before 2026-11-25. -/
+@[reducible] def configOld {m : AzNat} [NeZero m.toNat] : AzPolynomialMulConfig (AzZMod m) where
+  dmul p q :=
+    if p.coeffs.size < kroneckerThreshold ∨ q.coeffs.size < kroneckerThreshold then
+      mulBasecaseFold p q
+    else mulKroneckerOld p q
+  dmul_eq p q := by
+    split
+    · rfl
+    · rw [mulKroneckerOld_eq]
+      exact eq_mulBasecaseFold_of_toPoly (toPoly_mulKronecker p q)
+  invThreshold := some 9
+
 /-! ### The default product against the schoolbook one, through generic code
 
 `benchmark poly_default <iters>` runs code that is generic in the coefficient ring with the
@@ -116,7 +294,43 @@ the library was before 2026-11-24): `*`, `pow`, and `powModByMonic` (the power i
 
 def timeOne {α : Type} (f : Unit → α) : IO (α × UInt64) := timeNsIter 1 f
 
+/-- A power in `AzPolyMod f`, plain (in-place reduction) against the precomputed inverse
+whatever the config's threshold says.  Milliseconds. -/
+def cmpPow {R : Type} [CommRing R] [DecidableEq R] [AzPolynomialMulConfig R]
+    (label : String) (f : AzPolynomial R) (y : AzPolyMod f) (n : AzNat) : IO Unit := do
+  let (g, tG) ← timeOne fun _ => AzPolynomial.invRev f
+  let (p1, t1) ← timeOne fun _ => (Azurite.slidingWindowPowAzNat y n).val
+  let (p2, t2) ← timeOne fun _ =>
+    (@Azurite.slidingWindowPowAzNat (AzPolyMod f) ⟨AzPolyMod.mulInv g⟩ _
+      (@instSquare _ ⟨AzPolyMod.mulInv g⟩) y n).val
+  IO.println s!"   {label}: plain {us (t1 / 1000)}ms, by inverse {us (t2 / 1000)}ms ({
+    decide (p1 = p2)}); invRev {us (tG / 1000)}ms"
+
+/-- `benchmark poly_default 1 "inv:1"`: the two reductions for powers over `AzInt` and
+`AzRat`, where the coefficients are not reduced and grow with the power. -/
+def runInv : IO Unit := do
+  for e in [8, 64] do
+    IO.println s!"AzInt, modulus with coefficients in [-11, 11], y^{e}"
+    for d in [8, 16, 32, 64] do
+      let f : AzPolynomial AzInt := AzPolynomial.monomial d 1 +
+        normalize ((Array.range d).map fun (i : Nat) =>
+          AzInt.ofInt (((i : Int) * 37 + 4) % 23 - 11))
+      let y : AzPolyMod f := AzPolyMod.ofPoly (normalize ((Array.range d).map fun (i : Nat) =>
+        AzInt.ofInt (((i : Int) * (i : Int) * 5 + (i : Int) * 9 + 3) % 41 - 20)))
+      cmpPow s!"deg {d}" f y (AzNat.ofNat e)
+    IO.println s!"AzRat, modulus with coefficients k/7, y^{e}"
+    for d in [8, 16, 32] do
+      let f : AzPolynomial AzRat := AzPolynomial.monomial d 1 +
+        normalize ((Array.range d).map fun (i : Nat) =>
+          ((((i * 37 + 4) % 23 : Nat) : AzRat) - 11) / 7)
+      let y : AzPolyMod f := AzPolyMod.ofPoly (normalize ((Array.range d).map fun (i : Nat) =>
+        ((((i * i * 5 + i * 9 + 3) % 41 : Nat) : AzRat) - 20) / 3))
+      cmpPow s!"deg {d}" f y (AzNat.ofNat e)
+
 def runDefault (limit : Nat) (_cfg : Std.HashMap String String) : IO Unit := do
+  if _cfg.contains "inv" then
+    runInv
+    return
   let iters := max limit 1
   -- AzInt: product and fifth power
   IO.println "AzInt, 60-bit coefficients (µs: default / schoolbook)"
@@ -133,11 +347,11 @@ def runDefault (limit : Nat) (_cfg : Std.HashMap String String) : IO Unit := do
     report len [fun p _ => AzPolynomial.pow p 5,
       fun p _ => @AzPolynomial.pow AzInt _ _ .basecase p 5] pairs
   -- AzZMod: the power in the quotient ring
-  for bits in [60, 250] do
+  for bits in [20, 30, 60, 64, 120, 250, 500] do
     let m := AzNat.pow (AzNat.ofNat 2) bits - AzNat.ofNat 3
     if h : m.toNat ≠ 0 then
       have : NeZero m.toNat := ⟨h⟩
-      IO.println s!"AzZMod, {bits}-bit modulus: x^(m) modulo a monic f (ms: default / schoolbook)"
+      IO.println s!"AzZMod, {bits}-bit modulus: x^(m) modulo a monic f (ms: default / before / schoolbook)"
       for d in [4, 8, 12, 16, 24, 32, 64, 128] do
         let f : AzPolynomial (AzZMod m) := AzPolynomial.monomial d 1 + testPoly m d 7
         let a : AzPolynomial (AzZMod m) := testPoly m d 3
@@ -171,9 +385,19 @@ def runDefault (limit : Nat) (_cfg : Std.HashMap String String) : IO Unit := do
             decide (p1 = p2)}); invRev {us tG}µs, one mulInv {us t10}µs"
           continue
         let (r1, t1) ← timeOne fun _ => powModByMonic a m f
-        let (r2, t2) ← timeOne fun _ =>
-          @powModByMonic (AzZMod m) _ _ .basecase a (m + 1 - 1) f
-        IO.println
-          s!"   deg {d}: {us (t1 / 1000)} / {us (t2 / 1000)}  ({decide (r1 = r2)})"
+        let (r3, t3) ← timeOne fun _ =>
+          @powModByMonic (AzZMod m) _ _ configOld a (m + 2 - 2) f
+        let (r1', t1') ← timeOne fun _ => powModByMonic a (m + 3 - 3) f
+        let (_, t3') ← timeOne fun _ =>
+          @powModByMonic (AzZMod m) _ _ configOld a (m + 4 - 4) f
+        if _cfg.contains "nobase" then
+          IO.println s!"   deg {d}: {us (min t1 t1' / 1000)} / before 2026-11-25 {
+            us (min t3 t3' / 1000)}  ({decide (r1 = r3) && decide (r1 = r1')})"
+        else
+          let (r2, t2) ← timeOne fun _ =>
+            @powModByMonic (AzZMod m) _ _ .basecase a (m + 1 - 1) f
+          IO.println s!"   deg {d}: {us (min t1 t1' / 1000)} / before 2026-11-25 {
+            us (min t3 t3' / 1000)} / {us (t2 / 1000)}  ({
+            decide (r1 = r2) && decide (r1 = r3) && decide (r1 = r1')})"
 
 end Azurite.Benchmark.PolyKronecker

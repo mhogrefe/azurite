@@ -41,7 +41,7 @@ private def c6 : StepCert := step "173914" "914786" "247198" "381021" "333631"
 #guard !checkStep (N "1") c6
 #guard !checkStep (N "0") c6
 #guard !checkStep (N "1000002") c6
--- no step: `AzNat.isPrime`
+-- no step: `AzNat.isPrimeAprcl`
 #guard check (N "1000003") []
 #guard !check (N "1000001") []
 

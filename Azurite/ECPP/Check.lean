@@ -7,8 +7,8 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.ECPP.Curve
-import Azurite.AzNat.IsPrime
+import Azurite.ECPP.CurveMont
+import Azurite.AzNat.IsPrimeAprcl
 import Azurite.AzNat.Gcd
 import Azurite.AzNat.SqrtRem
 import Azurite.AzNat.Size
@@ -21,7 +21,7 @@ A certificate for `n` is a list of steps (`StepCert`): a curve `y² = x³ + ax +
 `ℤ/n`, a point `(u, v)` on it, and a number `q` — the claim being that `(u, v)` has order `q`
 modulo every prime factor of `n`, which for `q` prime and `q > (n^(1/4) + 1)²` forces `n`
 prime (Goldwasser–Kilian).  The next step is a certificate for `q`; after the last step the
-remaining number is settled by `AzNat.isPrime`.
+remaining number is settled by `AzNat.isPrimeAprcl`.
 
 `checkStep n c` tests, with `s = ⌊√n⌋`:
 
@@ -80,10 +80,10 @@ def checkStep (n : AzNat) (c : StepCert) : Bool :=
             && decide (V.2.1 = -(v * (V.2.2 * Square.square V.2.2)))
   else false
 
-/-- **The checker of a certificate**: the steps in a chain, and `AzNat.isPrime` on the number
+/-- **The checker of a certificate**: the steps in a chain, and `AzNat.isPrimeAprcl` on the number
 that remains. -/
 def check : AzNat → List StepCert → Bool
-  | n, [] => n.isPrime
+  | n, [] => n.isPrimeAprcl
   | n, c :: cs => checkStep n c && check c.q cs
 
 end Azurite.ECPP

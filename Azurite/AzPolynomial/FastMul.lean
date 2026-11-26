@@ -27,6 +27,12 @@ on `AzPolynomial` uses, with the proof that it is the schoolbook product (the cl
 * `AzZMod m`: Kronecker substitution from `kroneckerThreshold` coefficients on;
 * `ℤ`, `ℚ`: Karatsuba with the default threshold.
 
+Only `AzZMod m` sets `invThreshold` (powers in `AzPolyMod` reducing by a precomputed inverse).
+Over `AzInt` and `AzRat` the coefficients of a power are not reduced and the inverse has large
+coefficients of its own; measured 2026-11-24 (`benchmark poly_default 1 "inv:1"`, degrees 8–64,
+exponents 8 and 64), the inverse-based power is 1.1–1.7 times slower over `AzInt` and 1.2–1.4
+times slower over `AzRat`, so they keep the default `none`.
+
 Every instance starts with a test on the sizes alone and takes the schoolbook product for
 short factors, so that the kernel can still evaluate small products (`decide`, `rfl`): the
 other algorithms are defined by well-founded recursion.
@@ -96,17 +102,22 @@ instance : AzPolynomialMulConfig AzRat := .karatsubaWith 14
 the schoolbook product; from it on it is Kronecker substitution. -/
 def kroneckerThreshold : Nat := 3
 
-/-- Multiplication for `AzZMod m`: Kronecker substitution (one large `AzNat` product) when
-both factors have at least `kroneckerThreshold` coefficients, else the schoolbook product. -/
+/-- Multiplication for `AzZMod m`: Kronecker substitution when both factors have at least
+`kroneckerThreshold` coefficients — at two points (two `AzNat` products of half the size)
+when `useKronecker2`, else at one point (one large `AzNat` product) — else the schoolbook
+product.  Both Kronecker products square the packed numbers when the factors are equal. -/
 instance {m : AzNat} [NeZero m.toNat] : AzPolynomialMulConfig (AzZMod m) where
   dmul p q :=
     if p.coeffs.size < kroneckerThreshold ∨ q.coeffs.size < kroneckerThreshold then
       mulBasecaseFold p q
+    else if useKronecker2 p q then mulKronecker2 p q
     else mulKronecker p q
   dmul_eq p q := by
     split
     · rfl
-    · exact eq_mulBasecaseFold_of_toPoly (toPoly_mulKronecker p q)
+    · split
+      · exact eq_mulBasecaseFold_of_toPoly (toPoly_mulKronecker2 p q)
+      · exact eq_mulBasecaseFold_of_toPoly (toPoly_mulKronecker p q)
   -- measured 2026-11-24 (`benchmark poly_default 1 "parts:1"`): slower at degree 4, 1.2 times
   -- faster at degree 8, 1.4–1.7 at 16, 3.2–3.4 at 128
   invThreshold := some 9

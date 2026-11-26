@@ -38,6 +38,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
   is `Azurite.GG.equalDegreeSplitting_correct`, proved in
   `Azurite/GathenGerhard/Chapter14/Algorithm_14_8.lean`.
 -/
+import Azurite.AzPolynomial.GcdEuclid
 import Azurite.AzPolynomial.DistinctDegreeFactorization
 import Azurite.ExhaustiveGenerator.Polynomials
 import Azurite.Random.Gen

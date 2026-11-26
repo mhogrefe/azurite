@@ -12,6 +12,31 @@ import Azurite.AzNat.Div.Recursive
 
 namespace Azurite.AzNat
 
+/-- The number of quotient limbs to compute below the overflow digit, for a normalized
+dividend buffer `a` of `nU + 1` limbs and a divisor of `n` limbs.  When the top limb of the
+buffer is zero the dividend fits in `nU` limbs, its top `n` limbs are below twice the
+normalized divisor, and the overflow digit of the limb division is the top quotient limb:
+`nU − n` limbs remain.  Otherwise `nU + 1 − n`.  For the reduction of a product of two
+residues the top limb is always zero, which saves one quotient limb per reduction. -/
+@[inline]
+def quotLimbCount (a : Array UInt64) (nU n : Nat) : Nat :=
+  if a.getD nU 1 = 0 then nU - n else nU + 1 - n
+
+/-- The quotient limbs chosen by `quotLimbCount` fit in the buffer. -/
+theorem add_quotLimbCount_le (a : Array UInt64) {nU n : Nat} (h : n ≤ nU) :
+    n + quotLimbCount a nU n ≤ nU + 1 := by
+  unfold quotLimbCount
+  split <;> omega
+
+/-- The remainder of a normalized division, from the division buffer `a`: its low `n` limbs,
+shifted right by the normalizing shift `k`.  Equal to `ofLimbs (a.extract 0 n) >>> k`
+(`remInPlace_eq`), computed in the buffer itself: the high limbs are dropped, the rest is
+shifted in place and trimmed, with no new array. -/
+def remInPlace (a : Array UInt64) (n k : Nat) (hk : k ≤ 63) : AzNat :=
+  let b := a.shrink n
+  if hk0 : k = 0 then ofLimbs b
+  else ofLimbs (shiftLimbsRight b 0 b.size k (Nat.zero_le _) (Nat.le_refl _) (by omega) hk).1
+
 /-- Divide `U` by `V`, returning `(quotient, remainder)`. By convention,
     `divModClassic t U 0 = (0, U)`. Dispatches to the smallest specialized primitive
     based on the divisor's limb count: a 1-limb divisor uses `divModUInt64`
@@ -109,10 +134,11 @@ def divModClassic (threshold : Nat) (U V : AzNat) : AzNat × AzNat :=
       have h_VBuf_size : VBuf.size = n := by
         show (VBufRaw.set _ _ _).size = n
         rw [Array.size_set]; exact h_VBufRaw_size
-      let m := nU + 1 - n
+      let m := quotLimbCount UBuf nU n
       have h_n_pos : 0 < n := by omega
       have h_loA : 0 + n + m ≤ UBuf.size := by
-        show 0 + n + (nU + 1 - n) ≤ UBuf.size
+        show 0 + n + quotLimbCount UBuf nU n ≤ UBuf.size
+        have h_q := add_quotLimbCount_le UBuf h_nU_ge_n
         rw [h_UBuf_size]; omega
       have h_loB : 0 + n ≤ VBuf.size := by rw [h_VBuf_size]; omega
       have h_VBuf_norm :
@@ -126,9 +152,7 @@ def divModClassic (threshold : Nat) (U V : AzNat) : AzNat × AzNat :=
         recursiveDivModLimbsArr threshold UBuf VBuf 0 0 n m h_n_pos h_loA h_loB h_VBuf_norm
       let quotLimbs := res.1.extract n (n + m) ++ #[res.2]
       let quot := ofLimbs quotLimbs
-      let remLimbs := res.1.extract 0 n
-      let remNorm := ofLimbs remLimbs
-      (quot, remNorm >>> k)
+      (quot, remInPlace res.1 n k hk_le)
 
 /-- Division of two `AzNat`s.  Specialised: mirrors `divModClassic`'s structure
     but skips remainder post-processing (extract + `ofLimbs` normalisation
@@ -217,10 +241,11 @@ def divClassic (threshold : Nat) (U V : AzNat) : AzNat :=
       have h_VBuf_size : VBuf.size = n := by
         show (VBufRaw.set _ _ _).size = n
         rw [Array.size_set]; exact h_VBufRaw_size
-      let m := nU + 1 - n
+      let m := quotLimbCount UBuf nU n
       have h_n_pos : 0 < n := by omega
       have h_loA : 0 + n + m ≤ UBuf.size := by
-        show 0 + n + (nU + 1 - n) ≤ UBuf.size
+        show 0 + n + quotLimbCount UBuf nU n ≤ UBuf.size
+        have h_q := add_quotLimbCount_le UBuf h_nU_ge_n
         rw [h_UBuf_size]; omega
       have h_loB : 0 + n ≤ VBuf.size := by rw [h_VBuf_size]; omega
       have h_VBuf_norm :
@@ -321,10 +346,11 @@ def modClassic (threshold : Nat) (U V : AzNat) : AzNat :=
       have h_VBuf_size : VBuf.size = n := by
         show (VBufRaw.set _ _ _).size = n
         rw [Array.size_set]; exact h_VBufRaw_size
-      let m := nU + 1 - n
+      let m := quotLimbCount UBuf nU n
       have h_n_pos : 0 < n := by omega
       have h_loA : 0 + n + m ≤ UBuf.size := by
-        show 0 + n + (nU + 1 - n) ≤ UBuf.size
+        show 0 + n + quotLimbCount UBuf nU n ≤ UBuf.size
+        have h_q := add_quotLimbCount_le UBuf h_nU_ge_n
         rw [h_UBuf_size]; omega
       have h_loB : 0 + n ≤ VBuf.size := by rw [h_VBuf_size]; omega
       have h_VBuf_norm :
@@ -336,15 +362,15 @@ def modClassic (threshold : Nat) (U V : AzNat) : AzNat :=
         rw [h_eq]; exact h_d_top_ge
       let res :=
         recursiveDivModLimbsArr threshold UBuf VBuf 0 0 n m h_n_pos h_loA h_loB h_VBuf_norm
-      let remLimbs := res.1.extract 0 n
-      let remNorm := ofLimbs remLimbs
-      remNorm >>> k
+      remInPlace res.1 n k hk_le
 
 /-- Quotient-limb count below which the recursive division falls back to schoolbook
-division (`recursiveDivModLimbsAux`).  Measured with `az_nat_div_cross` (2026-10-02, dividend
-twice the divisor, 16 to 4096 divisor limbs): thresholds 16 to 32 are indistinguishable and
-best at every size (the D&C path is 84 % of schoolbook at 32 limbs, 49 % at 128, 25 % at 1024,
-13 % at 4096); 48 and above lose up to a fifth at mid sizes. -/
-def divDispatchThreshold : Nat := 32
+division (`recursiveDivModLimbsAux`).  Measured with `az_nat_div_cross` (2026-11-24, dividend
+twice the divisor, after the schoolbook loop went to two quotient limbs per pass): thresholds
+64 to 128 are within 2 % of each other at 16 to 1024 divisor limbs and at or below pure
+schoolbook everywhere (92 % at 48 and 96 limbs, 82 % at 256, 58 % at 1024); 32, the value
+tuned for the one-limb loop (2026-10-02), is now 12–14 % slower than schoolbook at 32 and 64
+limbs. -/
+def divDispatchThreshold : Nat := 96
 
 end Azurite.AzNat

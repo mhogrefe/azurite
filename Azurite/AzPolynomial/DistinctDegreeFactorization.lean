@@ -47,6 +47,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
   `Azurite/GathenGerhard/Chapter14/Algorithm_14_3.lean` by transporting GG
   Theorem 14.4 along `toPoly`.
 -/
+import Azurite.AzPolynomial.GcdEuclid
 import Azurite.AzPolyMod.Basic
 import Azurite.AzPolynomial.Gcd
 import Azurite.AzZMod.Field

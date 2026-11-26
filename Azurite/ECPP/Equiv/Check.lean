@@ -10,7 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.ECPP.Check
 import Azurite.ECPP.Equiv.Curve
 import Azurite.ECPP.Theory.Soundness
-import Azurite.AzNat.Equiv.IsPrime
+import Azurite.AzNat.Equiv.IsPrimeAprcl
 import Azurite.AzNat.Equiv.Gcd
 import Azurite.AzNat.Equiv.SqrtRem
 import Azurite.AzNat.Equiv.Sub
@@ -98,7 +98,7 @@ theorem checkStep_sound {n : AzNat} {c : StepCert} (h : checkStep n c = true) :
 /-- **A certificate that passes the check is a proof by elliptic curves.** -/
 theorem check_sound : ∀ (cs : List StepCert) (n : AzNat), check n cs = true →
     EcppProof n.toNat
-  | [], n, h => EcppProof.base ((AzNat.isPrime_eq_true_iff n).mp h)
+  | [], n, h => EcppProof.base ((AzNat.isPrimeAprcl_eq_true_iff n).mp h)
   | c :: cs, n, h => by
     rw [check, Bool.and_eq_true] at h
     exact EcppProof.step (checkStep_sound h.1) (check_sound cs c.q h.2)

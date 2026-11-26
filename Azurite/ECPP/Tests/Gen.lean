@@ -41,6 +41,11 @@ private def H (D : Nat) : Option (List String) :=
 #guard (trialDivide (N "1000") [2, 3, 5]) == (N "1", N "1000")
 #guard (trialDivide (N "2002") [2, 3, 5, 7]) == (N "143", N "14")
 #guard smallPrimes 30 == [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
+#guard smoothParts (AzNat.primorial 7) #[N "1000", N "2002", N "143", N "1", N "210"] ==
+  #[(N "1", N "1000"), (N "143", N "14"), (N "143", N "1"), (N "1", N "1"), (N "1", N "210")]
+#guard smoothParts (AzNat.primorial 16) #[N "5184", N "33614", N "1000000007"] ==
+  #[(N "1", N "5184"), (N "1", N "33614"), (N "1000000007", N "1")]
+#guard smoothParts (AzNat.primorial 100) #[] == #[]
 
 /-! ## Roots of split polynomials (packed powers) -/
 
@@ -69,6 +74,71 @@ private def rootTest (n : AzNat) : Bool :=
 #guard rootTest (N "675904957021146642687026859253")
 #guard rootTest (N "1000000000000000000000000000000000000000000000000000000000007")
 
+/-! ## Factors of class polynomials over the genus field -/
+
+/-- A root of the genus factor of `H_{−D}` modulo `n` is a root of `H_{−D}`, and the factor
+has degree `deg`. -/
+private def genusTest (D deg : Nat) (n : AzNat) : Bool :=
+  if h : 1 < n.toNat then
+    haveI : NeZero n.toNat := ⟨by omega⟩
+    match genusClassPoly D with
+    | none => false
+    | some G =>
+      match genusPolyMod n G, (hilbertClassPoly D).map (polyOfInts n) with
+      | some g, some H =>
+        g.natDegree == deg &&
+          match rootOfSplitPoly n g with
+          | some r => decide (AzPolynomial.eval H r = 0)
+          | none => false
+      | _, _ => false
+  else false
+
+#guard genusTest 15 1 (N "1000000096000002439")
+#guard genusTest 20 1 (N "1000000226000018549")
+#guard genusTest 84 1 (N "1000000054000017193")
+#guard genusTest 55 2 (N "1000000058000006341")
+#guard genusTest 244 3 (N "1000000068000075881")
+#guard genusTest 1615 6 (N "1000000218000173381")
+#guard genusTest 1155 1 (N "1000000084000002919")
+#guard (genusClassPoly 23).isNone
+#guard positiveSubsets [-3, 5] == [[false, false], [false, true]]
+#guard positiveSubsets [-4, -3, -7] ==
+  [[false, false, false], [true, true, false], [true, false, true], [false, true, true]]
+
+/-! ## Weber class polynomials
+
+The known `W_23 = X³ − X² + 1`, `W_31 = X³ + X − 1`, `W_47 = X⁵ + 2X⁴ + 2X³ + X² − 1` (up
+to `X ↦ −X`); and, modulo a prime `n` with `4n = x² + D y²`, the number obtained from a root
+of the Weber polynomial is a root of `H_{−D}` (prime and composite discriminants, with and
+without the factor `3`). -/
+
+#guard (weberClassPoly 23).map (·.map AzInt.toInt) == some [1, 0, -1, 1]
+#guard (weberClassPoly 31).map (·.map AzInt.toInt) == some [-1, 1, 0, 1]
+#guard (weberClassPoly 47).map (·.map AzInt.toInt) == some [-1, 0, 1, 2, 2, 1]
+#guard (weberClassPoly 15).map (·.map AzInt.toInt) == some [-1, 1, 1]
+#guard (weberClassPoly 19).isNone
+#guard (genusWeberPoly 23).isNone
+#guard (genusWeberPoly 95).isSome
+
+private def weberOk (D : Nat) (n : AzNat) : Bool :=
+  if h : 1 < n.toNat then
+    haveI : NeZero n.toNat := ⟨by omega⟩
+    match weberRoot n D, hilbertClassPoly D with
+    | some j, some H => decide ((polyOfInts n H).eval j = 0)
+    | _, _ => false
+  else false
+
+#guard weberOk 23 (N "307519000361")
+#guard weberOk 31 (N "327509000081")
+#guard weberOk 47 (N "367531000961")
+#guard weberOk 71 (N "427501000001")
+#guard weberOk 95 (N "487507000049")
+#guard weberOk 119 (N "547507000049")
+#guard weberOk 191 (N "727519000361")
+#guard weberOk 15 (N "287521000441")
+#guard weberOk 39 (N "347511000121")
+#guard weberOk 87 (N "467527000729")
+#guard weberOk 255 (N "887511000121")
 /-! ## Certificates -/
 
 private def P : GenParams := { dMax := 200, hMax := 4, trialBound := 1000, baseBits := 30 }
@@ -78,5 +148,13 @@ private def P : GenParams := { dMax := 200, hMax := 4, trialBound := 1000, baseB
 #guard (ecppCertificate (N "655863716953") P).isSome
 #guard provePrime (N "675904957021146642687026859253") P
 #guard !provePrime (N "675904957021146642687026859251") P
+
+/-! With the default parameters.  The Mersenne prime `2^521 − 1` (157 digits; about two
+minutes in the interpreter), and two strong pseudoprimes to the first twelve prime bases, on
+which the search gives up at once. -/
+
+#guard provePrime (AzNat.ofNat (2 ^ 521 - 1))
+#guard !provePrime (N "3317044064679887385961981")
+#guard !provePrime (N "318665857834031151167461")
 
 end Azurite.ECPP.Tests

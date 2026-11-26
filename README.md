@@ -49,9 +49,10 @@ and as the baseline the benchmarks compare against.
   Functions*, equation by equation (Chapters 1–5 largely complete, Chapter 6 in
   progress).
 - **A verified primality test.** `AzNat.isPrime` is Miller–Rabin rejection
-  followed by a fully proven APR-CL certificate checker, with trial division as
-  the fallback; `isPrime n = true ↔ Nat.Prime n` is a theorem.  A 247-digit
-  prime is certified in under 30 seconds.
+  followed by an elliptic curve certificate (found by an unproven search, checked
+  by a fully proven checker), with the fully proven APR-CL test for small
+  numbers and as the fallback; `isPrime n = true ↔ Nat.Prime n` is a theorem.  A
+  300-digit prime is certified in about ten seconds.
 - **Small trusted base.** Every declaration depends only on the three standard
   axioms (`propext`, `Classical.choice`, `Quot.sound`); `native_decide` and
   `sorry` are rejected by CI.

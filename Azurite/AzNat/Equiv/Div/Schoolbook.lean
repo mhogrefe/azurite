@@ -45,7 +45,7 @@ private theorem schoolbookDivModLimbs.go_succ_eq_bodyStep
 
     Both the base case and inductive step are proved; the latter consumes
     the helper `bodyStep_BZ`. -/
-private theorem schoolbookDivModLimbs.go_toNat
+theorem schoolbookDivModLimbs.go_toNat
     (a b : Array UInt64) (loA loB n j : Nat) (bn1 inv : UInt64)
     (hA : loA + n + j ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n)
     (hbn1_eq : ∃ h_idx : loB + n - 1 < b.size, bn1 = b[loB + n - 1]'h_idx)
@@ -242,7 +242,7 @@ private theorem schoolbookDivModLimbs.go_toNat
     divisor `B` satisfies `B ≥ 2^(64*n - 1)`, hence `2 * B ≥ 2^(64*n)`. This
     encapsulates the normalization → high-bound implication used in the
     not-`lt` case of `schoolbookDivModLimbs_toNat`. -/
-private theorem schoolbookDivModLimbs.divisor_bound (b : Array UInt64) (loB n : Nat)
+theorem schoolbookDivModLimbs.divisor_bound (b : Array UInt64) (loB n : Nat)
     (h_n_pos : 0 < n) (hB : loB + n ≤ b.size)
     (hbn1 : 2 ^ 63 ≤ (b[loB + n - 1]'(by omega)).toNat) :
     2 ^ (64 * n - 1) ≤ toNatLimbsList ((b.toList.drop loB).take n) := by

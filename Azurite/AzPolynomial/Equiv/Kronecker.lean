@@ -10,6 +10,10 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzPolynomial.Kronecker
 import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzNat.Equiv.Kronecker
+import Azurite.AzNat.Equiv.Kronecker2
+import Azurite.AzNat.Equiv.BlockRem
+import Azurite.AzNat.Equiv.Square.Dispatch
+import Azurite.AzInt.Equiv.Mul
 import Azurite.AzNat.Equiv.LogBase2
 import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzZMod.Equiv.RingEquiv
@@ -95,6 +99,155 @@ theorem liftCoeff_eq_zero_of_size_le (p : AzPolynomial (AzZMod m)) (i : ℕ)
   rw [Array.getElem?_eq_none h]
   rfl
 
+/-- The product of the lifts. -/
+noncomputable def liftProd (p q : AzPolynomial (AzZMod m)) : ℕ[X] :=
+  natPoly (liftList p) * natPoly (liftList q)
+
+theorem liftProd_coeff_eq_zero (p q : AzPolynomial (AzZMod m)) (i : ℕ)
+    (hi : p.coeffs.size + q.coeffs.size - 1 ≤ i) : (liftProd p q).coeff i = 0 := by
+  rw [liftProd, liftProd_coeff]
+  apply Finset.sum_eq_zero
+  intro j hj
+  rw [Finset.mem_range] at hj
+  by_cases hjp : p.coeffs.size ≤ j
+  · rw [liftCoeff_eq_zero_of_size_le p j hjp, Nat.zero_mul]
+  · rw [liftCoeff_eq_zero_of_size_le q (i - j) (by omega), Nat.mul_zero]
+
+theorem liftProd_coeff_lt (p q : AzPolynomial (AzZMod m)) (i B : ℕ)
+    (hi : i < p.coeffs.size + q.coeffs.size - 1)
+    (hB : (p.coeffs.size + q.coeffs.size) * (m.toNat * m.toNat) < B) :
+    (liftProd p q).coeff i < B := by
+  rw [liftProd, liftProd_coeff]
+  have hle : ∑ j ∈ Finset.range (i + 1),
+      (p.coeff j).val.toNat * (q.coeff (i - j)).val.toNat ≤
+      (Finset.range (i + 1)).card • (m.toNat * m.toNat) :=
+    Finset.sum_le_card_nsmul _ _ _ fun j _ =>
+      Nat.mul_le_mul (p.coeff j).isLt.le (q.coeff (i - j)).isLt.le
+  rw [Finset.card_range, smul_eq_mul] at hle
+  have : (i + 1) * (m.toNat * m.toNat) ≤
+      (p.coeffs.size + q.coeffs.size) * (m.toNat * m.toNat) :=
+    Nat.mul_le_mul_right _ (by omega)
+  omega
+
+/-- A number whose value is a coefficient of the product of the lifts reduces to the
+coefficient of the product. -/
+theorem ofAzNat_eq_of_toNat_eq (p q : AzPolynomial (AzZMod m)) (k : ℕ) (c : AzNat)
+    (hc : c.toNat = (liftProd p q).coeff k) :
+    AzZMod.ofAzNat m c = ∑ i ∈ Finset.range (k + 1), p.coeff i * q.coeff (k - i) := by
+  apply AzZMod.toZMod_injective
+  rw [AzZMod.toZMod_ofAzNat, hc, liftProd, liftProd_coeff]
+  change _ = AzZMod.toZModRingHom _
+  rw [map_sum]
+  push_cast
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [map_mul]
+  rfl
+
+/-- The lifts are below any `B` above `N m²`. -/
+theorem lift_lt_of_spec (p : AzPolynomial (AzZMod m)) (N B : ℕ) (hN : 0 < N)
+    (hB : N * (m.toNat * m.toNat) < B) : ∀ c ∈ p.coeffs.map (·.val), c.toNat < B := by
+  intro c hc
+  obtain ⟨a, _, rfl⟩ := Array.mem_map.mp hc
+  have h0 := a.isLt
+  have h1 : m.toNat ≤ m.toNat * m.toNat := Nat.le_mul_self _
+  have h2 : m.toNat * m.toNat ≤ N * (m.toNat * m.toNat) := Nat.le_mul_of_pos_left _ hN
+  omega
+
+theorem ofAzNat_val_toNat (c : AzNat) : (AzZMod.ofAzNat m c).val.toNat = c.toNat % m.toNat :=
+  AzNat.toNat_mod c m
+
+/-- Two numbers with the same residue reduce to the same element. -/
+theorem ofAzNat_congr {c d : AzNat} (h : c.toNat % m.toNat = d.toNat % m.toNat) :
+    AzZMod.ofAzNat m c = AzZMod.ofAzNat m d := by
+  apply AzZMod.ext
+  apply AzNat.toNat_injective
+  rw [ofAzNat_val_toNat, ofAzNat_val_toNat, h]
+
+/-- **The entries of `blockReduce`**: the `j`-th is the reduction of any number whose value
+is the `j`-th block. -/
+theorem blockReduce_getElem? (w off cnt : ℕ) (x : Array UInt64) (j : ℕ) (hj : j < cnt)
+    (c : AzNat) (hc : c.toNat = AzNat.blockValue x.toList w off j) :
+    (blockReduce m w off cnt x)[j]? = some (AzZMod.ofAzNat m c) := by
+  have hslow : (blockReduceSlow m w off cnt x)[j]? = some (AzZMod.ofAzNat m c) := by
+    unfold blockReduceSlow
+    rw [Array.getElem?_ofFn]
+    simp only [hj, ↓reduceDIte]
+    congr 1
+    apply ofAzNat_congr
+    rw [hc, AzNat.toNat_ofLimbs, Array.toList_extract]
+    show AzNat.toNatLimbsList ((x.toList.drop (off + j * w)).take
+      (off + j * w + w - (off + j * w))) % _ = _
+    rw [Nat.add_sub_cancel_left]
+    rfl
+  unfold blockReduce
+  split
+  · next h1 =>
+    obtain ⟨-, h⟩ := AzNat.blockRemsMod_spec m h1 (fun c hc => (⟨c, hc⟩ : AzZMod m)) w off cnt x
+    obtain ⟨c', hc', h2, h3⟩ := h j hj
+    rw [h2]
+    congr 1
+    apply AzZMod.ext
+    apply AzNat.toNat_injective
+    rw [ofAzNat_val_toNat, hc]
+    exact h3
+  · exact hslow
+
+theorem blockReduce_getD (w off cnt : ℕ) (x : Array UInt64) (j : ℕ) (hj : j < cnt)
+    (c : AzNat) (hc : c.toNat = AzNat.blockValue x.toList w off j) :
+    (blockReduce m w off cnt x)[j]?.getD 0 = AzZMod.ofAzNat m c := by
+  rw [blockReduce_getElem? w off cnt x j hj c hc, Option.getD_some]
+
+theorem blockReduce_size (w off cnt : ℕ) (x : Array UInt64) :
+    (blockReduce m w off cnt x).size = cnt := by
+  unfold blockReduce
+  split
+  · next h1 =>
+    exact (AzNat.blockRemsMod_spec m h1 (fun c hc => (⟨c, hc⟩ : AzZMod m)) w off cnt x).1
+  · simp [blockReduceSlow]
+
+/-- `kroneckerRead` is the block-by-block reading. -/
+theorem kroneckerRead_eq (w n : ℕ) (x : AzNat) :
+    kroneckerRead m w n x =
+      Array.ofFn fun (k : Fin n) => AzZMod.ofAzNat m (AzNat.kroneckerCoeff w x k.val) := by
+  unfold kroneckerRead
+  apply Array.ext_getElem?
+  intro k
+  by_cases hk : k < n
+  · rw [blockReduce_getElem? w 0 n x.limbs k hk (AzNat.kroneckerCoeff w x k)
+      (by rw [AzNat.kroneckerCoeff_toNat_list]; simp [AzNat.blockValue]),
+      Array.getElem?_ofFn]
+    simp only [hk, ↓reduceDIte]
+  · rw [Array.getElem?_eq_none (by rw [blockReduce_size]; omega),
+      Array.getElem?_eq_none (by simp; omega)]
+
+/-- `kroneckerRead2` is the block-by-block reading. -/
+theorem kroneckerRead2_eq (w n : ℕ) (xe xo : AzNat) :
+    kroneckerRead2 m w n xe xo =
+      Array.ofFn fun (k : Fin n) =>
+        AzZMod.ofAzNat m (AzNat.kroneckerCoeff2 w xe xo k.val) := by
+  unfold kroneckerRead2
+  dsimp only
+  congr 1
+  funext k
+  obtain ⟨k, hk⟩ := k
+  dsimp only
+  rcases Nat.even_or_odd' k with ⟨j, rfl | rfl⟩
+  · have hpar : 2 * j % 2 = 0 := by omega
+    simp only [hpar, ↓reduceIte, Nat.mul_div_cancel_left j (by norm_num : 0 < 2)]
+    refine blockReduce_getD (2 * w) 0 ((n + 1) / 2) xe.limbs j (by omega) _ ?_
+    unfold AzNat.kroneckerCoeff2
+    simp only [hpar, ↓reduceIte]
+    rw [AzNat.limbBlock_toNat_list, AzNat.blockValue,
+      show 0 + j * (2 * w) = 2 * j * w by ring]
+  · have hpar : ¬ (2 * j + 1) % 2 = 0 := by omega
+    have hdiv : (2 * j + 1) / 2 = j := by omega
+    simp only [hpar, ↓reduceIte, hdiv]
+    refine blockReduce_getD (2 * w) w (n / 2) xo.limbs j (by omega) _ ?_
+    unfold AzNat.kroneckerCoeff2
+    simp only [hpar, ↓reduceIte]
+    rw [AzNat.limbBlock_toNat_list, AzNat.blockValue,
+      show w + j * (2 * w) = (2 * j + 1) * w by ring]
+
 theorem mulKronecker_eq_mulBasecase (p q : AzPolynomial (AzZMod m)) :
     mulKronecker p q = mulBasecase p q := by
   unfold mulKronecker mulBasecase
@@ -104,69 +257,115 @@ theorem mulKronecker_eq_mulBasecase (p q : AzPolynomial (AzZMod m)) :
     simp only [Bool.or_eq_true, beq_iff_eq, not_or] at hne
     obtain ⟨hp, hq⟩ := hne
     dsimp only
+    rw [kroneckerRead_eq]
     congr 1
     congr 1
     funext k
-    obtain ⟨k, hk0⟩ := k
+    obtain ⟨k, hk⟩ := k
     dsimp only
-    obtain ⟨N, hN⟩ : ∃ N, N = p.coeffs.size + q.coeffs.size := ⟨_, rfl⟩
-    have hk : k < N - 1 := hN ▸ hk0
-    rw [← hN]
-    obtain ⟨w, hw⟩ : ∃ w, w = kroneckerWidth m N := ⟨_, rfl⟩
+    refine ofAzNat_eq_of_toNat_eq p q k _ ?_
+    obtain ⟨w, hw⟩ : ∃ w, w = kroneckerWidth m (p.coeffs.size + q.coeffs.size) := ⟨_, rfl⟩
     rw [← hw]
-    obtain ⟨B, hBdef⟩ : ∃ B, B = 2 ^ (64 * w) := ⟨_, rfl⟩
-    have hspec : N * (m.toNat * m.toNat) < B := by
-      rw [hBdef, hw]
-      exact kroneckerWidth_spec N
-    have hm : 0 < m.toNat := Nat.pos_of_ne_zero (NeZero.ne _)
+    have hspec : (p.coeffs.size + q.coeffs.size) * (m.toNat * m.toNat) < 2 ^ (64 * w) := by
+      rw [hw]
+      exact kroneckerWidth_spec _
     have hmB : m.toNat ≤ 2 ^ (64 * w) := by
       have h1 : m.toNat ≤ m.toNat * m.toNat := Nat.le_mul_self _
-      have h2 : m.toNat * m.toNat ≤ N * (m.toNat * m.toNat) :=
+      have h2 : m.toNat * m.toNat ≤ (p.coeffs.size + q.coeffs.size) * (m.toNat * m.toNat) :=
         Nat.le_mul_of_pos_left _ (by omega)
       omega
-    set R := natPoly (liftList p) * natPoly (liftList q) with hR
-    have hdeg : ∀ i, N - 1 ≤ i → R.coeff i = 0 := by
-      intro i hi
-      rw [hR, liftProd_coeff]
-      apply Finset.sum_eq_zero
-      intro j hj
-      rw [Finset.mem_range] at hj
-      by_cases hjp : p.coeffs.size ≤ j
-      · rw [liftCoeff_eq_zero_of_size_le p j hjp, Nat.zero_mul]
-      · rw [liftCoeff_eq_zero_of_size_le q (i - j) (by omega), Nat.mul_zero]
-    have hlt : ∀ i, i < N - 1 → R.coeff i < B := by
-      intro i hi
-      rw [hR, liftProd_coeff]
-      have hle : ∑ j ∈ Finset.range (i + 1),
-          (p.coeff j).val.toNat * (q.coeff (i - j)).val.toNat ≤
-          (Finset.range (i + 1)).card • (m.toNat * m.toNat) :=
-        Finset.sum_le_card_nsmul _ _ _ fun j _ =>
-          Nat.mul_le_mul (p.coeff j).isLt.le (q.coeff (i - j)).isLt.le
-      rw [Finset.card_range, smul_eq_mul] at hle
-      have : (i + 1) * (m.toNat * m.toNat) ≤ N * (m.toNat * m.toNat) :=
-        Nat.mul_le_mul_right _ (by omega)
-      omega
-    have hx : (AzNat.kroneckerPack w (p.coeffs.map (·.val)) *
-        AzNat.kroneckerPack w (q.coeffs.map (·.val))).toNat = R.eval B := by
-      rw [AzNat.toNat_mul, packLift_toNat p w hmB, packLift_toNat q w hmB, hR, eval_mul,
-        hBdef]
-    apply AzZMod.toZMod_injective
-    rw [AzZMod.toZMod_ofAzNat, AzNat.kroneckerCoeff_toNat, hx]
-    have hpow : (2 : ℕ) ^ (64 * (k * w)) = B ^ k := by
-      rw [hBdef, ← pow_mul]
-      congr 1
-      ring
-    rw [hpow, ← hBdef, eval_div_pow_mod R B (N - 1) hdeg hlt, hR, liftProd_coeff]
-    change _ = AzZMod.toZModRingHom _
-    rw [map_sum]
-    push_cast
-    refine Finset.sum_congr rfl fun j _ => ?_
-    rw [map_mul]
-    rfl
+    have hx : (if p = q then AzNat.square (AzNat.kroneckerPack w (p.coeffs.map (·.val)))
+        else AzNat.kroneckerPack w (p.coeffs.map (·.val)) *
+          AzNat.kroneckerPack w (q.coeffs.map (·.val))).toNat =
+        (liftProd p q).eval (2 ^ (64 * w)) := by
+      split
+      · next hpq =>
+        subst hpq
+        rw [AzNat.toNat_square, packLift_toNat p w hmB, liftProd, eval_mul, sq]
+      · rw [AzNat.toNat_mul, packLift_toNat p w hmB, packLift_toNat q w hmB, liftProd, eval_mul]
+    rw [AzNat.kroneckerCoeff_toNat, hx,
+      show (2 : ℕ) ^ (64 * (k * w)) = (2 ^ (64 * w)) ^ k by rw [← pow_mul]; congr 1; ring,
+      eval_div_pow_mod _ _ (p.coeffs.size + q.coeffs.size - 1)
+        (liftProd_coeff_eq_zero p q) (fun i hi => liftProd_coeff_lt p q i _ hi hspec)]
+
+theorem mulKronecker2_eq_mulBasecase (p q : AzPolynomial (AzZMod m)) :
+    mulKronecker2 p q = mulBasecase p q := by
+  unfold mulKronecker2 mulBasecase
+  split
+  · rfl
+  · next hne =>
+    simp only [Bool.or_eq_true, beq_iff_eq, not_or] at hne
+    obtain ⟨hp, hq⟩ := hne
+    dsimp only
+    rw [kroneckerRead2_eq]
+    congr 1
+    congr 1
+    funext k
+    obtain ⟨k, hk⟩ := k
+    dsimp only
+    refine ofAzNat_eq_of_toNat_eq p q k _ ?_
+    obtain ⟨w, hw⟩ :
+      ∃ w, w = (kroneckerWidth m (p.coeffs.size + q.coeffs.size) + 1) / 2 := ⟨_, rfl⟩
+    rw [← hw]
+    have hspec : (p.coeffs.size + q.coeffs.size) * (m.toNat * m.toNat) <
+        2 ^ (64 * (2 * w)) :=
+      lt_of_lt_of_le (kroneckerWidth_spec _)
+        (Nat.pow_le_pow_right (by norm_num) (by omega))
+    have hpl := lift_lt_of_spec p _ _ (by omega) hspec
+    have hql := lift_lt_of_spec q _ _ (by omega) hspec
+    obtain ⟨B, hB⟩ : ∃ B, B = 2 ^ (64 * w) := ⟨_, rfl⟩
+    have hp1 := AzNat.kroneckerEvalPair_fst w _ hpl
+    have hp2 := AzNat.kroneckerEvalPair_snd w _ hpl
+    have hq1 := AzNat.kroneckerEvalPair_fst w _ hql
+    have hq2 := AzNat.kroneckerEvalPair_snd w _ hql
+    rw [← hB] at hp1 hp2 hq1 hq2
+    change _ = (natPoly (liftList p)).eval B at hp1
+    change _ = (Kronecker.evenValue (natPoly (liftList p)) B : ℤ) -
+      Kronecker.oddValue (natPoly (liftList p)) B at hp2
+    change _ = (natPoly (liftList q)).eval B at hq1
+    change _ = (Kronecker.evenValue (natPoly (liftList q)) B : ℤ) -
+      Kronecker.oddValue (natPoly (liftList q)) B at hq2
+    obtain ⟨a, ha⟩ : ∃ a, a = AzNat.kroneckerEvalPair w (p.coeffs.map (·.val)) := ⟨_, rfl⟩
+    obtain ⟨b, hb⟩ : ∃ b, b = AzNat.kroneckerEvalPair w (q.coeffs.map (·.val)) := ⟨_, rfl⟩
+    rw [← ha] at hp1 hp2 ⊢
+    rw [← hb] at hq1 hq2 ⊢
+    obtain ⟨uv, huv⟩ : ∃ uv : AzNat × AzInt, uv = if p = q then
+        (AzNat.square a.1, (AzNat.square a.2.abs).toAzInt) else (a.1 * b.1, a.2 * b.2) :=
+      ⟨_, rfl⟩
+    rw [← huv]
+    have hu : uv.1.toNat = (natPoly (liftList p)).eval B * (natPoly (liftList q)).eval B := by
+      rw [huv]
+      split
+      · next hpq =>
+        subst hpq
+        rw [AzNat.toNat_square, hp1, sq]
+      · rw [AzNat.toNat_mul, hp1, hq1]
+    have hv : uv.2.toInt =
+        ((Kronecker.evenValue (natPoly (liftList p)) B : ℤ) -
+          Kronecker.oddValue (natPoly (liftList p)) B) *
+        ((Kronecker.evenValue (natPoly (liftList q)) B : ℤ) -
+          Kronecker.oddValue (natPoly (liftList q)) B) := by
+      rw [huv]
+      split
+      · next hpq =>
+        subst hpq
+        have hab : b = a := by rw [ha, hb]
+        subst hab
+        rw [AzNat.toInt_toAzInt, AzNat.toNat_square, Nat.cast_pow, AzNat.natCast_abs_toNat,
+          sq_abs, hp2, sq]
+      · rw [AzInt.toInt_mul, hp2, hq2]
+    rw [AzNat.kroneckerCoeff2_toNat w (liftProd p q) (p.coeffs.size + q.coeffs.size - 1)
+      (liftProd_coeff_eq_zero p q) (fun i hi => liftProd_coeff_lt p q i _ hi hspec) _ _
+      (hB ▸ AzNat.kroneckerHalves_fst _ _ B uv.1 uv.2 hu hv)
+      (hB ▸ AzNat.kroneckerHalves_snd _ _ B uv.1 uv.2 hu hv)]
 
 @[simp] theorem toPoly_mulKronecker (p q : AzPolynomial (AzZMod m)) :
     AzPolynomial.toPoly (mulKronecker p q) = AzPolynomial.toPoly p * AzPolynomial.toPoly q := by
   rw [mulKronecker_eq_mulBasecase, toPoly_mulBasecase]
+
+@[simp] theorem toPoly_mulKronecker2 (p q : AzPolynomial (AzZMod m)) :
+    AzPolynomial.toPoly (mulKronecker2 p q) = AzPolynomial.toPoly p * AzPolynomial.toPoly q := by
+  rw [mulKronecker2_eq_mulBasecase, toPoly_mulBasecase]
 
 /-! ### Natural-number coefficients -/
 

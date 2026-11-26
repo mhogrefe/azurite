@@ -10,6 +10,8 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzPolynomial.Mul
 import Azurite.AzZMod.Instances
 import Azurite.AzNat.Kronecker
+import Azurite.AzNat.Kronecker2
+import Azurite.AzNat.BlockRem
 import Azurite.AzNat.LogBase2
 import Azurite.AzNat.Instances
 import Azurite.AzNat.Pow2
@@ -34,16 +36,81 @@ namespace Azurite.AzPolynomial
 def kroneckerWidth (m : AzNat) (n : Nat) : Nat :=
   (2 * m.size + n.log2 + 1 + 63) / 64
 
-/-- **Multiplication over `ℤ/m` by Kronecker substitution.** -/
+/-- The `cnt` blocks of `w` limbs of `x` from limb `off` on, each extracted and reduced. -/
+def blockReduceSlow (m : AzNat) [NeZero m.toNat] (w off cnt : Nat) (x : Array UInt64) :
+    Array (AzZMod m) :=
+  Array.ofFn fun (j : Fin cnt) =>
+    AzZMod.ofAzNat m (AzNat.ofLimbs (x.extract (off + j.val * w) (off + j.val * w + w)))
+
+/-- **The blocks of a limb array modulo `m`**: the `cnt` blocks of `w` limbs of `x` from limb
+`off` on.  For a one-limb `m` by the one-limb division on the limbs themselves
+(`AzNat.blockRemsMod`); else block by block.  (Two prepared-divisor readers for longer
+moduli were measured on 2026-11-25 and removed: at most 5 % on products, nothing on modular
+powers; see `docs/module_map.md`.) -/
+def blockReduce (m : AzNat) [NeZero m.toNat] (w off cnt : Nat) (x : Array UInt64) :
+    Array (AzZMod m) :=
+  if h1 : m.limbs.size = 1 then
+    AzNat.blockRemsMod m h1 (fun c hc => (⟨c, hc⟩ : AzZMod m)) w off cnt x
+  else blockReduceSlow m w off cnt x
+
+/-- **The coefficients of a packed product**: the `n` blocks of `w` limbs of `x`, reduced
+modulo `m` (`blockReduce`). -/
+def kroneckerRead (m : AzNat) [NeZero m.toNat] (w n : Nat) (x : AzNat) : Array (AzZMod m) :=
+  blockReduce m w 0 n x.limbs
+
+/-- **The coefficients of a two-point product**: the `k`-th is the block of `2 w` limbs at limb
+`k w` of `xe` (`k` even) or `xo` (`k` odd), reduced modulo `m`. -/
+def kroneckerRead2 (m : AzNat) [NeZero m.toNat] (w n : Nat) (xe xo : AzNat) :
+    Array (AzZMod m) :=
+  let es := blockReduce m (2 * w) 0 ((n + 1) / 2) xe.limbs
+  let os := blockReduce m (2 * w) w (n / 2) xo.limbs
+  Array.ofFn fun (k : Fin n) =>
+    if k.val % 2 = 0 then es[k.val / 2]?.getD 0 else os[k.val / 2]?.getD 0
+
+/-- **Multiplication over `ℤ/m` by Kronecker substitution.**  A square (`p = q`) packs once and
+squares the packed number. -/
 def mulKronecker {m : AzNat} [NeZero m.toNat] (p q : AzPolynomial (AzZMod m)) :
     AzPolynomial (AzZMod m) :=
   if p.coeffs.size == 0 || q.coeffs.size == 0 then 0
   else
     let w := kroneckerWidth m (p.coeffs.size + q.coeffs.size)
-    let x := AzNat.kroneckerPack w (p.coeffs.map (·.val)) *
-      AzNat.kroneckerPack w (q.coeffs.map (·.val))
-    normalize <| Array.ofFn fun (k : Fin (p.coeffs.size + q.coeffs.size - 1)) =>
-      AzZMod.ofAzNat m (AzNat.kroneckerCoeff w x k.val)
+    let a := AzNat.kroneckerPack w (p.coeffs.map (·.val))
+    let x := if p = q then AzNat.square a
+      else a * AzNat.kroneckerPack w (q.coeffs.map (·.val))
+    normalize (kroneckerRead m w (p.coeffs.size + q.coeffs.size - 1) x)
+
+/-- **Multiplication over `ℤ/m` by Kronecker substitution at two points**, `2^(64 w)` and
+`−2^(64 w)` for `w` half the width of `mulKronecker` (rounded up): two products of numbers of
+`len · w` limbs instead of one of numbers of `len · 2w` limbs.  A square (`p = q`) evaluates
+once and squares the two values. -/
+def mulKronecker2 {m : AzNat} [NeZero m.toNat] (p q : AzPolynomial (AzZMod m)) :
+    AzPolynomial (AzZMod m) :=
+  if p.coeffs.size == 0 || q.coeffs.size == 0 then 0
+  else
+    let w := (kroneckerWidth m (p.coeffs.size + q.coeffs.size) + 1) / 2
+    let a := AzNat.kroneckerEvalPair w (p.coeffs.map (·.val))
+    let uv : AzNat × AzInt :=
+      if p = q then (AzNat.square a.1, (AzNat.square a.2.abs).toAzInt)
+      else
+        let b := AzNat.kroneckerEvalPair w (q.coeffs.map (·.val))
+        (a.1 * b.1, a.2 * b.2)
+    let h := AzNat.kroneckerHalves uv.1 uv.2
+    normalize (kroneckerRead2 m w (p.coeffs.size + q.coeffs.size - 1) h.1 h.2)
+
+/-- Use the two-point product: the width `w` of the one-point product is even or at least 7
+(so that two products at half the width, rounded up, are cheaper than one), the shorter
+factor has at least three coefficients and at least `64 / w`, and the longer one at most
+`12000 / w`.  Measured with `benchmark poly_kronecker 100 "two:1"` (2026-11-25): below 64
+limbs in the shorter packed factor the extra additions cost more than the products save;
+from there on the two-point product takes 0.75–0.93 of the time (0.75–0.8 for even `w` from
+128 limbs on); above 12000 limbs, where the product of the packed numbers is close to the
+range of the FFT, it loses again. -/
+def useKronecker2 {m : AzNat} [NeZero m.toNat] (p q : AzPolynomial (AzZMod m)) : Bool :=
+  let w := kroneckerWidth m (p.coeffs.size + q.coeffs.size)
+  let lo := min p.coeffs.size q.coeffs.size
+  let hi := max p.coeffs.size q.coeffs.size
+  (w % 2 == 0 || decide (7 ≤ w)) && decide (3 ≤ lo) && decide (64 ≤ lo * w) &&
+    decide (hi * w ≤ 12000)
 
 /-! ### Natural-number coefficients
 
@@ -135,6 +202,30 @@ private def agrees (m a b : Nat) : Bool :=
     decide (mulKronecker p q = mulBasecaseFold p q)
   else false
 
+/-- `mulKronecker2` and the two squares against the schoolbook product. -/
+private def agrees2 (m a b : Nat) : Bool :=
+  if h : m ≠ 0 then
+    haveI : NeZero m := ⟨h⟩
+    let p := testPoly (AzNat.ofNat m) a 1
+    let q := testPoly (AzNat.ofNat m) b 2
+    decide (mulKronecker2 p q = mulBasecaseFold p q) &&
+      decide (mulKronecker2 p p = mulBasecaseFold p p) &&
+      decide (mulKronecker p p = mulBasecaseFold p p)
+  else false
+
+#guard agrees2 7 5 9
+#guard agrees2 2 6 6
+#guard agrees2 1 3 4
+#guard agrees2 1000003 1 7
+#guard agrees2 1000003 8 1
+#guard agrees2 (2 ^ 64 - 59) 9 6
+#guard agrees2 (2 ^ 127 - 1) 6 11
+#guard agrees2 (2 ^ 200 + 235) 12 12
+#guard agrees2 (2 ^ 64 + 13) 5 8
+#guard agrees2 (2 ^ 128 - 159) 20 20
+#guard agrees2 (2 ^ 255 - 19) 9 14
+#guard agrees2 (3 ^ 100) 16 16
+#guard agrees2 (2 ^ 192) 7 7
 #guard agrees 7 5 9
 #guard agrees 2 6 6
 #guard agrees 1 3 4

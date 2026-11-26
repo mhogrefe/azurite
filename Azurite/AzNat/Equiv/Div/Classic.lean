@@ -29,24 +29,24 @@ namespace Azurite.AzNat
     to produce the divMod correctness identity, given the normalization facts
     that UBuf represents `U * 2^k`, VBuf represents `V * 2^k`, and VBuf's top
     limb is normalized. -/
-private theorem divMod_size_ge3_finish (threshold : Nat) (U V : AzNat)
+private theorem divMod_size_ge3_finish_gen (threshold : Nat) (U V : AzNat)
     (k : Nat) (_hk_le : k ≤ 63)
-    (UBuf VBuf : Array UInt64)
+    (UBuf VBuf : Array UInt64) (m : Nat) (hm : V.limbs.size + m ≤ U.limbs.size + 1)
     (h_n_ge_3 : 3 ≤ V.limbs.size)
     (h_n_le_nU : V.limbs.size ≤ U.limbs.size)
     (h_UBuf_size : UBuf.size = U.limbs.size + 1)
     (h_VBuf_size : VBuf.size = V.limbs.size)
     (h_VBuf_norm :
       2 ^ 63 ≤ (VBuf[0 + V.limbs.size - 1]'(by rw [h_VBuf_size]; omega)).toNat)
-    (h_UBuf_toNat : toNatLimbsList UBuf.toList = U.toNat * 2 ^ k)
+    (h_UBuf_toNat :
+      toNatLimbsList (UBuf.toList.take (V.limbs.size + m)) = U.toNat * 2 ^ k)
     (h_VBuf_toNat : toNatLimbsList VBuf.toList = V.toNat * 2 ^ k)
     (_hV_pos : 0 < V.toNat) :
-    let res := recursiveDivModLimbsArr threshold UBuf VBuf 0 0 V.limbs.size
-                  (U.limbs.size + 1 - V.limbs.size)
+    let res := recursiveDivModLimbsArr threshold UBuf VBuf 0 0 V.limbs.size m
                   (by omega) (by rw [h_UBuf_size]; omega)
                   (by rw [h_VBuf_size]; omega) h_VBuf_norm
     (ofLimbs (res.1.extract V.limbs.size
-                (V.limbs.size + (U.limbs.size + 1 - V.limbs.size))
+                (V.limbs.size + m)
               ++ #[res.2])).toNat * V.toNat
         + (ofLimbs (res.1.extract 0 V.limbs.size) >>> k).toNat = U.toNat
     ∧ (V.toNat ≠ 0 →
@@ -54,7 +54,6 @@ private theorem divMod_size_ge3_finish (threshold : Nat) (U V : AzNat)
   -- Abbreviate the key sizes.
   set n  := V.limbs.size with hn_def
   set nU := U.limbs.size with hnU_def
-  set m  := nU + 1 - n with hm_def
   have h_n_pos : 0 < n := by omega
   have h_nU_ge_n : n ≤ nU := h_n_le_nU
   -- Proof-obligation bounds for recursiveDivModLimbsArr.
@@ -84,10 +83,6 @@ private theorem divMod_size_ge3_finish (threshold : Nat) (U V : AzNat)
   have h_UBuf_sv : sliceVal UBuf 0 (n + m) = U.toNat * 2 ^ k := by
     unfold sliceVal
     rw [List.drop_zero]
-    have h_nm : n + m = nU + 1 := by omega
-    have h_len : UBuf.toList.length = nU + 1 := by
-      rw [Array.length_toList, h_UBuf_size]
-    rw [List.take_of_length_le (by rw [h_len, h_nm])]
     exact h_UBuf_toNat
   -- `sliceVal VBuf 0 n = V.toNat * 2^k`.
   have h_VBuf_sv : sliceVal VBuf 0 n = V.toNat * 2 ^ k := by
@@ -159,6 +154,95 @@ private theorem divMod_size_ge3_finish (threshold : Nat) (U V : AzNat)
     have h_lt' : (U.toNat - Q_val * V.toNat) * 2 ^ k < V.toNat * 2 ^ k := by
       rw [← h_R_eq]; exact h_rem_lt
     exact Nat.lt_of_mul_lt_mul_right h_lt'
+
+/-- Dropping a zero top limb does not change the value of the dividend buffer. -/
+private theorem toNatLimbsList_take_quotLimbCount (a : Array UInt64) (nU n : Nat)
+    (ha : a.size = nU + 1) (h : n ≤ nU) :
+    toNatLimbsList (a.toList.take (n + quotLimbCount a nU n)) = toNatLimbsList a.toList := by
+  have hl : a.toList.length = nU + 1 := by rw [Array.length_toList, ha]
+  unfold quotLimbCount
+  split
+  · rename_i h0
+    have h0' : a.toList[nU]'(by omega) = 0 := by
+      simpa [Array.getD, ha] using h0
+    rw [show n + (nU - n) = nU by omega]
+    conv_rhs => rw [← List.take_append_drop nU a.toList]
+    rw [List.drop_eq_getElem_cons (by omega), List.drop_of_length_le (by omega), h0',
+      toNatLimbsList_append]
+    simp [toNatLimbsList]
+  · rw [show n + (nU + 1 - n) = nU + 1 by omega, List.take_of_length_le (by omega)]
+
+/-- **`remInPlace` is the extracted, trimmed and shifted remainder.** -/
+theorem remInPlace_eq (a : Array UInt64) (n k : Nat) (hk : k ≤ 63) :
+    remInPlace a n k hk = ofLimbs (a.extract 0 n) >>> k := by
+  apply toNat_injective
+  rw [hShiftRight_eq, toNat_shiftRight, toNat_ofLimbs]
+  unfold remInPlace
+  simp only [Array.shrink_eq_take, Array.take_eq_extract]
+  split
+  · rename_i hk0
+    rw [toNat_ofLimbs, hk0, Nat.pow_zero, Nat.div_one]
+  · rename_i hk0
+    rw [toNat_ofLimbs]
+    have h := shiftLimbsRight_toNat (a.extract 0 n) 0 (a.extract 0 n).size k (Nat.zero_le _)
+      (Nat.le_refl _) (by omega) hk
+    have hs := shiftLimbsRight_size (a.extract 0 n) 0 (a.extract 0 n).size k (Nat.zero_le _)
+      (Nat.le_refl _) (by omega) hk
+    generalize shiftLimbsRight (a.extract 0 n) 0 (a.extract 0 n).size k (Nat.zero_le _)
+      (Nat.le_refl _) (by omega) hk = r at h hs ⊢
+    obtain ⟨b, c⟩ := r
+    simp only [Nat.sub_zero, List.drop_zero] at h hs
+    rw [List.take_of_length_le (by rw [Array.length_toList, hs]),
+      List.take_of_length_le (by rw [Array.length_toList])] at h
+    have hc : c.toNat < 2 ^ 64 := c.toNat_lt
+    have hp : (2 : Nat) ^ 64 = 2 ^ (64 - k) * 2 ^ k := by rw [← Nat.pow_add]; congr 1; omega
+    generalize toNatLimbsList b.toList = x at h ⊢
+    generalize toNatLimbsList (a.extract 0 n).toList = y at h ⊢
+    have hpos : 0 < (2 : Nat) ^ (64 - k) := Nat.two_pow_pos _
+    -- `x 2^64 + c = y 2^(64 − k)` with `c < 2^64`
+    symm
+    rw [Nat.div_eq_iff (Nat.two_pow_pos k)]
+    constructor
+    · refine Nat.le_of_mul_le_mul_left ?_ hpos
+      calc 2 ^ (64 - k) * (x * 2 ^ k) = x * 2 ^ 64 := by rw [hp]; ring
+        _ ≤ y * 2 ^ (64 - k) := by omega
+        _ = 2 ^ (64 - k) * y := Nat.mul_comm _ _
+    · have hlt : y < x * 2 ^ k + 2 ^ k := by
+        refine Nat.lt_of_mul_lt_mul_right (a := 2 ^ (64 - k)) ?_
+        calc y * 2 ^ (64 - k) < x * 2 ^ 64 + 2 ^ 64 := by omega
+          _ = (x * 2 ^ k + 2 ^ k) * 2 ^ (64 - k) := by rw [hp]; ring
+      omega
+
+/-- `divMod_size_ge3_finish_gen` for the quotient limb count chosen by `quotLimbCount`. -/
+private theorem divMod_size_ge3_finish (threshold : Nat) (U V : AzNat)
+    (k : Nat) (hk_le : k ≤ 63)
+    (UBuf VBuf : Array UInt64)
+    (h_n_ge_3 : 3 ≤ V.limbs.size)
+    (h_n_le_nU : V.limbs.size ≤ U.limbs.size)
+    (h_UBuf_size : UBuf.size = U.limbs.size + 1)
+    (h_VBuf_size : VBuf.size = V.limbs.size)
+    (h_VBuf_norm :
+      2 ^ 63 ≤ (VBuf[0 + V.limbs.size - 1]'(by rw [h_VBuf_size]; omega)).toNat)
+    (h_UBuf_toNat : toNatLimbsList UBuf.toList = U.toNat * 2 ^ k)
+    (h_VBuf_toNat : toNatLimbsList VBuf.toList = V.toNat * 2 ^ k)
+    (hV_pos : 0 < V.toNat) :
+    let res := recursiveDivModLimbsArr threshold UBuf VBuf 0 0 V.limbs.size
+                  (quotLimbCount UBuf U.limbs.size V.limbs.size)
+                  (by omega)
+                  (by have := add_quotLimbCount_le UBuf h_n_le_nU; rw [h_UBuf_size]; omega)
+                  (by rw [h_VBuf_size]; omega) h_VBuf_norm
+    (ofLimbs (res.1.extract V.limbs.size
+                (V.limbs.size + quotLimbCount UBuf U.limbs.size V.limbs.size)
+              ++ #[res.2])).toNat * V.toNat
+        + (remInPlace res.1 V.limbs.size k hk_le).toNat = U.toNat
+    ∧ (V.toNat ≠ 0 →
+        (remInPlace res.1 V.limbs.size k hk_le).toNat < V.toNat) := by
+  intro res
+  rw [remInPlace_eq]
+  exact divMod_size_ge3_finish_gen threshold U V k hk_le UBuf VBuf _
+    (add_quotLimbCount_le UBuf h_n_le_nU) h_n_ge_3 h_n_le_nU h_UBuf_size h_VBuf_size h_VBuf_norm
+    ((toNatLimbsList_take_quotLimbCount UBuf _ _ h_UBuf_size h_n_le_nU).trans h_UBuf_toNat)
+    h_VBuf_toNat hV_pos
 
 set_option maxHeartbeats 800000 in
 /-- **Top-level correctness of `divModClassic`**: `divModClassic t U V` returns `(Q, R)` such

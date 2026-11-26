@@ -113,7 +113,8 @@ is the one formalized.)
      `onCurve_addMixed`, `ladder`, `ladder_chain`, `ecppStep_of_ladder`.
    * `Curve.lean`: `JacPoint`, `jacDbl`, `jacAddMixed`, `jacMul` over `AzZMod n`;
      `Equiv/Curve.lean`: they are the specification through `AzZMod.toZMod`.
-   * `Check.lean`: `StepCert`, `checkStep`, `check`; the chain ends with `AzNat.isPrime`.
+   * `Check.lean`: `StepCert`, `checkStep`, `check`; the chain ends with `AzNat.isPrimeAprcl`
+     (the APR-CL test, called `AzNat.isPrime` until 2026-11-26).
      `Equiv/Check.lean`: **`check_prime : check n cert = true → Nat.Prime n.toNat`**.
    * **The addition (changed 2026-11-23, after the first timings).**  The first version used
      Mathlib's representative (`Z₃ = X − uZ²`, some 35 multiplications) with a separate
@@ -136,7 +137,7 @@ is the one formalized.)
      Cornacchia, trial division, curve from `j` or the `D = 3, 4` families, point and
      `checkStep`), `genChain` (down to `baseBits` bits, with backtracking),
      **`ecppCertificate`**, **`provePrime`**; `Equiv/Search.lean`: **`provePrime_sound`**.
-   * `GenParams` defaults: `dMax 2000`, `hMax 24`, `trialBound 16384`, `baseBits 64`, and
+   * `GenParams` defaults: `dMax 2000`, `hMax 24`, `trialBound 2^24` (largest; about `bits^2.7 / 64` is used for each `n`), `batch 16`, `trialExtra 0`, `baseBits 64`, and
      `tiers 2` — when no step is found for some `n` the discriminant set and the trial bound
      are enlarged (×4, class number ×2) up to twice (`GenParams.tierTables`,
      `findStepTiers`).  Without the tiers about one prime in three of 100–200 digits got no
@@ -185,6 +186,64 @@ is the one formalized.)
      multiplications); (2) the square-root cache is kept from one tier to the next
      (`findStepWith`); (3) for `D = 3` and `D = 4` the six and four twists by powers of a
      non-residue instead of `b = 1, 2, 3, …`.
+   * **Montgomery reduction (2026-11-24, fourth run).**  A multiplication modulo `n` spent
+     about 80 % of its time in the division.  `AzNat/Montgomery.lean` (theory in
+     `Montgomery/Theory.lean`, proofs in `AzNat/Equiv/Montgomery.lean`) reduces by `n/2`
+     passes of the fused two-row multiply-accumulate instead; measured with
+     `benchmark ecpp 1 "modmul:1"` (ns per modular multiplication, plain / Montgomery):
+     64 bits 226–256 / 173–181, 256 bits 954–962 / 406–407, 1024 bits 5390–5494 / 2806–2861,
+     2048 bits 16 223–16 420 / 8895–8984.  Used, with no change to any definition the
+     theory talks about, through three proven `@[csimp]` replacements — `AzZMod.pow`,
+     `AzZMod.powAzNat` (odd modulus, exponent of at least 32 bits) and `ECPP.jacMul`
+     (`ECPP/CurveMont.lean`, odd `n`, multiplier of at least 32 bits) — and directly in the
+     unproven `PackedMod` of the generator.  Timed (three primes per size, same as the third
+     run):
+
+     | digits | generator | checker |
+     |---|---|---|
+     | 100 | 0.21–0.36 s (was 0.29–0.54) | 28–44 ms |
+     | 200 | 1.5–3.2 s (was 2.4–5.1) | 0.24–0.27 s (was 0.51–0.57) |
+     | 300 | 12.7–16.8 s (was 20.1–28.7) | 0.88–0.96 s (was 2.0–2.3) |
+
+     Profile at 300 digits (one prime, 12.7 s): root of the class polynomial 5.8 s (46 %),
+     square roots 2.1 s (17 %), probable-prime tests 1.9 s (15 %), curves 1.8 s (14 %),
+     trial division 0.7 s.  With the powers alone switched the same prime took 15.7 s
+     (root 6.9 s, curves 3.7 s): the root gained little from Montgomery form, so its time is
+     not in the reductions of the coefficients; what it is in is not measured yet.
+     Pitfall met on the way: binding the Montgomery data with `letI` inlines
+     `MontCtx.make` (two divisions) into every multiplication — bind it with `let` and pass
+     the instance explicitly.
+   * **The root of the class polynomial (2026-11-24, fifth run).**  Breakdown of one
+     squaring of the packed power (`"digits:300,root:1"`, degree 24): the three large integer
+     products were 91 % (square 0.74 ms, quotient product 0.93 ms, `q·g` 1.07 ms of 3.0 ms),
+     the Montgomery reductions of the coefficients 6 %, packing under 1 %; the gcd of a round
+     costs 8 ms against 3 s for the power.  Two changes:
+     (1) *evaluation at `±2^(64 hw)`* (`EvalPM`, `evalPM`, `splitPM`): the coefficients fill
+     only half of a slot of the usual packing, so each product is done as two products of
+     half the size (sum and difference give the even and the odd coefficients) — one squaring
+     3.0 → 2.3 ms at degree 24, 8.9 → 6.8 ms at degree 48, no gain below degree 8;
+     (2) *the factor over the genus field* (`genusClassPoly`, `genusPolyMod`,
+     `classPolyRoot`): for `−D` a product of `t ≥ 2` prime discriminants, `H_{−D}` splits
+     over `ℚ(√d₁, …, √d_t)` into `2^(t−1)` factors; the product of `X − j` over one genus of
+     forms is recognised as `2^(−t) ∑_S A_S ∏_{i∈S} √dᵢ` from the `2^(t−1)` real genus
+     products, and the square roots of the `dᵢ` modulo `n` give a factor of degree
+     `h / 2^(t−1)` modulo `n` (`D = 1615`: 24 → 6; `D = 1155`: 8 → 1).  Falls back to
+     `H_{−D}` when `t = 1` or anything fails.  Tested against `H_{−D}` (`Tests/Gen`).
+     Timed (same primes):
+
+     | digits | generator | before (fourth run) |
+     |---|---|---|
+     | 100 | 0.19–0.33 s | 0.21–0.36 s |
+     | 200 | 1.4–3.1 s | 1.5–3.2 s |
+     | 300 | 8.5–13.7 s | 12.7–16.8 s |
+
+     Profile at 300 digits (8.7 s): square roots 2.2 s, probable-prime tests 1.9 s, curves
+     1.9 s, root 1.6 s (was 5.8 s; with (1) alone 5.1 s), trial division 0.8 s, class
+     polynomials 0.2 s.  No single piece dominates any more.
+     Open: order the discriminant table by `h / 2^(t−1)` instead of `h` (more discriminants
+     at the same root cost); low short products for the two reduction products; `AzNat`
+     products at 400–800 limbs scale about twice worse than from 32 limbs by the Toom
+     exponent (384 limbs: 0.26 ms square, 0.35 ms product) — not looked into.
    * Not yet done from the paper: the simultaneous smoothness test of all the `m` (now trial
      division of each `m`), early abort, fast Cornacchia (half-gcd), Weber or other small
      class invariants (now `j`, whose polynomials are much larger), root finding by fast
@@ -206,7 +265,7 @@ All in namespace `Azurite.ECPP`, over `AzZMod n` (2026-11-23):
 | `jacMul a u v fuel k` | `Option (JacPoint n)` | `k · (u, v)`; the final `Z` is the product of all the steps' `Z`-factors |
 | `StepCert` | structure | `a b u v q : AzNat` |
 | `checkStep n c` | `Bool` | one step of a certificate for `n` |
-| `check n cert` | `Bool` | the chain, ending with `AzNat.isPrime` |
+| `check n cert` | `Bool` | the chain, ending with `AzNat.isPrimeAprcl` |
 
 No new function on `AzNat` or `AzZMod` themselves was needed.
 
@@ -218,11 +277,19 @@ No new function on `AzNat` or `AzZMod` themselves was needed.
 | `ECPP.resOfInt n d` | `AzZMod n` | a small `Int` as a residue |
 | `ECPP.sqrtSmall? n d` | `Option (AzZMod n)` | `√d` modulo `n` for a small integer `d` (Jacobi symbol, then `AzZMod.sqrt?`) |
 | `ECPP.cornacchia4 n D r` | `Option (AzNat × AzNat)` | `x² + D y² = 4n` from `r² ≡ −D` |
-| `ECPP.trialDivide m primes` | `AzNat × AzNat` | cofactor and removed part |
+| `ECPP.trialDivide m primes` | `AzNat × AzNat` | cofactor and removed part (no longer used by the search) |
+| `ECPP.smoothParts P ms` | `Array (AzNat × AzNat)` | for each `m` of the batch, cofactor and the part made of primes dividing the primorial `P`: one `P mod ∏ ms`, then `gcd(R mod m, m)` divided out repeatedly (Bernstein 2004) |
 | `ECPP.polyOfInts n c` | `AzPolynomial (AzZMod n)` | integer coefficients reduced modulo `n` |
 | `ECPP.rootOfSplitPoly n h` | `Option (AzZMod n)` | a root of a polynomial that splits into distinct linear factors |
-| `ECPP.unpackCoeffs n w k x` | `Array AzNat` | the first `k` coefficients of a packed number, reduced modulo `n` |
-| `ECPP.PackedMod`, `PackedMod.make n g` | structure | arithmetic modulo `n` and a monic `g`: `g` packed, inverse of the reversed `g` packed |
+| `ECPP.EvalPM`, `evalPM hw a` | structure | a polynomial with coefficients below `B = 2^(64 hw)` evaluated at `±B`: `plus`, `minus` (absolute value), `neg` (2026-11-24) |
+| `ECPP.splitPM hw p m neg`, `EvalPM.mul`, `EvalPM.sqr` | `AzNat × AzNat` | from the values of a product at `±B`: its even and its odd coefficients, each packed `2 hw` limbs apart |
+| `ECPP.unpackCoeffs c hw k eo` | `Array AzNat` | the first `k` coefficients of such a pair, each through the Montgomery reduction of `c` |
+| `ECPP.PackedMod`, `PackedMod.make n g` | structure | arithmetic modulo `n` and a monic `g`: Montgomery data of `n`, `g` and the inverse of the reversed `g` as `EvalPM`, coefficients in Montgomery form |
+| `ECPP.genusChar d f` | `Int` | the genus character of the prime discriminant `d` on a reduced form |
+| `ECPP.positiveSubsets ds` | `List (List Bool)` | the sets of prime discriminants with positive product |
+| `ECPP.GenusPoly`, `genusClassPolyAt D p`, `genusClassPoly D` | structure, `Option GenusPoly` | a factor of `H_{−D}` over the genus field: the integers `A_S(k)` by `AzFloat`/`AzComplexFloat` |
+| `ECPP.genusPolyMod n G` | `Option (AzPolynomial (AzZMod n))` | that factor modulo `n`, from the square roots of the prime discriminants |
+| `ECPP.classPolyRoot n D` | `Option (AzZMod n)` | a root of `H_{−D}` modulo `n`: through the genus factor, else through `H_{−D}` |
 | `PackedMod.reduce`, `sqr`, `mulLinear r`, `powLinear r e` | `Array AzNat` | reduction of a packed product, square, times `X + r`, `(X + r)^e` modulo `g` |
 | `AzNat.kroneckerPack w a` | `AzNat` | `∑ aᵢ · 2^(64 w i)` for an `Array AzNat` of coefficients below `2^(64 w)` (**proven**, `kroneckerPack_toNat`) |
 | `AzNat.kroneckerCoeff w x k` | `AzNat` | `⌊x / 2^(64 w k)⌋ mod 2^(64 w)` (**proven**, `kroneckerCoeff_toNat`) |
@@ -249,9 +316,28 @@ No new function on `AzNat` or `AzZMod` themselves was needed.
 | `ECPP.powersOf g k` | `List (AzZMod n)` | `g⁰, …, g^(k−1)` |
 | `ECPP.findStep P T n skip` | `Option StepCert` | one step of a certificate |
 | `ECPP.findStepWith P T n skip cache` | `Option StepCert × SqrtCache n` | the same, with the square roots found given and returned |
+| `ECPP.processBatch P prim n batch toSkip` | `Option StepCert × Nat` | a batch of candidate orders `(D, m)`: `smoothParts`, then by increasing cofactor the probable-prime test, the curves and the point |
+| `ECPP.primorialLadder top`, `GenTables.primorialFor T n` | `Array (Thunk AzNat)`, `AzNat` | the products of the primes below `2^j` (lazy), and the one used for `n` (`j = ⌊2.7 log₂ bits⌋ − 6`, between 10 and the cap) |
 | `ECPP.findStepTiers P tiers n skip` | `Option StepCert` | the first tier of tables that gives a step |
 | `ECPP.genChain`, `ecppCertificate n P` | `Option (List StepCert)` | the certificate |
 | `ECPP.provePrime n P` | `Bool` | search and check; `true` proves primality |
+
+### Montgomery reduction (2026-11-24)
+
+| Function | Type | What it is |
+|---|---|---|
+| `AzNat.montNegInv n₀` | `UInt64` | `−n₀⁻¹ mod 2^64` for odd `n₀` (**proven**, `montNegInv_mul`) |
+| `AzNat.redcStep`, `redcLoop`, `redcLimbs N ne ninv a` | `Array UInt64` | Montgomery reduction on a `2 ne + 1`-limb buffer, two limbs per pass (**proven**, `redcLimbs_spec`) |
+| `AzNat.MontCtx`, `MontCtx.make m extra` | structure | the precomputed data of an odd modulus: padded limbs, `−m⁻¹ mod 2^64`, `R mod m`, `R² mod m` (`R = 2^(64 ne)`, `ne` even, at least the limb count of `m` plus `extra`) |
+| `MontCtx.redc c t` | `AzNat` | `t R⁻¹ mod m` for `t < m R` (**proven**, `MontCtx.redc_spec`, `redc_cast`) |
+| `MontCtx.mul c a b`, `sqr c a` | `AzNat` | `a b R⁻¹ mod m`, `a² R⁻¹ mod m` (**proven**, `mul_spec`, `sqr_spec`) |
+| `MontCtx.toMont c a`, `fromMont c a` | `AzNat` | `a R mod m`, `a R⁻¹ mod m` (**proven**, `toMont_spec`, `fromMont_spec`) |
+| `AzZMod.Mont m`, class `AzZMod.MontData m` | structure / class | a reduced residue in Montgomery form; `+`, `−`, `*`, squaring, `1` given the data of an odd `m` (**proven** against `ZMod` through `Mont.toZMod`) |
+| `AzZMod.toMont a`, `ofMont x` | `Mont m`, `AzZMod m` | into and out of Montgomery form |
+| `AzZMod.powMont hm a n`, `powAzNatMont hm a n` | `AzZMod m` | `a ^ n` in Montgomery form (**proven**, `toZMod_powMont`, `toZMod_powAzNatMont`) |
+| `AzZMod.powFast`, `powAzNatFast`, `montPowMinBits` | `AzZMod m`, `ℕ` | what `pow`/`powAzNat` compile to (**proven** equal, `@[csimp]`); the exponent size from which Montgomery form is used (32 bits) |
+| `ECPP.jacDblG`, `jacAddMixedG`, `jacMulG` | generic | the curve formulas over any type with `+`, `−`, `*`, squaring, `1` |
+| `ECPP.ofMontPt P`, `jacMulMont hn a u v fuel k`, `jacMulFast` | `JacPoint n`, `Option (JacPoint n)` | the ladder in Montgomery form; what `jacMul` compiles to (**proven** equal, `jacMul_eq_jacMulFast`, `@[csimp]`) |
 
 Small-number helpers on `Nat`/`Int` (not `Az*`): `reducedForms`, `classNumber`,
 `isFundamental`, `primeDiscriminants`, `discriminantTable`, `smallPrimes`,
@@ -282,3 +368,124 @@ Open for the full type (not needed by the generator): the conventions for infini
 division by zero in `divPrecRound` (to follow MPC), precision-less variants (`add`, `mul`, …), `abs`/`arg`, `sqrt`, `exp`, `ln`, string
 conversion.  `divPrecRound` forms exact sums, whose precision grows with the gap between
 the exponents of the terms.
+
+## 2026-11-25 — batched trial division
+
+The candidate orders of a step are collected in batches of `GenParams.batch` and divided at
+once by all the primes below the bound (`smoothParts`), and within a batch the candidates are
+tried by increasing cofactor.  The bound went from `2^14` for every `n` to `2^j` with
+`j = ⌊2.7 log₂ bits⌋ − 6` (`2^16`, `2^19`, `2^20` at 100, 200, 300 digits; at most
+`trialBound = 2^24`, then ×4 per tier).
+
+**Timed 2026-11-25** (`benchmark ecpp 10 "digits:D,noaprcl:1"`, totals over the first ten
+probable primes above `10^D`; before = the one-by-one trial division with bound `2^14`):
+
+| digits | steps before → now | generator (s) before → now | checker (s) before → now |
+|---|---|---|---|
+| 50 | 77 → 52 | 0.36 → 0.24 | 0.076 → 0.071 |
+| 100 | 178 → 144 | 2.25 → 1.70 | 0.37 → 0.31 |
+| 200 | 399 → 288 | 24.2 → 15.2 | 2.75 → 1.93 |
+| 300 | 607 → 434 | 132.8 → 76.5 | 10.0 → 6.9 |
+
+Tuning runs (same primes, generator total in s at 100 / 200 / 300 digits), bound exponent
+`2 log₂ bits + e`: `e = 0` (2^16, 2^18, 2^18) 1.61 / 14.3 / 105.7; `e = 2` 1.87 / 17.8 / 71.6;
+`e = 4` 5.09 / 39.3 / 100.4; batch 32 and 8 at `e = 2`: 1.99 / 18.8 / 81.5 and
+1.83 / 18.3 / 82.1 (16 kept).  The time per prime varies by a factor of two with the chain
+taken, so differences below about 10 % between settings are not significant.  Profile of one
+300-digit prime after the change (8.5 s): square roots 2.3, curves 1.7, class-polynomial
+roots 1.5, probable primes 1.4, trial division 1.3 (of which the product of the primes below
+`2^20`, built once).
+
+Tried and reverted the same day (no gain, ten primes each): Jacobi symbols of all the prime
+discriminants of a `D` before any root; table ordered by `h / 2^(t−1)`; later tiers skipping
+the previous tier's discriminants.
+
+## 2026-11-26 — `AzNat.isPrime` uses elliptic curves
+
+* `AzNat.isPrimeAprcl` (`AzNat/IsPrimeAprcl.lean`): the APR-CL test, the `isPrime` of before,
+  with `isPrimeAprcl_eq_true_iff`.  The base case of `ECPP.check`.
+* `AzNat.isPrime` (`AzNat/IsPrime.lean`): `isPrimeAprcl` up to 80 bits; above,
+  `millerRabin n 0 0 && (ECPP.provePrime n || aprclOrNaive n)`.  `isPrime_eq_true_iff`
+  unchanged in statement (`provePrime_sound`, `aprclOrNaive_eq_true_iff`,
+  `millerRabin_eq_true_of_prime`).
+* **Composites that pass Miller–Rabin.**  The first build hung for hours on the guard for
+  `3317044064679887385961981` (a strong pseudoprime to the twelve bases): the search went
+  through every discriminant of every tier.  Now the search for a step gives up at a sign
+  that `n` is composite: a prime discriminant of Jacobi symbol `1` without a square root
+  (`SqrtCache.composite`), or `GenParams.maxFailures = 3` probable-prime cofactors for which
+  no curve gives a step.  That pseudoprime and `318665857834031151167461` are now rejected at
+  once.  A prime that trips the failure count only loses its certificate (`isPrime` then asks
+  APR-CL).
+* Guards (interpreter, time of the whole file): `10^50 + 151` ≈ 2 s, `10^100 + 267` ≈ 27 s
+  (both in `AzNat/IsPrime.lean`), `2^521 − 1` ≈ 2.4 min (`ECPP/Tests/Gen.lean`);
+  `10^200 + 357` took 5.5 min and was left out.
+* Changed signatures (generator, unproven): `SqrtCache` is a structure (`roots`,
+  `composite`); `processBatch` also returns the number of failed cofactors.
+
+## 2026-11-26 — Weber class invariants
+
+Generator only (unproven, `ECPP/Gen/ClassPoly.lean`, `Gen/Search.lean`), for `D ≡ 7 (mod 8)`.
+
+* `weberFn which D A B p`: `𝔣, 𝔣₁, 𝔣₂` at `τ = (−B + √−D)/(2A)` from the pentagonal series,
+  all powers of `q` from one `w = e^(2πiτ/48)` (one `exp`, one `cis`).
+* `weberValue D cube f p`: the invariant of a form by the recipe of Yui–Zagier (Math. Comp. 66
+  (1997), §3): a 48th root of unity `ζ^(b(a−c−ac²))` or `ζ^(b(a−c+a²c))`, the sign
+  `(−1)^((D+1)/8)`, and `𝔣`, `𝔣₁` or `𝔣₂` by the parities of `a`, `c`; cubed when `3 ∣ D`.
+  The recipe was written from memory and settled by experiment: of the eight variants of
+  the signs, only this one gives integer coefficients for `D = 23, 31, 47, 71, 95, 119, 191,
+  1319` and (cubes) `15, 39, 87, 255`.
+* `weberClassPoly D`, `genusWeberPoly D` (the factor over the genus field, by the same code as
+  for `j`: `formsPoly`, `genusPolyAt`, `retry3` are now shared).  Starting precision
+  `classPolyBits D / 48` (`/ 16` for cubes) plus the margin.
+* `weberRoot n D`: a root `u` modulo `n`, then `(x − 16)³ / x`, `x = u^24` (`u^8` for cubes);
+  `classPolyRoot` tries it first and falls back to `hilbertRoot` (the path of before).
+* Tests (`ECPP/Tests/Gen.lean`): `W_23`, `W_31`, `W_47`, and for eleven discriminants (prime,
+  composite, with `3`, three prime discriminants) the number from `weberRoot` modulo a
+  12-digit prime is a root of `H_{−D}`.
+* Not covered: `D ≡ 3 (mod 8)` and even `D` (other invariants: `γ₂`, `𝔣₁` at level 2, …).
+* **TIMED 2026-11-26.**  Certificates (`benchmark ecpp 10 "digits:D,noaprcl:1"`, ten primes,
+  old and new binary alternately, generator ms): 100 digits 1595, 1577 → 1572, 1560;
+  200 digits 14533, 14567 → 14978, 14778; 300 digits 75157, 75143 → 75800, 75365.  No
+  change (same 144 / 288 / 434 steps), as expected with `D ≤ 2000`, `h ≤ 24`: the class
+  polynomials are a small part.  The polynomials themselves (`benchmark ecpp 1 "classpoly:1"`,
+  `H_{−D}` / Weber, ms): `D = 1319` (`h = 45`) 138 / 49; `4079` (85) 846 / 96; `9239` (139)
+  4539 / 250; `20639` (179) 12826 / 456; `49871` (357) 119348 / 2399; with the genus factor
+  `1295` (36) 103 / 27, `5015` (88) 1064 / 101.  So 3× at `h ≈ 40`, 9–10× at `h ≈ 85`, 28× at
+  `h ≈ 180`, 50× at `h ≈ 360`; the gain will show once the search uses larger discriminants.
+
+## 2026-11-26 — the discriminant set
+
+Generator only (`Gen/Forms.lean`, `Gen/Search.lean`).
+
+* `smoothFundamental Dmax pMax`, `smoothDiscriminantTable Dmax pMax gMax hMax hMaxWeber
+  sqrtCost rootCost`: the fundamental `D ≤ Dmax` built from the primes up to `pMax`, with
+  `h ≤ hMax` (`hMaxWeber` for `D ≡ 7 (mod 8)`) and at most `gMax` classes per genus; ordered
+  greedily by estimated cost in µs: class polynomial (`1100 h` Weber, `50 h²` Hilbert,
+  nothing for `h = 1`), root (`rootCost · g` for `g > 1`), `sqrtCost` per prime discriminant
+  not yet used by an earlier `D`.  `oddPrimeFactors` is now trial division (it scanned
+  `0 … n`).
+* Defaults: `dMax 20000`, `pMax 1000`, `gMax 8`, `hMax 24`, `hMaxWeber 64`, `sqrtCost 2000`,
+  `rootCost 10000` (1348 discriminants, 54 ms to build; the table of before: `D ≤ 2000`,
+  `h ≤ 24`, 528 discriminants by increasing `h`).  Tiers: ×2 for `dMax`, `pMax`, `gMax`,
+  `hMax`, `hMaxWeber` (tier 1: 5233 discriminants, 0.5 s).
+* The tables of the default parameters are top-level constants of unforced thunks
+  (`defaultTierTables`), so they are built once per process and not once per call;
+  `smallTierTables` (`dMax 2000`, `pMax 2000`, costs for short `n`) for `n ≤ 256` bits.
+* **Timed 2026-11-26** (ten primes, generator total; before = Weber build with the table of
+  before): 30 digits 0.109 → 0.120 s; 50: 0.241 → 0.243; 100: 1.69–1.78 → 1.52, 1.54;
+  200: 15.2 → 13.3, 13.3; 300: 76.3–76.7 → 62.1, 61.9 (−12 %, −13 %, −19 %).  Profile of
+  four 300-digit primes (first-step chains): 32.8 → 24.5 s; per prime now square roots
+  1.0–1.7 s (were 1.4–2.5), trial division 1.1–1.3, probable primes 0.8–1.4, roots 0.6–1.4,
+  curves 1.3–1.5, class polynomials 0.1–0.2.
+* What did not work: (1) primes up to 100 only, ordered by largest prime (`D ≤ 50000`):
+  the profile improved (sqrt 2.4 → 0.7 s) but the full runs were 15–25 % SLOWER — for an `n`
+  for which the few small primes are non-residues nearly every `D` dies, the level has no
+  step and the search backtracks (yield has a large variance on a small prime set);
+  (2) ordering by largest prime: uses `D` with expensive class polynomials and roots
+  early, bad for short `n`; (3) fewer classes per genus (`gMax 4`: 81.8 s, `gMax 2`: 99.7 s
+  at 300 digits against 71 s, tables rebuilt per prime in these runs); (4) `dMax 50000`:
+  84 s (0.15 s table per prime in that run, and tier tables of seconds).  Weights
+  `sqrtCost 1000 / 4000`, `rootCost 5000 / 20000`: within noise, `sqrtCost 1000` worse.
+* Benchmark: keys `pmax`, `gmax`, `hweber`, `sqrtcost`, `rootcost`; the `classpoly` stage
+  of the profile now times what the search uses (Weber when available).  Any non-default
+  key rebuilds the tables per prime (about 55 ms, and 0.5 s per tier escalation).
