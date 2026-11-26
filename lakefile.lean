@@ -59,6 +59,11 @@ Azurite backend of Malachite's differential-testing driver. -/
 lean_exe «oracle» where
   root := `Azurite.Oracle.Main
 
+/-- `lake exe ecpp_cert <pari|flint> <file>`: elliptic curve primality certificates for the
+numbers in `<file>`, in the formats for exchange (`Azurite/ECPP/CertTool.lean`). -/
+lean_exe «ecpp_cert» where
+  root := `EcppCert
+
 require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
 
 -- Local documentation builds only (`lake -R -Kenv=dev build Azurite:docs`); the published docs

@@ -533,3 +533,61 @@ Generator only (`Gen/ClassPoly.lean`, `Gen/Search.lean`).
 * APR-CL has never been seen to give up, so the path is tested by guards on `ecppOrNaive`.
 * New functions on `Az*` types: `AzNat.ecppOrNaive`, `AzNat.aprclOrEcpp`
   (`AzNat → Bool`), constants `AzNat.ecppFallbackParams`, `AzNat.ecppFallbackBits`.
+
+## 2026-11-26 — certificates for exchange
+
+Requested by the Malachite session (formats to be shared with Malachite's ECPP port).  No
+source of another library was read; the formats are plain data formats given in the request.
+
+* `ECPP/Export.lean` (checker side, no search): `ExportStep` (`n D a b m q x y : AzNat`:
+  curve order `m = c q` and the point before the cofactor multiplication; `D` for
+  information), `toStepCert n e` (`(m/q) · (x, y)` by `jacMul`, affine), `chainFrom`,
+  **`checkExport n cert`** (chain, conversion, the proven `check`; `[]` for a prime of at
+  most 64 bits); formats `printFlint` / `parseFlint` (multi-line) and `printPari` /
+  `parsePari` (one line, `[[N, t, s, a, [x, y]], …]`, `t = N + 1 − m`, `s = m/q`, `b`
+  recovered as `y² − x³ − ax mod N`, `D = 0`); helpers `parseDecimal`, `fieldNames`,
+  `parseFields`, `parseFlintSteps`, `traceString`, `parsePariStep`.
+* `ECPP/Equiv/Export.lean`: **`checkExport_prime`** (`checkExport n cert = true →
+  Nat.Prime n.toNat`).
+* Search: `tryCurve` also returns the point, `processBatch` … `genChain` return
+  `StepCert × ExportStep`; `ecppCertificateBoth`, **`ecppCertificateExport`**;
+  `ecppCertificate` and `provePrime` are unchanged in what they return.
+* `ECPP/CertTool.lean` (`certText`, `certMain`), root `EcppCert.lean`:
+  **`lake exe ecpp_cert <pari|flint> <file>`** — one decimal `n` per line in, `<n>: <cert>`
+  (one-line format), or `<n>:` + the multi-line block + an empty line, or `<n>: none`.
+* Oracle (`Oracle/Ecpp.lean`): modes `az_ecpp_cert_check`
+  (`ecpp_verify(<n>, <cert>) = true|false`; a rejection by Malachite of a certificate
+  Azurite accepts passes unless `strictCert` holds — Malachite's extra conditions) and
+  `az_ecpp_cert_roundtrip`.
+* Tests `ECPP/Tests/Export.lean`: exact text of both formats, round trips, rejections of
+  malformed text; for `10^50 + 151`, `2^127 − 1`, `10^100 + 267`: accepted, round trips,
+  rejected after changing `x`, `a`, `m ± 1`, `q`, a chain link (45 s in the interpreter).
+* Not timed (no change to the work the search does beyond carrying two more numbers).
+
+## 2026-11-26 — the bound of other verifiers
+
+Requested by the Malachite session: its verifier (as others) asks `(⌊√q⌋ − 1)⁴ > n`.
+
+* `Export.lean`: `strictBound n q`, `strictStep`, `strictCert` (moved from the oracle).
+* Proven (`Equiv/Export.lean`): **`strictBound_nat`** — `n < (⌊√q⌋ − 1)⁴` implies
+  `⌊√n⌋ + 1 < q` and `4⌊√n⌋ < (q − ⌊√n⌋ − 1)²`; `strictBound_eq_true_iff`;
+  `Equiv/Search.lean`: `aboveBound_of_strictBound`.
+* The search (`processBatch`) filters cofactors with `strictBound` instead of `aboveBound`;
+  `checkStep` is unchanged.  On 420 primes (60 each just above `2^64`, `2^66`, `2^70`,
+  `2^80`; 40 above `2^96`, `10^30`, `10^40`; 30 above `10^50`; 20 above `10^70`; 10 above
+  `10^100`) the exported certificates are byte-for-byte the same as before (1054 steps, all
+  within the strict bound already).  Not timed.
+* Oracle: an `ecpp_verify(…) = true` line whose certificate fails `strictCert` is a
+  disagreement.  Tests: `strictCert` on the three exported certificates, guards on
+  `strictBound`.
+* Seen on the way (before and after alike): no certificate for the 65-bit prime
+  `2^64 + 961`.  **Cause and fix (2026-11-26):** the first step found leads to
+  `q = 68719214593 = 246241 · 279073` (37 bits), a strong pseudoprime to the base 2;
+  `probablePrime` is one round to the base 2, and `genChain` ended the chain on any `q` of
+  at most `baseBits` bits without looking at it again, so the certificate ended on a
+  composite and the checker rejected it.  (A pseudoprime in the middle of a chain was
+  never a problem: no step is found for it and the level above takes its next step.)
+  `genChain` now accepts the end of the chain only if it passes the twelve Miller–Rabin
+  bases (`AzNat.millerRabin n 0 0`, decisive below 81 bits); otherwise the continuation
+  fails and the level above backtracks.  On the 420 primes: the one missing certificate is
+  found, the other 419 are unchanged.  Guards in `Tests/Export`.

@@ -3199,12 +3199,15 @@ import Azurite.DLMF.Chapter6.Section7Aux
 import Azurite.DLMF.Chapter6.Section7Sine
 import Azurite.DLMF.Chapter6.Section8
 import Azurite.DLMF.Chapter6.Section9
+import Azurite.ECPP.CertTool
 import Azurite.ECPP.Check
 import Azurite.ECPP.Curve
 import Azurite.ECPP.CurveMont
 import Azurite.ECPP.Equiv.Check
 import Azurite.ECPP.Equiv.Curve
+import Azurite.ECPP.Equiv.Export
 import Azurite.ECPP.Equiv.Search
+import Azurite.ECPP.Export
 import Azurite.ECPP.Gen.ClassPoly
 import Azurite.ECPP.Gen.Forms
 import Azurite.ECPP.Gen.Modular

@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.Oracle.AzInt
 import Azurite.Oracle.AzZModPow2
+import Azurite.Oracle.Ecpp
 import Azurite.Oracle.AzZMod
 import Azurite.Oracle.AzRat
 import Azurite.Oracle.AzFloat
@@ -97,6 +98,8 @@ def modes : List (String × Mode) := [
   ("az_nat_is_square", mode checkIsSquare),
   ("az_nat_is_prime", mode checkIsPrime),
   ("az_nat_is_prime_proven", mode checkIsPrimeProven),
+  ("az_ecpp_cert_check", mode checkEcppCertCheck),
+  ("az_ecpp_cert_roundtrip", mode checkEcppCertRoundtrip),
   ("az_nat_is_probable_prime", mode checkIsProbablePrime),
   ("az_nat_primes_less_than", mode checkPrimesLessThan),
   ("az_nat_to_float", mode checkNatToFloat),

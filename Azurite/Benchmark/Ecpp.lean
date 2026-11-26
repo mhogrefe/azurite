@@ -107,7 +107,7 @@ def stats (T : GenTables) (n : AzNat) : Nat × Nat × Nat × Nat :=
             s := (s.1, s.2.1 + 1, s.2.2)
             for (q, c) in smoothParts prim (candidateOrders n D x y).toArray do
               if c = 1 then continue
-              if !aboveBound n q then continue
+              if !strictBound n q then continue
               s := (s.1, s.2.1, s.2.2.1 + 1, s.2.2.2)
               if probablePrime q then s := (s.1, s.2.1, s.2.2.1, s.2.2.2 + 1)
       return s
@@ -123,8 +123,8 @@ def trace (P : GenParams) (n : AzNat) : IO Unit := do
     let (st, t) ← timeOnce fun _ => findStepTiers P tiers m 0
     match st with
     | some c =>
-      IO.println s!"   {m.size} bits -> {c.q.size} bits  {ms t}ms"
-      m := c.q
+      IO.println s!"   {m.size} bits -> {c.1.q.size} bits  {ms t}ms"
+      m := c.1.q
     | none =>
       IO.println s!"   {m.size} bits: no step  {ms t}ms  (roots, cornacchia, smooth, prime) = {stats tabs m}"
       break
@@ -142,7 +142,7 @@ def processBatchTimed (P : GenParams) (prim : AzNat) (n : AzNat) [NeZero n.toNat
   for i in [0:batch.size] do
     let (q, c) := parts[i]!
     if c = 1 then continue
-    let (ab, t) ← timeOnce fun _ => aboveBound n q
+    let (ab, t) ← timeOnce fun _ => strictBound n q
     acc := acc.modify 3 (· + t)
     cnt := cnt.modify 3 (· + 1)
     if !ab then continue
@@ -183,7 +183,7 @@ def processBatchTimed (P : GenParams) (prim : AzNat) (n : AzNat) [NeZero n.toNat
       cnt := cnt.modify 7 (· + 1)
       match res with
       | none => continue
-      | some cert => return (some (cert, D), acc, cnt)
+      | some (cert, _, _) => return (some (cert, D), acc, cnt)
   return (none, acc, cnt)
 
 /-- `findStep` with a clock on every stage.  The times (nanoseconds) and counts are added to

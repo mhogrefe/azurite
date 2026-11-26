@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.ECPP.Export
 import Azurite.ECPP.Check
 import Azurite.ECPP.Gen.ClassPoly
 import Azurite.ECPP.Gen.Modular
@@ -209,7 +210,9 @@ def candidateOrders (n : AzNat) (D : Nat) (x y : AzNat) : List AzNat :=
     base ++ [n1 + s, n1 - s, n1 + d, n1 - d]
   else base
 
-/-- Is `q` above the bound of the criterion for `n`? -/
+/-- Is `q` above the bound of the criterion for `n`?  The search asks for the stronger
+`strictBound` (`aboveBound_of_strictBound`, `Equiv/Search.lean`), which other verifiers
+require. -/
 def aboveBound (n q : AzNat) : Bool :=
   let s := AzNat.sqrt n
   let t := q - s - 1
@@ -220,8 +223,10 @@ the search a failed step). -/
 def probablePrime (q : AzNat) : Bool := AzNat.millerRabinBase q (AzNat.ofNat 2)
 
 /-- Try to finish a step on the curve `y² = x³ + ax + b`: a point `P`, `(u, v) = c · P`, and
-the check.  Gives up at the first point that fails the check (the curve has another order). -/
-def tryCurve (a b : AzZMod n) (c q : AzNat) (tries : Nat) : Option StepCert := Id.run do
+the check.  Gives up at the first point that fails the check (the curve has another order).
+Returns the step and the point `P`. -/
+def tryCurve (a b : AzZMod n) (c q : AzNat) (tries : Nat) :
+    Option (StepCert × AzNat × AzNat) := Id.run do
   let mut failures := 0
   for i in [1:tries + 1] do
     if failures ≥ 1 then break
@@ -240,7 +245,7 @@ def tryCurve (a b : AzZMod n) (c q : AzNat) (tries : Nat) : Option StepCert := I
         | some zi =>
           let zi2 := Square.square zi
           let cert : StepCert := ⟨a.val, b.val, (V.1 * zi2).val, (V.2.1 * (zi2 * zi)).val, q⟩
-          if checkStep n cert then return some cert
+          if checkStep n cert then return some (cert, x.val, y.val)
           failures := failures + 1
   return none
 
@@ -343,17 +348,20 @@ def cmCurves (n : AzNat) [NeZero n.toNat] (D tries : Nat) : List (AzZMod n × Az
           [(a, b), (a * g2, b * (g2 * g'))]
 
 /-- **A batch of candidate orders** `(D, m)`: trial division of all of them at once by the
-primes of `prim`, then, by increasing cofactor `q`, the probable-prime test, the curves of
-`D` and the point.  Returns the `(toSkip + 1)`-th step found, or what is left of `toSkip`,
-and the number of probable-prime cofactors for which no curve gave a step. -/
+primes of `prim`, the bound on the cofactor `q` (`strictBound`), then, by increasing `q`,
+the probable-prime test, the curves of
+`D` and the point.  Returns the `(toSkip + 1)`-th step found (with its form for exchange),
+or what is left of `toSkip`, and the number of probable-prime cofactors for which no curve
+gave a step. -/
 def processBatch (P : GenParams) (prim : AzNat) (n : AzNat) [NeZero n.toNat]
-    (batch : Array (Nat × AzNat)) (toSkip : Nat) : Option StepCert × Nat × Nat := Id.run do
+    (batch : Array (Nat × AzNat)) (toSkip : Nat) :
+    Option (StepCert × ExportStep) × Nat × Nat := Id.run do
   let parts := smoothParts prim (batch.map (·.2))
   let mut cands : Array (Nat × AzNat × AzNat) := #[]
   for i in [0:batch.size] do
     let (q, c) := parts[i]!
     if c = 1 then continue
-    if !aboveBound n q then continue
+    if !strictBound n q then continue
     cands := cands.push (batch[i]!.1, q, c)
   let sorted := cands.qsort fun x y => decide (x.2.1 < y.2.1)
   let mut toSkip := toSkip
@@ -370,8 +378,9 @@ def processBatch (P : GenParams) (prim : AzNat) (n : AzNat) [NeZero n.toNat]
     for (a, b) in cs do
       match tryCurve a b c q P.tries with
       | none => continue
-      | some cert =>
-        if toSkip = 0 then return (some cert, 0, failures)
+      | some (cert, x, y) =>
+        if toSkip = 0 then
+          return (some (cert, ⟨n, AzNat.ofNat D, cert.a, cert.b, c * q, q, x, y⟩), 0, failures)
         toSkip := toSkip - 1
         found := true
         break
@@ -380,7 +389,7 @@ def processBatch (P : GenParams) (prim : AzNat) (n : AzNat) [NeZero n.toNat]
 
 /-- `findStep` with the cache of square roots given and returned. -/
 def findStepWith (P : GenParams) (T : GenTables) (n : AzNat) [NeZero n.toNat] (skip : Nat)
-    (cache : SqrtCache n) : Option StepCert × SqrtCache n := Id.run do
+    (cache : SqrtCache n) : Option (StepCert × ExportStep) × SqrtCache n := Id.run do
   let prim := T.primorialFor n
   let mut cache := cache
   let mut toSkip := skip
@@ -414,13 +423,13 @@ def findStepWith (P : GenParams) (T : GenTables) (n : AzNat) [NeZero n.toNat] (s
 def findStep (P : GenParams) (T : GenTables) (n : AzNat) (skip : Nat) : Option StepCert :=
   if h : 1 < n.toNat then
     haveI : NeZero n.toNat := ⟨by omega⟩
-    (findStepWith P T n skip {}).1
+    (findStepWith P T n skip {}).1.map (·.1)
   else none
 
 /-- The first tier that gives a `(skip + 1)`-th step; the square roots found are kept from
 one tier to the next.  Stops at a sign that `n` is composite (`SqrtCache.composite`). -/
 def findStepTiers (P : GenParams) (T : List (Thunk GenTables)) (n : AzNat) (skip : Nat) :
-    Option StepCert :=
+    Option (StepCert × ExportStep) :=
   if h : 1 < n.toNat then
     haveI : NeZero n.toNat := ⟨by omega⟩
     Id.run do
@@ -433,19 +442,23 @@ def findStepTiers (P : GenParams) (T : List (Thunk GenTables)) (n : AzNat) (skip
       return none
   else none
 
-/-- The chain of steps from `n` down to `baseBits` bits. -/
+/-- The chain of steps from `n` down to `baseBits` bits, each in both forms.  The number the
+chain ends on has only passed `probablePrime` (one base), so it is tested with the twelve
+Miller–Rabin bases (decisive below 81 bits) before the chain is accepted: a pseudoprime there
+would make the checker reject the certificate, and is instead a failed continuation, which
+the level above answers with its next step. -/
 def genChain (P : GenParams) (T : List (Thunk GenTables)) (fuel : Nat) (n : AzNat)
     (skip budget : Nat) :
-    Option (List StepCert) :=
+    Option (List (StepCert × ExportStep)) :=
   match fuel with
   | 0 => none
   | fuel + 1 =>
-    if n.size ≤ P.baseBits then some []
+    if n.size ≤ P.baseBits then (if AzNat.millerRabin n 0 0 then some [] else none)
     else
       match findStepTiers P T n skip with
       | none => none
       | some c =>
-        match genChain P T fuel c.q 0 P.backtrack with
+        match genChain P T fuel c.1.q 0 P.backtrack with
         | some rest => some (c :: rest)
         | none =>
           match budget with
@@ -453,13 +466,25 @@ def genChain (P : GenParams) (T : List (Thunk GenTables)) (fuel : Nat) (n : AzNa
           | budget + 1 => genChain P T (fuel + 1) n (skip + 1) budget
 termination_by (fuel, budget)
 
-/-- **A primality certificate for `n`** by elliptic curves, if the search finds one.  The
-result is to be given to `ECPP.check`. -/
-def ecppCertificate (n : AzNat) (P : GenParams := {}) : Option (List StepCert) :=
+/-- The certificate for `n` in both forms, if the search finds one. -/
+def ecppCertificateBoth (n : AzNat) (P : GenParams := {}) :
+    Option (List (StepCert × ExportStep)) :=
   let T :=
     if P = {} then (if n.size ≤ 256 then smallTierTables else defaultTierTables)
     else P.tierTables
   genChain P T (n.size + 1) n 0 P.backtrack
+
+/-- **A primality certificate for `n`** by elliptic curves, if the search finds one.  The
+result is to be given to `ECPP.check`. -/
+def ecppCertificate (n : AzNat) (P : GenParams := {}) : Option (List StepCert) :=
+  (ecppCertificateBoth n P).map fun l => l.map (·.1)
+
+/-- **A primality certificate for `n` in the form for exchange** (`ExportStep`: curve order
+and point before the cofactor), if the search finds one; the chain ends at 64 bits with the
+default parameters.  The result is to be given to `ECPP.checkExport`, or printed
+(`printFlint`, `printPari`). -/
+def ecppCertificateExport (n : AzNat) (P : GenParams := {}) : Option (List ExportStep) :=
+  (ecppCertificateBoth n P).map fun l => l.map (·.2)
 
 /-- **Primality proving by elliptic curves**: search for a certificate and check it.
 `true` proves that `n` is prime (`provePrime_sound`); `false` says nothing. -/
