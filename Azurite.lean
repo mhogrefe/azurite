@@ -964,6 +964,7 @@ import Azurite.AzNat.Equiv.Divisors
 import Azurite.AzNat.Equiv.DoubleFactorial
 import Azurite.AzNat.Equiv.ExactDivOdd
 import Azurite.AzNat.Equiv.ExpSplit
+import Azurite.AzNat.Equiv.Factor
 import Azurite.AzNat.Equiv.Factorial
 import Azurite.AzNat.Equiv.Fibonacci
 import Azurite.AzNat.Equiv.Garner
@@ -1050,6 +1051,7 @@ import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.Equiv.TwoAdicPow
 import Azurite.AzNat.ExactDivOdd
 import Azurite.AzNat.ExpSplit
+import Azurite.AzNat.Factor
 import Azurite.AzNat.Factorial
 import Azurite.AzNat.Fibonacci
 import Azurite.AzNat.Garner
