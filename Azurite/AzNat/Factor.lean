@@ -14,6 +14,7 @@ import Azurite.AzNat.Div
 import Azurite.AzNat.FactorWord
 import Azurite.AzNat.IsPrime
 import Azurite.AzNat.PerfectPower
+import Azurite.AzNat.PPlusMinusOne
 import Azurite.AzNat.PollardRho
 
 /-!
@@ -45,7 +46,9 @@ returns is used only if it is a divisor strictly between `1` and `n` (three comp
 the proofs hold for any function in its place.  Primality is decided by the proven `isPrime`.
 For now `findDivisor` is Pollard's rho method with Brent's cycle finding
 (`Azurite/AzNat/PollardRho.lean`), which finds a prime factor `p` in about `3 √p`
-multiplications modulo `n`.
+multiplications modulo `n`, interleaved with the `p − 1` and `p + 1` methods
+(`Azurite/AzNat/PPlusMinusOne.lean`), which find a `p` for which `p ∓ 1` is a product of
+small primes.
 -/
 
 namespace Azurite.AzNat
@@ -101,15 +104,36 @@ def trialBound : Nat := 4096
 def trialDivide (n : AzNat) : AzNat × List AzNat :=
   trialDivideBy (primesUpTo trialBound).toList n []
 
-/-- The terms of the rho sequence computed for one constant before the next is tried.  Until
-there are methods for larger factors there is nothing better to hand over to, so this is
+/-- The terms of the rho sequence computed for one constant in the last round.  Until there
+are methods for larger factors there is nothing better to hand over to, so this is
 generous. -/
 def rhoBudget : Nat := 1 <<< 36
 
+/-- The first-stage bound of the `p ± 1` methods. -/
+def pm1B₁ : Nat := 100000
+
+/-- The second-stage bound of the `p ± 1` methods. -/
+def pm1B₂ : Nat := 3000000
+
 /-- **A divisor of a composite `n`** that has no small prime factor and is not a perfect power,
-if one is found: Pollard's rho method.  Not verified, and need not be: `splitFactors` checks
-what it returns. -/
-def findDivisor (n : AzNat) : Option AzNat := pollardRho n 16 rhoBudget
+if one is found: Pollard's rho method for a while, then the `p − 1` and `p + 1` methods, then
+rho (with other constants) without a practical limit.  The first round of rho is as long as
+makes the `p ± 1` methods a modest addition to it (measured 2026-11-27, see
+`docs/factor_plan.md`): `2^26` terms for a number of two machine words, where a term of rho
+costs about 20 ns and `p − 1` with `p + 1` about 0.36 s; `2^17` terms for larger numbers,
+where rho runs on `AzNat` and `2^17` terms cost about as much as `p − 1`.  Not verified, and
+need not be: `splitFactors` checks what it returns. -/
+def findDivisor (n : AzNat) : Option AzNat :=
+  if n.size ≤ 126 then
+    (pollardRho n 1 (1 <<< 26)).orElse fun _ =>
+    (PM1.pMinusOne n 2 pm1B₁ pm1B₂).orElse fun _ =>
+    (PM1.pPlusOne n 3 pm1B₁ pm1B₂).orElse fun _ =>
+    pollardRho n 16 rhoBudget 2
+  else
+    (pollardRho n 1 (1 <<< 17)).orElse fun _ =>
+    (PM1.pMinusOne n 2 pm1B₁ pm1B₂).orElse fun _ =>
+    ([3, 5, 7].findSome? fun P => PM1.pPlusOne n P pm1B₁ pm1B₂).orElse fun _ =>
+    pollardRho n 16 rhoBudget 2
 
 /-- **Is `l` a list of primes with product `n`?**  Primality by the proven `isPrime`. -/
 def checkFactors (n : AzNat) (l : List AzNat) : Bool :=

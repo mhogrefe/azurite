@@ -56,5 +56,29 @@ def run (limit : Nat) : IO Unit := do
   line "2^101 - 1" (AzNat.pow (AzNat.ofNat 2) 101 - 1)
   line "2^64 + 1" (AzNat.pow (AzNat.ofNat 2) 64 + 1)
   line "(10^9 + 7)^5" (AzNat.pow (AzNat.ofNat 1000000007) 5)
+  -- a 16-digit prime with `p − 1` (resp. `p + 1`) made of primes below 12000 (16000), times
+  -- a 51-digit prime
+  let big := AzNat.pow (AzNat.ofNat 10) 50 + AzNat.ofNat 151
+  line "p - 1 smooth (16 digits) x 51 digits" (AzNat.ofNat 1091614439518223 * big)
+  line "p + 1 smooth (16 digits) x 51 digits" (AzNat.ofNat 1270305450585217 * big)
+  let (g, t) ← timeNsIter 1 fun _ =>
+    AzNat.PM1.pMinusOne (AzNat.ofNat 1091614439518223 * big) 2 AzNat.pm1B₁ AzNat.pm1B₂
+  IO.println s!"   p - 1 alone, default bounds: {ms t}ms ({g.isSome})"
+  let (g, t) ← timeNsIter 1 fun _ =>
+    AzNat.PM1.pPlusOne (AzNat.ofNat 1270305450585217 * big) 3 AzNat.pm1B₁ AzNat.pm1B₂
+  IO.println s!"   p + 1 alone, default bounds: {ms t}ms ({g.isSome})"
+  -- the cost of the methods when they find nothing, at three sizes
+  let m101 := AzNat.pow (AzNat.ofNat 2) 101 - 1
+  let hard := big * (AzNat.pow (AzNat.ofNat 10) 50 + AzNat.ofNat 447)
+  for (name, n) in [("101 bits", m101), ("217 bits", AzNat.ofNat 1270305450585217 * big),
+      ("333 bits", hard)] do
+    let (g, t) ← timeNsIter 1 fun _ => AzNat.PM1.pMinusOne n 2 AzNat.pm1B₁ AzNat.pm1B₂
+    let (g1, t1) ← timeNsIter 1 fun _ => AzNat.PM1.pMinusOne n 2 AzNat.pm1B₁ AzNat.pm1B₁
+    let (h, u) ← timeNsIter 1 fun _ => AzNat.PM1.pPlusOne n 4 AzNat.pm1B₁ AzNat.pm1B₂
+    let (h1, u1) ← timeNsIter 1 fun _ => AzNat.PM1.pPlusOne n 4 AzNat.pm1B₁ AzNat.pm1B₁
+    let (r, v) ← timeNsIter 1 fun _ => AzNat.pollardRho n 1 (1 <<< 17)
+    IO.println s!"   {name}: p - 1 {ms t}ms ({g.isSome}; first stage {ms t1}ms, {g1.isSome}), \
+      p + 1 {ms u}ms ({h.isSome}; first stage {ms u1}ms, {h1.isSome}), \
+      rho 2^17 terms {ms v}ms ({r.isSome})"
 
 end Azurite.Benchmark.Factor

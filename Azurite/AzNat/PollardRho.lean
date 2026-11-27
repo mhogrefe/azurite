@@ -89,18 +89,23 @@ def rhoBrent (n c x₀ : AzNat) (batch budget : Nat) : Option AzNat × Nat := Id
 /-- The number of differences per gcd. -/
 def rhoBatch : Nat := 128
 
+/-- The number of differences per gcd in two machine words, where a term costs so little
+(about 17 ns) that a gcd for every 128 of them (some 3 µs) would be more than half of the
+time. -/
+def rhoBatchTwoWord : Nat := 2048
+
 /-- **Pollard's rho method**: a divisor of the odd composite `n` strictly between `1` and
-`n`, if one is found with `c = 1, 2, …, tries` (and `x₀ = 2`) within `budget` terms of the
-sequence each.  Numbers of 64 to 126 bits are done in two machine words
+`n`, if one is found with `c = c₀, c₀ + 1, …, c₀ + tries − 1` (and `x₀ = 2`) within `budget`
+terms of the sequence each.  Numbers of 64 to 126 bits are done in two machine words
 (`TwoWord.rhoBrent`), the others on `AzNat`. -/
-def pollardRho (n : AzNat) (tries budget : Nat) : Option AzNat :=
+def pollardRho (n : AzNat) (tries budget : Nat) (c₀ : Nat := 1) : Option AzNat :=
   if n.isEven || n.size ≤ 2 then none
   else if 63 < n.size ∧ n.size ≤ 126 then
     (List.range tries).findSome? fun i =>
-      (TwoWord.rhoBrent n (i + 1).toUInt64 rhoBatch budget).1
+      (TwoWord.rhoBrent n (i + c₀).toUInt64 rhoBatchTwoWord budget).1
   else
     (List.range tries).findSome? fun i =>
-      (rhoBrent n (ofNat (i + 1)) (ofNat 2) rhoBatch budget).1
+      (rhoBrent n (ofNat (i + c₀)) (ofNat 2) rhoBatch budget).1
 
 end Azurite.AzNat
 

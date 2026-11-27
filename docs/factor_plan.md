@@ -36,7 +36,7 @@ Started 2026-11-26.  Goal: `AzNat.factor : AzNat → List (AzNat × Nat)` — th
 1. **Proven skeleton — DONE 2026-11-26.**
 2. **Pollard–Brent rho — DONE 2026-11-26** (untimed).
 3. Hart's one-line method, SQUFOF.
-4. `p − 1`, `p + 1`.
+4. **`p − 1`, `p + 1` — DONE 2026-11-27** (untimed; step 3 skipped: machine-word rho covers its range).
 5. ECM.
 6. Quadratic sieve.
 
@@ -282,3 +282,87 @@ New functions: `TwoWord.reduce`, `mulMont`, `addMod`, `absDiff`, `next`, `advanc
   and 65–80 bits (two words): still Miller–Rabin and APR-CL.
 * `listProd` moved here from `Factor.lean`.
 * New functions: `AzNat.lucasHint`, `lucasCheck`, `lucasCertified`, `listProd`.
+
+### Timed 2026-11-27 (quiet machine, `benchmark factor 13`)
+
+Primality of the two factors, before → with the certificates (ms): 10 + 10 digits
+1.1–1.2 → 0.08–0.13; 11 + 11: 1.8–2.0 → 0.13–0.15; 12 + 12: 1.8–8.3 → 0.16–0.18;
+13 + 13: 1.8–9.4 → 0.18–0.20; the two factors of `2^101 − 1` (43 and 59 bits):
+5.7 → 0.20.  Totals: 10 + 10 digits 1.4–2.8 (were 2.3–3.8); 11 + 11: 10.7–11.9;
+12 + 12: 32; 13 + 13: 64–77 (rho is now nearly all of it); squares of primes of 10 to 13
+digits 0.20–0.22 (were 0.9–5.1); `2^64 + 1` 0.32 (was 1.36); `2^101 − 1` 151;
+`10^40 + 1` 13.0, of which 3.7 the proof of its 26-digit prime (above the range of the
+certificates).  `30!` is back at 0.017: the 0.12 of the earlier runs was the first use of
+`trialDivide` in the process, which in this run falls on an earlier line.
+
+## 2026-11-27 — step 4, the `p − 1` and `p + 1` methods
+
+`AzNat/PPlusMinusOne.lean` (namespace `AzNat.PM1`; searches, nothing proven).  **Not timed.**
+
+* `pMinusOne n a B₁ B₂` (Pollard 1974): `a^M`, `M = ∏_{q ≤ B₁} q^⌊log_q B₁⌋`, one prime
+  power at a time (`powSmall`, `primePower`), `gcd(a^M − 1, n)`.
+* `pPlusOne n P B₁ B₂` (Williams 1982): `V_M(P)` by the binary ladder `lucasPair`
+  (`V_{2k} = V_k² − 2`, `V_{2k+1} = V_k V_{k+1} − P`), `gcd(V_M − 2, n)`; a `p + 1` method
+  when `P² − 4` is a non-residue modulo `p`, a `p − 1` method otherwise.
+* `stage2` (shared; Montgomery 1987, §4): from `V₁ = α + α⁻¹` (`α = a^M` for `p − 1`, by
+  one modular inverse), the product of `V_{kw} − V_j`, `w = 210`, `0 < j < 105` prime to
+  `w`, over the pairs with `kw − j` or `kw + j` a prime in `(B₁, B₂]`;
+  `V_{(k+1)w} = V_w V_{kw} − V_{(k−1)w}`.  About one multiplication per prime; the primes
+  as a byte array.
+* On `AzNat` in Montgomery form (`MontCtx`) for every size.
+* `findDivisor` is now a schedule: rho `2^21` terms; `p − 1` and `p + 1` (`P = 3`) with
+  `B₁ = 10^5`, `B₂ = 3 · 10^6` (`pm1B₁`, `pm1B₂`; together about a quarter of the
+  multiplications of the first rho round); rho `2^26` terms × 4 constants; `p + 1` with
+  `P = 5, 7`; rho without limit.  **Untuned** — the bounds are guesses to be revised with
+  measurements and again when ECM exists.
+* Guards: 12- and 16-digit primes with smooth `p − 1` or `p + 1` (one prime of the order
+  above `B₁` for the second stage) times a 51-digit prime; `lucasPair` against the
+  recurrence.  A test prime had `P² − 4` a square for every `P ≤ 13`: the starting values
+  matter.
+* New functions: `PM1.subMod`, `powSmall`, `lucasPair`, `primePower`, `proper`, `stage2`,
+  `pMinusOne`, `pPlusOne`; constants `pm1B₁`, `pm1B₂`.
+
+### Timed 2026-11-27 (quiet machine) — the schedule of `findDivisor`
+
+Cost of the methods when they find nothing, default bounds `B₁ = 10^5`, `B₂ = 3 · 10^6`
+(ms; `benchmark factor 3`, last lines):
+
+| `n` | `p − 1` (first stage) | `p + 1` (first stage) | rho, `2^17` terms |
+|---|---|---|---|
+| 101 bits (two words) | ≈ 165 (38) | 199–205 (74–76) | 4.5 (was 6.2 with a gcd per 128 terms) |
+| 217 bits | 257–264 (92–93) | 310–339 (143–147) | 186–187 |
+| 333 bits | 367–369 (145–147) | 450–454 (231–232) | 292 |
+
+So on `AzNat` (above 126 bits) `p − 1` costs as much as `1.8 · 10^5` terms of rho and
+`p + 1` as much as `2.2 · 10^5`; on two words, where a term of rho costs about 20 ns but
+`p ± 1` still run on `AzNat`, the two together cost as much as `2^24` terms.
+
+What the first schedule (rho `2^21` → `p − 1` → `p + 1` → rho `2^26` × 4 → …, the same for
+all sizes) did: `2^101 − 1` 151 → 334 ms (0.18 s of `p ± 1` in the way, and the second rho
+round began again with the same constant); the 16-digit primes with smooth `p ∓ 1` times a
+51-digit prime 3.1–3.4 s, of which 3 s the first rho round on `AzNat` (1.4 µs per term at
+217 bits) before `p − 1`, which alone takes 0.09 s.
+
+Now:
+
+* two words (64–126 bits): rho `2^26` terms (about 1.3 s; prime factors up to some
+  `5 · 10^14`) → `p − 1` → `p + 1` (`P = 3`) → rho with the constants `2, 3, …`;
+* above: rho `2^17` terms → `p − 1` → `p + 1` (`P = 3, 5, 7`) → rho with the constants
+  `2, 3, …`.
+
+Two more things the timings showed:
+
+* `p − 1` with the base `2` found nothing in `2^101 − 1` although
+  `7432339208719 − 1 = 2 · 3 · 101 · 44029 · 278557` is within the bounds: `2` has order
+  `101` modulo all of `2^101 − 1`, so the first stage ended with `a^M ≡ 1 (mod n)`.
+  `pMinusOne` now goes on to the bases `a + 1`, `a + 2` when that happens.
+* In two words the gcd of each batch (about 3 µs) was more than half of the time of 128
+  terms: `rhoBatchTwoWord = 2048`.
+
+After that (`benchmark factor 13`, ms; before = the previous table): 10 + 10 digits
+1.2–2.9; 11 + 11: 8.3–9.3 (were 10.7–11.9); 12 + 12: 25.6 (32); 13 + 13: 52–57 (64–77);
+`2^101 − 1` 115 (151); 16-digit prime with smooth `p − 1` × 51 digits 324; with smooth
+`p + 1` 638 (`P = 3` is the right starting value for this one).
+
+Still guesses: `B₁`, `B₂` themselves (to be set together with ECM, for which `p − 1` is
+the usual cheap first step), and the number of starting values of `p + 1`.
