@@ -224,3 +224,61 @@ exponent):
 At 30000 bits by ranges of the exponent: `3`: 1.2 ms; `5, 7`: 0.9; `11 … 31`: 0.9;
 `37 … 929` (147 primes, `AzNat` path): 2.8; `937 …` (3087 primes, machine words): 2.0;
 the inverse hint 0.35.  No wrong candidate anywhere (the `rootInt` fallback is not taken).
+
+## 2026-11-27 — rho in two machine words
+
+`AzNat/RhoTwoWord.lean` (namespace `AzNat.TwoWord`, nothing proven): for an odd `n` of 65
+to 126 bits, residues in two `UInt64` words, Montgomery product with `R = 2^128`
+(`mulMont`: the four-word product, two clearing rounds, `reduce`), `addMod`, `absDiff`,
+`next`, and the loops as recursions on words (`advance`, `batch`) so that a term allocates
+nothing; `rhoBrent n c batchSize budget` drives them, with one `AzNat` gcd per batch.
+`pollardRho` uses it for 65–126 bits and the `AzNat` version elsewhere.  Guards check
+`mulMont` against its definition (`r · 2^128 ≡ a b`, `r < n`) on 400 moduli.
+**Not timed** (the machine was busy): compare `2^101 − 1` (2.53 s before) and `10^40 + 1`
+with `benchmark factor 9`.
+New functions: `TwoWord.reduce`, `mulMont`, `addMod`, `absDiff`, `next`, `advance`, `batch`,
+`toAzNat`, `rhoBrent`.
+
+### Timed 2026-11-27 (quiet machine, `benchmark factor 13`)
+
+* `2^101 − 1 = 7432339208719 · 341117531003194129`: 2530 → **152 ms** (about 17 ns per
+  term against 290).  `2^64 + 1`: 1.97 → 1.36 ms (1.14 of it primality).  `10^40 + 1`
+  (133 bits, still on `AzNat`): 13.8 ms.
+* Products of two primes of `d` digits (ms, of which primality):
+
+  | `d + d` | bits | time | primality |
+  |---|---|---|---|
+  | 10 + 10 | 64–65 | 2.3–3.8 | 1.1–1.2 |
+  | 11 + 11 | 71–72 | 11.6–13.0 | 1.8–2.0 |
+  | 12 + 12 | 77–78 | 33–39 | 1.8–8.3 |
+  | 13 + 13 | 84–85 | 65–82 | 1.8–9.4 |
+
+  (squares of primes: 0.9–5.1 ms, nearly all of it primality.)
+* Found on the way: a number of exactly 64 bits fell between the paths (`factorWord` takes
+  `n < 2^63`, the two-word rho took 65 bits and more) and cost 38 ms on `AzNat`; the
+  two-word rho now starts at 64 bits (3.8 ms).
+* Primality is now a visible share: the proof of a prime of 33 to 44 bits by Miller–Rabin
+  and APR-CL costs 1–9 ms, more than finding it up to about 11 digits.  A certificate from
+  the factorization of `n − 1` (which `factorWord` gives at once) is the natural remedy.
+
+## 2026-11-27 — primality of one-word primes by the factorization of `n − 1`
+
+`AzNat/IsPrimeLucas.lean`, `AzNat/Equiv/IsPrimeLucas.lean`.  **Not timed yet.**
+
+* `lucasHint n` (machine words, not verified): `2 ::` the factors of `(n − 1)/2` from
+  `Word.factorWord`, and the first of twenty small primes `a` with `a^((n−1)/q) ≠ 1` for
+  every prime `q ∣ n − 1` (`Word.powMont`).
+* `lucasCheck n a l` (on `AzZMod n`): `listProd l = n − 1`, `a^(n−1) = 1`,
+  `a^((n−1)/q) ≠ 1` for the distinct `q` of `l`.
+* `lucasCertified fuel n`: up to 32 bits `isPrimeWord`; up to 63 bits the hint, the check,
+  and the certification of every `q` (fuel 40 from `isPrime`: each level at least halves).
+* Proven: `lucasCheck_prime` (with Mathlib's `lucas_primality`), **`lucasCertified_prime`**
+  (`= true → Nat.Prime n.toNat`), `toNat_listProd`, `isPrimeWord_toUInt64`.
+* `isPrime`, 33–80 bits: `(size ≤ 63 ∧ Word.isProbablePrime ∧ lucasCertified 40) ∨
+  (millerRabin ∧ aprclOrEcpp)` — the machine-word probable-prime test only decides whether
+  the certificate is attempted, so that composites do not pay for a factorization of
+  `n − 1`; `isPrime_eq_true_iff` unchanged in statement.
+* Not covered: numbers of exactly 64 bits (the machine-word arithmetic needs `n < 2^63`),
+  and 65–80 bits (two words): still Miller–Rabin and APR-CL.
+* `listProd` moved here from `Factor.lean`.
+* New functions: `AzNat.lucasHint`, `lucasCheck`, `lucasCertified`, `listProd`.

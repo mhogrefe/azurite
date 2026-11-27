@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzNat.Conversion
 import Azurite.AzNat.IsPrimeAprcl
+import Azurite.AzNat.IsPrimeLucas
 import Azurite.AzNat.IsPrimeWord
 import Azurite.ECPP.Gen.Search
 
@@ -18,7 +19,10 @@ import Azurite.ECPP.Gen.Search
 `isPrime n`, with `isPrime n = true ↔ Nat.Prime n.toNat` (`isPrime_eq_true_iff`,
 `Azurite/AzNat/Equiv/IsPrime.lean`):
 
-* up to 32 bits, trial division in machine words (`isPrimeWord`); up to 80 bits, the twelve Miller–Rabin bases and the APR-CL
+* up to 32 bits, trial division in machine words (`isPrimeWord`); up to 63 bits, a
+  probable prime (an unverified Miller–Rabin test in machine words) is first given to
+  Lucas's test with the factorization of `n − 1` (`lucasCertified`: `true` proves
+  primality), and what follows is only for the rest; up to 80 bits, the twelve Miller–Rabin bases and the APR-CL
   verdict.  If APR-CL gives up (never observed), `ecppOrNaive`: an elliptic curve
   certificate when `n` has more than `ecppFallbackBits` bits, trial division otherwise or
   when no certificate is found;
@@ -60,7 +64,8 @@ def aprclOrEcpp (n : AzNat) : Bool :=
   | some b => b
   | none => ecppOrNaive n
 
-/-- **Primality test**: trial division (in machine words) up to 32 bits; up to 80 bits, Miller–Rabin rejection
+/-- **Primality test**: trial division (in machine words) up to 32 bits; up to 63 bits a
+certificate by the factorization of `n − 1` when one is found; up to 80 bits, Miller–Rabin rejection
 and the APR-CL verdict (an elliptic curve certificate or trial division if it gives up);
 above, Miller–Rabin rejection, then a checked elliptic curve certificate, then APR-CL if none
 was found.  Proven: `isPrime n = true ↔ Nat.Prime n.toNat`. -/
@@ -69,7 +74,9 @@ def isPrime (n : AzNat) : Bool :=
     match isPrimeWord n.toUInt64 with
     | some b => b
     | none => isPrimeNaive n
-  else if n.size ≤ 80 then millerRabin n 0 0 && aprclOrEcpp n
+  else if n.size ≤ 80 then
+    (decide (n.size ≤ 63) && Word.isProbablePrime n.toUInt64 && lucasCertified 40 n)
+      || (millerRabin n 0 0 && aprclOrEcpp n)
   else millerRabin n 0 0 && (ECPP.provePrime n || aprclOrNaive n)
 
 end AzNat
@@ -97,6 +104,14 @@ private def parse' (s : String) : AzNat := (AzNat.parse s).get!
 -- strong pseudoprimes to the twelve bases: the certificate search gives up, APR-CL decides
 #guard isPrime (parse' "3317044064679887385961981") == false
 #guard isPrime (parse' "318665857834031151167461") == false
+-- 33 to 63 bits: Lucas certificates (primes), Miller–Rabin (composites)
+#guard isPrime (parse' "4294967311") == true && isPrime (parse' "4294967313") == false
+#guard isPrime (parse' "9223372036854775783") == true    -- the largest prime below 2^63
+#guard isPrime (parse' "9223372036854775807") == false   -- 2^63 − 1
+#guard isPrime (parse' "3215031751") == false            -- strong pseudoprime to 2, 3, 5, 7
+#guard isPrime (parse' "341550071728321") == false       -- strong pseudoprime to 2, …, 17
+-- 64 bits: the general path
+#guard isPrime (parse' "18446744073709551557") == true   -- the largest prime below 2^64
 -- above 80 bits: by elliptic curve certificates
 #guard isPrime (parse' "1000000000000000000000007") == true
 #guard isPrime (ofNat (2 ^ 127 - 1)) == true

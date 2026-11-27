@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzNat.Factor
 import Azurite.AzNat.Equiv.IsPrime
+import Azurite.AzNat.Equiv.IsPrimeLucas
 import Azurite.AzNat.Equiv.PerfectPower
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Div.DivMod
@@ -209,18 +210,12 @@ private theorem two_le_of_pow {x k n : ℕ} (hk : 1 < k) (hn : 2 ≤ n) (h : x ^
 
 /-! ### Checked proposals -/
 
-private theorem toNat_foldl_mul (l : List AzNat) (a : AzNat) :
-    (l.foldl (· * ·) a).toNat = a.toNat * (l.map toNat).prod := by
-  induction l generalizing a with
-  | nil => simp
-  | cons b l ih => rw [List.foldl_cons, ih, toNat_mul, List.map_cons, List.prod_cons, mul_assoc]
-
 /-- A list that passes `checkFactors` is a list of primes with product `n`. -/
 theorem checkFactors_spec {n : AzNat} {l : List AzNat} (h : checkFactors n l = true) :
     FactorsOf l n.toNat := by
   rw [checkFactors, Bool.and_eq_true, decide_eq_true_iff, List.all_eq_true] at h
   refine ⟨fun p hp => (isPrime_eq_true_iff p).1 (h.2 p hp), ?_⟩
-  rw [← h.1, listProd, toNat_foldl_mul, toNat_one'', one_mul]
+  rw [← h.1, toNat_listProd]
 
 /-- `hinted` is as good as its slow path. -/
 theorem hinted_spec {n : AzNat} {slow : Unit → List AzNat}

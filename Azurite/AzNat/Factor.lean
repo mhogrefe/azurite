@@ -111,9 +111,6 @@ if one is found: Pollard's rho method.  Not verified, and need not be: `splitFac
 what it returns. -/
 def findDivisor (n : AzNat) : Option AzNat := pollardRho n 16 rhoBudget
 
-/-- The product of a list. -/
-def listProd (l : List AzNat) : AzNat := l.foldl (· * ·) 1
-
 /-- **Is `l` a list of primes with product `n`?**  Primality by the proven `isPrime`. -/
 def checkFactors (n : AzNat) (l : List AzNat) : Bool :=
   decide (listProd l = n) && l.all isPrime

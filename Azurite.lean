@@ -977,6 +977,7 @@ import Azurite.AzNat.Equiv.InvMod
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.IsPrime
 import Azurite.AzNat.Equiv.IsPrimeAprcl
+import Azurite.AzNat.Equiv.IsPrimeLucas
 import Azurite.AzNat.Equiv.IsPrimeWord
 import Azurite.AzNat.Equiv.IsSquare
 import Azurite.AzNat.Equiv.JacobiSym
@@ -1067,6 +1068,7 @@ import Azurite.AzNat.InvMod
 import Azurite.AzNat.IsMultipleOfPow2
 import Azurite.AzNat.IsPrime
 import Azurite.AzNat.IsPrimeAprcl
+import Azurite.AzNat.IsPrimeLucas
 import Azurite.AzNat.IsPrimeWord
 import Azurite.AzNat.IsSquare
 import Azurite.AzNat.JacobiSym
@@ -1116,6 +1118,7 @@ import Azurite.AzNat.Pow2
 import Azurite.AzNat.Pratt
 import Azurite.AzNat.Primality
 import Azurite.AzNat.Primorial
+import Azurite.AzNat.RhoTwoWord
 import Azurite.AzNat.RisingFallingFactorial
 import Azurite.AzNat.RootInt
 import Azurite.AzNat.SetBit

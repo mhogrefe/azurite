@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzNat.Gcd
 import Azurite.AzNat.Montgomery
 import Azurite.AzNat.Parity
+import Azurite.AzNat.RhoTwoWord
 
 /-!
 # Pollard's rho method with Brent's cycle finding
@@ -90,9 +91,13 @@ def rhoBatch : Nat := 128
 
 /-- **Pollard's rho method**: a divisor of the odd composite `n` strictly between `1` and
 `n`, if one is found with `c = 1, 2, …, tries` (and `x₀ = 2`) within `budget` terms of the
-sequence each. -/
+sequence each.  Numbers of 64 to 126 bits are done in two machine words
+(`TwoWord.rhoBrent`), the others on `AzNat`. -/
 def pollardRho (n : AzNat) (tries budget : Nat) : Option AzNat :=
   if n.isEven || n.size ≤ 2 then none
+  else if 63 < n.size ∧ n.size ≤ 126 then
+    (List.range tries).findSome? fun i =>
+      (TwoWord.rhoBrent n (i + 1).toUInt64 rhoBatch budget).1
   else
     (List.range tries).findSome? fun i =>
       (rhoBrent n (ofNat (i + 1)) (ofNat 2) rhoBatch budget).1
@@ -120,6 +125,9 @@ private def splits (n : Nat) : Bool :=
 #guard splits ((2 ^ 31 - 1) * (2 ^ 61 - 1))
 #guard splits (104729 * (10 ^ 30 + 57))
 #guard splits (1000003 * (10 ^ 50 + 151))
+-- more than 126 bits: on `AzNat`
+#guard splits (1000003 * (10 ^ 40 + 121))
+#guard (rhoBrent (N (1000003 * (10 ^ 30 + 57))) (N 1) (N 2) 128 1000000).1.isSome
 -- the fifth Fermat number
 #guard (pollardRho (N (2 ^ 32 + 1)) 8 1000000).map toNat == some 641
 -- nothing to find: primes (the budget runs out), even numbers, numbers below 4
