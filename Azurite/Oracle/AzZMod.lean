@@ -237,12 +237,12 @@ def checkModDiv (line : String) : Verdict := do
     let qr ← residueMod m "quotient" q
     expectEq "q·y mod m" (AzZMod.mul qr b).val a.val
 
-/-- `x.mod_sqrt(m) = Some(y)` or `None`. Malachite documents that for a prime modulus a root is
-returned exactly when one exists, either of the two; for other moduli it may return `None` though a
-root exists, or a value that is not a root, so there only the documented range `y < m` is checked.
-For a prime modulus (decided by the proven `AzNat.isPrime`), `AzZMod.sqrt?`, complete for primes
-and returning the smaller root, decides existence, and the printed root must be it or its
-negation. -/
+/-- `x.mod_sqrt(m) = Some(y)` or `None`. Malachite documents that a returned value is always a
+root, the smaller of it and its negation, and that for a prime modulus a root is returned exactly
+when one exists; for other moduli it may return `None` though a root exists. So a printed root is
+checked by squaring and against its negation for every modulus, and for a prime modulus (decided by
+the proven `AzNat.isPrime`) `AzZMod.sqrt?`, complete for primes and returning the smaller root,
+decides existence and must give the printed root. -/
 def checkModSqrt (line : String) : Verdict := do
   let (x, args, res) ← expect "an `x.mod_sqrt(m) = r` line" (methodCall line "mod_sqrt")
   let m ← match args with
@@ -260,16 +260,17 @@ def checkModSqrt (line : String) : Verdict := do
       let y ← expect "root" (parseAzNat y)
       let r ← residueMod m "root" y
       pure (some r)
+  if let some y := root then
+    expectEq "y·y mod m" (AzZMod.mul y y).val a.val
+    if (-y).val < y.val then
+      disagree s!"Malachite printed {y.val}, but its negation {(-y).val} is smaller"
   if AzNat.isPrime m then
     match AzZMod.sqrt? a, root with
     | none, none => pure ()
     | some _, none => disagree s!"{x} is a square mod the prime {m}, but Malachite found no root"
     | none, some y =>
       disagree s!"{x} is not a square mod the prime {m}, but Malachite printed {y.val}"
-    | some r, some y =>
-      if y.val == r.val || y.val == (-r).val then pure ()
-      else disagree s!"the roots of {x} mod {m} are {r.val} and {(-r).val}, not {y.val}"
-  else pure ()
+    | some r, some y => expectEq "the smaller root" r.val y.val
 
 /-- `x is reduced mod m` or `x is not reduced mod m`: whether `x < m`. -/
 def checkModIsReduced (line : String) : Verdict := do

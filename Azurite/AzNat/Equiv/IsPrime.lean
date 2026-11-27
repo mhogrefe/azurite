@@ -8,7 +8,10 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzNat.IsPrime
+import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.IsPrimeAprcl
+import Azurite.AzNat.Equiv.IsPrimeWord
+import Azurite.AzNat.Equiv.Size
 import Azurite.ECPP.Equiv.Search
 
 /-!
@@ -53,7 +56,19 @@ theorem isPrime_eq_true_iff (n : AzNat) :
     isPrime n = true ↔ Nat.Prime n.toNat := by
   rw [isPrime]
   by_cases h32 : n.size ≤ 32
-  · rw [ite_eq_left h32, isPrimeNaive_eq_true_iff]
+  · rw [ite_eq_left h32]
+    rcases hw : isPrimeWord n.toUInt64 with _ | b
+    · exact isPrimeNaive_eq_true_iff n
+    · have hlt : n.toNat < 2 ^ 32 := by
+        rw [← size_toNat] at h32
+        exact lt_of_lt_of_le (Nat.lt_size_self _) (Nat.pow_le_pow_right (by norm_num) h32)
+      have hto : n.toUInt64.toNat = n.toNat := by
+        rw [toUInt64_toNat]
+        show n.toNat % 2 ^ 64 = n.toNat
+        exact Nat.mod_eq_of_lt (by omega)
+      have := isPrimeWord_eq_some hw
+      rw [hto] at this
+      exact this
   rw [ite_eq_right h32]
   by_cases hsize : n.size ≤ 80
   · rw [ite_eq_left hsize, Bool.and_eq_true, aprclOrEcpp_eq_true_iff]

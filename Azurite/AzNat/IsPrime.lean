@@ -7,7 +7,9 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzNat.Conversion
 import Azurite.AzNat.IsPrimeAprcl
+import Azurite.AzNat.IsPrimeWord
 import Azurite.ECPP.Gen.Search
 
 /-!
@@ -16,7 +18,7 @@ import Azurite.ECPP.Gen.Search
 `isPrime n`, with `isPrime n = true ↔ Nat.Prime n.toNat` (`isPrime_eq_true_iff`,
 `Azurite/AzNat/Equiv/IsPrime.lean`):
 
-* up to 32 bits, trial division; up to 80 bits, the twelve Miller–Rabin bases and the APR-CL
+* up to 32 bits, trial division in machine words (`isPrimeWord`); up to 80 bits, the twelve Miller–Rabin bases and the APR-CL
   verdict.  If APR-CL gives up (never observed), `ecppOrNaive`: an elliptic curve
   certificate when `n` has more than `ecppFallbackBits` bits, trial division otherwise or
   when no certificate is found;
@@ -58,12 +60,15 @@ def aprclOrEcpp (n : AzNat) : Bool :=
   | some b => b
   | none => ecppOrNaive n
 
-/-- **Primality test**: trial division up to 32 bits; up to 80 bits, Miller–Rabin rejection
+/-- **Primality test**: trial division (in machine words) up to 32 bits; up to 80 bits, Miller–Rabin rejection
 and the APR-CL verdict (an elliptic curve certificate or trial division if it gives up);
 above, Miller–Rabin rejection, then a checked elliptic curve certificate, then APR-CL if none
 was found.  Proven: `isPrime n = true ↔ Nat.Prime n.toNat`. -/
 def isPrime (n : AzNat) : Bool :=
-  if n.size ≤ 32 then isPrimeNaive n
+  if n.size ≤ 32 then
+    match isPrimeWord n.toUInt64 with
+    | some b => b
+    | none => isPrimeNaive n
   else if n.size ≤ 80 then millerRabin n 0 0 && aprclOrEcpp n
   else millerRabin n 0 0 && (ECPP.provePrime n || aprclOrNaive n)
 

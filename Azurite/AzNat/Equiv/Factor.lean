@@ -29,7 +29,8 @@ import Mathlib.Data.List.Sort
 
 The proof does not look at how divisors are found: `splitFactors_spec` holds for every
 function `find`, because a divisor is used only after it has been checked, and primality is
-`isPrime_eq_true_iff`.  A list of primes with product `n` is a permutation of
+`isPrime_eq_true_iff`.  Likewise a proposed list of factors (`factorHint`) is used only if it
+passes `checkFactors` (`checkFactors_spec`, `hinted_spec`).  A list of primes with product `n` is a permutation of
 `Nat.primeFactorsList n` (`Nat.primeFactorsList_unique`), and sorting makes it equal.
 -/
 
@@ -206,6 +207,30 @@ private theorem two_le_of_pow {x k n : ℕ} (hk : 1 < k) (hn : 2 ≤ n) (h : x ^
   · rw [zero_pow (by omega)] at h; omega
   · rw [one_pow] at h; omega
 
+/-! ### Checked proposals -/
+
+private theorem toNat_foldl_mul (l : List AzNat) (a : AzNat) :
+    (l.foldl (· * ·) a).toNat = a.toNat * (l.map toNat).prod := by
+  induction l generalizing a with
+  | nil => simp
+  | cons b l ih => rw [List.foldl_cons, ih, toNat_mul, List.map_cons, List.prod_cons, mul_assoc]
+
+/-- A list that passes `checkFactors` is a list of primes with product `n`. -/
+theorem checkFactors_spec {n : AzNat} {l : List AzNat} (h : checkFactors n l = true) :
+    FactorsOf l n.toNat := by
+  rw [checkFactors, Bool.and_eq_true, decide_eq_true_iff, List.all_eq_true] at h
+  refine ⟨fun p hp => (isPrime_eq_true_iff p).1 (h.2 p hp), ?_⟩
+  rw [← h.1, listProd, toNat_foldl_mul, toNat_one'', one_mul]
+
+/-- `hinted` is as good as its slow path. -/
+theorem hinted_spec {n : AzNat} {slow : Unit → List AzNat}
+    (h : FactorsOf (slow ()) n.toNat) : FactorsOf (hinted n slow) n.toNat := by
+  unfold hinted
+  simp only []
+  split_ifs with hc
+  · exact checkFactors_spec hc
+  · exact h
+
 /-- **`splitFactors` gives the prime factors of `n ≥ 2`, whatever `find` is.** -/
 theorem splitFactors_spec (find : AzNat → Option AzNat) :
     ∀ (fuel : ℕ) (n : AzNat), 2 ≤ n.toNat → FactorsOf (splitFactors find fuel n) n.toNat := by
@@ -215,6 +240,7 @@ theorem splitFactors_spec (find : AzNat → Option AzNat) :
   | succ fuel ih =>
     intro n hn
     rw [splitFactors]
+    apply hinted_spec
     split_ifs with hprime
     · rw [isPrime_eq_true_iff] at hprime
       exact ⟨by simpa using hprime, by simp⟩
@@ -271,24 +297,19 @@ private theorem size_le_one_iff' (n : AzNat) : n.size ≤ 1 ↔ n.toNat ≤ 1 :=
     have : n.toNat < 2 ^ 1 := by omega
     exact Nat.size_le.2 this
 
-/-- The unordered list of prime factors is a permutation of Mathlib's. -/
-theorem primeFactorList_perm (n : AzNat) :
-    ((primeFactorList n).map toNat).Perm (Nat.primeFactorsList n.toNat) := by
+/-- The unordered list of prime factors of `n ≥ 2` is a list of primes with product `n`. -/
+theorem primeFactorList_spec {n : AzNat} (hn : 2 ≤ n.toNat) :
+    FactorsOf (primeFactorList n) n.toNat := by
   unfold primeFactorList
-  by_cases hs : n.size ≤ 1
-  · simp only [hs, ↓reduceIte]
-    rw [size_le_one_iff'] at hs
-    have : n.toNat = 0 ∨ n.toNat = 1 := by omega
-    rcases this with h0 | h0 <;> rw [h0] <;> simp
+  have hs : ¬ n.size ≤ 1 := by rw [size_le_one_iff']; omega
   simp only [hs, ↓reduceIte]
+  apply hinted_spec
+  obtain ⟨hp, hprod⟩ := trialDivide_spec n
   by_cases h1 : (trialDivide n).1 = 1
   · simp only [h1, ↓reduceIte]
-    obtain ⟨hp, hprod⟩ := trialDivide_spec n
     rw [h1, toNat_one'', mul_one] at hprod
-    exact Nat.primeFactorsList_unique hprod (by simpa using hp)
+    exact ⟨hp, hprod⟩
   · simp only [h1, ↓reduceIte]
-    rw [size_le_one_iff'] at hs
-    obtain ⟨hp, hprod⟩ := trialDivide_spec n
     have hr2 : 2 ≤ (trialDivide n).1.toNat := by
       by_contra hc
       have : (trialDivide n).1.toNat = 0 ∨ (trialDivide n).1.toNat = 1 := by omega
@@ -296,15 +317,27 @@ theorem primeFactorList_perm (n : AzNat) :
       · rw [h0, mul_zero] at hprod; omega
       · exact h1 (toNat_injective (by rw [h0, toNat_one'']))
     obtain ⟨hp2, hprod2⟩ := splitFactors_spec findDivisor (trialDivide n).1.size _ hr2
-    apply Nat.primeFactorsList_unique
-    · rw [List.map_append, List.prod_append, hprod2, hprod]
+    refine ⟨?_, ?_⟩
     · intro p hp'
-      rw [List.map_append] at hp'
       rcases List.mem_append.1 hp' with h | h
-      · obtain ⟨q, hq, rfl⟩ := List.mem_map.1 h
-        exact hp q hq
-      · obtain ⟨q, hq, rfl⟩ := List.mem_map.1 h
-        exact hp2 q hq
+      · exact hp p h
+      · exact hp2 p h
+    · rw [List.map_append, List.prod_append, hprod2, hprod]
+
+/-- The unordered list of prime factors is a permutation of Mathlib's. -/
+theorem primeFactorList_perm (n : AzNat) :
+    ((primeFactorList n).map toNat).Perm (Nat.primeFactorsList n.toNat) := by
+  by_cases hn : 2 ≤ n.toNat
+  · obtain ⟨hp, hprod⟩ := primeFactorList_spec hn
+    apply Nat.primeFactorsList_unique hprod
+    intro p hp'
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hp'
+    exact hp q hq
+  · have hs : n.size ≤ 1 := by rw [size_le_one_iff']; omega
+    unfold primeFactorList
+    simp only [hs, ↓reduceIte]
+    have : n.toNat = 0 ∨ n.toNat = 1 := by omega
+    rcases this with h0 | h0 <;> rw [h0] <;> simp
 
 /-- The sorted list of prime factors is Mathlib's. -/
 theorem sorted_primeFactorList (n : AzNat) :

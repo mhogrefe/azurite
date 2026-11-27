@@ -39,6 +39,7 @@ import Azurite.Benchmark.AzFloatLnGamma
 import Azurite.Benchmark.AzFloatGamma
 import Azurite.Benchmark.AzFloatFamilies
 import Azurite.Benchmark.Ecpp
+import Azurite.Benchmark.Factor
 import Azurite.Benchmark.PerfectPower
 import Azurite.Benchmark.PolyKronecker
 import Azurite.Benchmark.PolyFactor
@@ -97,7 +98,7 @@ def validBenchmarks : List String :=
    "uint64_sqrt_rem", "az_nat_sqrt_rem_algorithms", "az_nat_sqrt_vs_nat",
    "az_nat_square_vs_mul", "az_nat_square_algorithms",
    "az_nat_square_algorithms_toomcook3", "az_nat_square_vs_nat",
-   "az_nat_pow_algorithms", "aprcl", "ecpp", "perfect_power", "poly_kronecker", "poly_default", "poly_factor", "az_nat_div_parts", "az_nat_barrett",
+   "az_nat_pow_algorithms", "aprcl", "ecpp", "perfect_power", "factor", "poly_kronecker", "poly_default", "poly_factor", "az_nat_div_parts", "az_nat_barrett",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all",
    "tune_karatsuba_aznat", "tune_karatsuba_aznat_2d",
    "tune_aznat_square", "tune_aznat_mul_toomcook3", "tune_aznat_square_toomcook3",
@@ -145,6 +146,7 @@ def main (args : List String) : IO Unit := do
       | "aprcl" => Azurite.Benchmark.Aprcl.run limit cfg
       | "ecpp" => Azurite.Benchmark.Ecpp.run limit cfg
       | "perfect_power" => Azurite.Benchmark.PerfectPower.run limit
+      | "factor" => Azurite.Benchmark.Factor.run limit
       | "poly_kronecker" => Azurite.Benchmark.PolyKronecker.run limit cfg
       | "poly_default" => Azurite.Benchmark.PolyKronecker.runDefault limit cfg
       | "poly_factor" => Azurite.Benchmark.PolyFactor.run limit cfg

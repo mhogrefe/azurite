@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.Algorithm.PrimeSieve
+import Azurite.AzNat.Conversion
 import Azurite.AzNat.IsSquare
 import Azurite.AzNat.ModPow2
 import Azurite.AzNat.MulModPow2.Dispatch
@@ -32,7 +33,8 @@ D. J. Bernstein, *Detecting perfect powers in essentially linear time*, Math. Co
 Write `n = 2 ^ e m` with `m` odd.  A `p`-th root of `n` (`p` prime) is `2 ^ (e/p)` times one
 of `m`, and `p` divides `e`; so the exponents to try are the primes dividing `e`, or, for odd
 `n`, the primes below its bit length `f`.  For an odd `p` and an odd `m` of `f` bits a root
-has at most `b = ⌈f/p⌉` bits, and is determined modulo `2 ^ b` by `r ^ p ≡ m`: such an `r` is
+has at most `b = ⌈f/p⌉` bits (when `2b ≤ 64` everything below is done in machine words,
+`oddRootWord?`), and is determined modulo `2 ^ b` by `r ^ p ≡ m`: such an `r` is
 found by Newton's iteration `z ← z + z (1 − zᵖ y)/p` for the inverse `p`-th root of
 `y = m⁻¹`, doubling the number of bits (`rootHint`; `y` is computed once for all `p`).  Then
 `r ^ p` is computed modulo `2 ^ (2b)`: if it differs from `m` there, `m` is not a `p`-th
@@ -100,11 +102,62 @@ def oddRoot? (m y : AzNat) (k : Nat) : Option AzNat :=
   else if p ≠ m.modPow2 (2 * b) then none
   else if r.pow k = m then some r else none
 
+/-! ### Roots of at most 32 bits, in machine words
+
+When `2b ≤ 64` (all exponents from a thirty-second of the bit length on) the same test runs
+in `UInt64` arithmetic, whose products are products modulo `2^64`. -/
+
+/-- The low `c` bits of `x` (`x` itself for `c ≥ 64`). -/
+def lowBitsWord (x : UInt64) (c : Nat) : UInt64 :=
+  if 64 ≤ c then x else x % (2 ^ c).toUInt64
+
+/-- `r ^ k mod 2^64`. -/
+def powWord (r : UInt64) : Nat → UInt64
+  | 0 => 1
+  | k + 1 =>
+    let h := powWord r ((k + 1) / 2)
+    if (k + 1) % 2 = 1 then h * h * r else h * h
+decreasing_by omega
+
+/-- The inverse of an odd `a` modulo `2^64` by Newton's iteration (not verified: a hint). -/
+def invWordHint (a : UInt64) : UInt64 :=
+  let x := a
+  let x := x * (2 - a * x)
+  let x := x * (2 - a * x)
+  let x := x * (2 - a * x)
+  let x := x * (2 - a * x)
+  x * (2 - a * x)
+
+/-- A `k`-th root of the odd `m₀` modulo `2^64` for odd `k`, by Newton's iteration for the
+inverse root of `m₀⁻¹` from one correct bit (not verified: a hint for `oddRootWord?`). -/
+def rootWordHint (m₀ : UInt64) (k : Nat) : UInt64 := Id.run do
+  let y := invWordHint m₀
+  let kinv := invWordHint k.toUInt64
+  let k1 := (k + 1).toUInt64
+  let mut z : UInt64 := 1
+  for _ in [0:7] do
+    z := (z * k1 - powWord z (k + 1) * y) * kinv
+  return z
+
+/-- **A `k`-th root of an odd `m` for odd `k`, when `2 ⌈f/k⌉ ≤ 64`** (`f` the bit length of
+`m`): as `oddRoot?`, in machine words.  The power of the candidate is compared with `m` on
+all 64 bits, not only `2b`: for the many large exponents `b` is one or two bits, and a
+weaker test would let a quarter of them through to the full power. -/
+def oddRootWord? (m : AzNat) (k : Nat) : Option AzNat :=
+  let b := (m.size + k - 1) / k
+  let m₀ := m.toUInt64
+  let r := lowBitsWord (rootWordHint m₀ k) b
+  let p := powWord r k
+  if lowBitsWord p b ≠ lowBitsWord m₀ b then kthRoot? m k
+  else if p ≠ m₀ then none
+  else if r.toAzNat.pow k = m then some r.toAzNat else none
+
 /-- **A `p`-th root of an odd `m`** (`y` as in `oddRoot?`): squares by `isSquare`, odd `p` by
 `oddRoot?`. -/
 def primeRoot? (m y : AzNat) (p : Nat) : Option AzNat :=
   if p = 2 then (if isSquare m then some (sqrt m) else none)
-  else if p % 2 = 1 then oddRoot? m y p
+  else if p % 2 = 1 then
+    if 2 * ((m.size + p - 1) / p) ≤ 64 then oddRootWord? m p else oddRoot? m y p
   else kthRoot? m p
 
 /-- **One perfect-power step**: a prime `p` and `x` with `x ^ p = n`, if `n ≥ 2` is a perfect
@@ -177,6 +230,18 @@ private def E (k : Nat) : Option (Nat × Nat) :=
 #guard (invModPow2Hint (N 12345) 100 * N 12345).modPow2 100 == N 1
 #guard powModPow2 (N 3) 10 7 == N (3 ^ 7 % 1024)
 #guard powModPow2 (N 3) 0 7 == N 0 && powModPow2 (N 3) 5 0 == N 1
+-- the same in machine words
+#guard powWord 3 7 == 2187 && powWord 3 0 == 1 && powWord 2 64 == 0
+#guard lowBitsWord 1000 4 == 8 && lowBitsWord 1000 64 == 1000 && lowBitsWord 1000 0 == 0
+#guard invWordHint 12345 * 12345 == 1
+#guard (List.range 200).all fun i =>
+  let m := (2 * i + 1).toUInt64 * 6700417
+  let k := 3 + 2 * (i % 9)
+  powWord (rootWordHint m k) k == m
+#guard (oddRootWord? (N (37 ^ 11)) 11).map toNat == some 37
+#guard oddRootWord? (N (37 ^ 11 + 2)) 11 == none
+#guard (oddRootWord? (N (4294967291 ^ 3)) 3).map toNat == some 4294967291
+#guard oddRootWord? (N (4294967291 ^ 3 + 2)) 3 == none
 -- the candidate of `oddRoot?` is right, so the fallback is not taken
 #guard (List.range 200).all fun i =>
   let m := N (2 * i + 1)

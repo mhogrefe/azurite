@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzNat.PerfectPower
 import Azurite.Bernstein.PerfectPower
 import Azurite.Algorithm.Equiv.PrimeSieve
+import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.IsSquare
 import Azurite.AzNat.Equiv.ModPow2
 import Azurite.AzNat.Equiv.MulModPow2.Dispatch
@@ -127,11 +128,95 @@ theorem oddRoot?_spec (m y : AzNat) {k : ℕ} (hm : Odd m.toNat) (hk : Odd k) :
     apply toNat_injective
     rw [toNat_pow, hrz, hz]
 
+/-- `lowBitsWord` is the remainder modulo `2 ^ c`, for `c ≤ 64`. -/
+theorem toNat_lowBitsWord (x : UInt64) {c : ℕ} (hc : c ≤ 64) :
+    (lowBitsWord x c).toNat = x.toNat % 2 ^ c := by
+  unfold lowBitsWord
+  split_ifs with h
+  · have : c = 64 := by omega
+    subst this
+    exact (Nat.mod_eq_of_lt x.toNat_lt).symm
+  · rw [UInt64.toNat_mod]
+    congr 1
+    show 2 ^ c % 2 ^ 64 = 2 ^ c
+    exact Nat.mod_eq_of_lt (Nat.pow_lt_pow_right (by norm_num) (by omega))
+
+/-- `powWord` is the power modulo `2 ^ 64`. -/
+theorem toNat_powWord (r : UInt64) (k : ℕ) : (powWord r k).toNat = r.toNat ^ k % 2 ^ 64 := by
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    rcases k with _ | k
+    · rw [powWord, pow_zero]
+      rfl
+    · rw [powWord]
+      have hh := ih ((k + 1) / 2) (by omega)
+      have hsplit : r.toNat ^ (k + 1) =
+          r.toNat ^ ((k + 1) / 2) * r.toNat ^ ((k + 1) / 2) * r.toNat ^ ((k + 1) % 2) := by
+        rw [← pow_add, ← pow_add]
+        congr 1
+        omega
+      split_ifs with hodd
+      · rw [UInt64.toNat_mul, UInt64.toNat_mul, hh, hsplit, hodd, pow_one]
+        change Nat.ModEq (2 ^ 64) _ _
+        exact ((Nat.mod_modEq _ _).trans
+          ((Nat.mod_modEq _ _).mul (Nat.mod_modEq _ _))).mul_right _
+      · have h0 : (k + 1) % 2 = 0 := by omega
+        rw [UInt64.toNat_mul, hh, hsplit, h0, pow_zero, mul_one]
+        change Nat.ModEq (2 ^ 64) _ _
+        exact (Nat.mod_modEq _ _).mul (Nat.mod_modEq _ _)
+
+/-- `oddRootWord?` finds a `k`-th root of an odd `m` for odd `k`, if there is one, when the
+root has at most 32 bits. -/
+theorem oddRootWord?_spec (m : AzNat) {k : ℕ} (hm : Odd m.toNat) (hk : Odd k)
+    (hb : 2 * ((m.size + k - 1) / k) ≤ 64) : RootSpec (oddRootWord? m k) m.toNat k := by
+  unfold oddRootWord?
+  simp only []
+  generalize hr : lowBitsWord (rootWordHint m.toUInt64 k) ((m.size + k - 1) / k) = r
+  have hrlt : r.toAzNat.toNat < 2 ^ ((m.size + k - 1) / k) := by
+    rw [UInt64.toNat_toAzNat, ← hr, toNat_lowBitsWord _ (by omega)]
+    exact Nat.mod_lt _ (by positivity)
+  have hm0 : ∀ c, c ≤ 64 → (lowBitsWord m.toUInt64 c).toNat = m.toNat % 2 ^ c := by
+    intro c hc
+    rw [toNat_lowBitsWord _ hc, toUInt64_toNat]
+    show m.toNat % 2 ^ 64 % 2 ^ c = _
+    exact Nat.mod_mod_of_dvd _ (pow_dvd_pow 2 hc)
+  have hpw : ∀ c, c ≤ 64 → (lowBitsWord (powWord r k) c).toNat = r.toNat ^ k % 2 ^ c := by
+    intro c hc
+    rw [toNat_lowBitsWord _ hc, toNat_powWord]
+    exact Nat.mod_mod_of_dvd _ (pow_dvd_pow 2 hc)
+  split_ifs with h1 h2 h3
+  · exact kthRoot?_spec m hk.pos
+  all_goals
+    have hlow : r.toAzNat.toNat ^ k % 2 ^ ((m.size + k - 1) / k) =
+        m.toNat % 2 ^ ((m.size + k - 1) / k) := by
+      push Not at h1
+      have := congrArg UInt64.toNat h1
+      rw [hpw _ (by omega), hm0 _ (by omega)] at this
+      rw [UInt64.toNat_toAzNat]
+      exact this
+  · refine ⟨fun x hx => (by cases hx), fun _ => ?_⟩
+    rintro ⟨z, hz⟩
+    have hrz := candidate_unique hm hk hrlt hlow hz
+    rw [UInt64.toNat_toAzNat] at hrz
+    apply h2
+    apply UInt64.toNat_inj.1
+    rw [toNat_powWord, hrz, hz, toUInt64_toNat]
+    rfl
+  · refine ⟨fun x hx => ?_, fun hx => (by cases hx)⟩
+    cases hx
+    rw [← toNat_pow, h3]
+  · refine ⟨fun x hx => (by cases hx), fun _ => ?_⟩
+    rintro ⟨z, hz⟩
+    have hrz := candidate_unique hm hk hrlt hlow hz
+    apply h3
+    apply toNat_injective
+    rw [toNat_pow, hrz, hz]
+
 /-- `primeRoot?` finds a `p`-th root of an odd `m`, if there is one. -/
 theorem primeRoot?_spec (m y : AzNat) {p : ℕ} (hm : Odd m.toNat) (hp : 0 < p) :
     RootSpec (primeRoot? m y p) m.toNat p := by
   unfold primeRoot?
-  split_ifs with h2 hsq hodd
+  split_ifs with h2 hsq hodd hword
   · subst h2
     rw [isSquare_eq_true_iff] at hsq
     obtain ⟨r, hr⟩ := hsq
@@ -144,6 +229,7 @@ theorem primeRoot?_spec (m y : AzNat) {p : ℕ} (hm : Odd m.toNat) (hp : 0 < p) 
     apply hsq
     rw [isSquare_eq_true_iff]
     exact ⟨z, by rw [← hz, pow_two]⟩
+  · exact oddRootWord?_spec m hm (Nat.odd_iff.2 hodd) hword
   · exact oddRoot?_spec m y hm (Nat.odd_iff.2 hodd)
   · exact kthRoot?_spec m hp
 
